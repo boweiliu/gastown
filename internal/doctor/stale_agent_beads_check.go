@@ -7,9 +7,19 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/constants"
 )
+
+// staleAgentBeadsScanConcurrency caps the number of rigs scanned in parallel.
+// Each rig spawns 2 bd subprocesses (List + ListAgentBeadsFromWisps), each
+// potentially holding a Dolt connection. The check exists to survive Dolt
+// memory pressure, so unbounded fan-out (one goroutine per rig) would compound
+// the very problem we're trying to relieve as the rig count grows. 4 keeps
+// wall-clock close to "slowest rig" without amplifying subprocess pressure.
+const staleAgentBeadsScanConcurrency = 4
 
 // StaleAgentBeadsCheck detects agent beads that exist in the database but have
 // no corresponding agent on disk. This catches beads inherited from upstream or
