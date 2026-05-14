@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
-	"github.com/steveyegge/gastown/internal/convoy"
+	"github.com/steveyegge/gastown/internal/batch"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -932,10 +932,10 @@ type GatedTask struct {
 	GatedBy []string // IDs of non-slingable open blockers (direct gates only)
 }
 
-// isSlingableType delegates to the canonical convoy.IsSlingableType, which
+// isSlingableType delegates to the canonical batch.IsSlingableType, which
 // handles empty types (legacy beads that default to "task").
 func isSlingableType(beadType string) bool {
-	return convoy.IsSlingableType(beadType)
+	return batch.IsSlingableType(beadType)
 }
 
 // computeWaves assigns each slingable task to an execution wave using Kahn's algorithm.

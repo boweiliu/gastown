@@ -1,4 +1,4 @@
-package convoy
+package batch
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func TestMain(m *testing.M) {
 	// container is terminated at cleanup — preventing orphan
 	// accumulation in the shared production Dolt data dir.
 	if err := testutil.EnsureDoltContainerForTestMain(); err != nil {
-		fmt.Fprintf(os.Stderr, "convoy TestMain: skipping — %v\n", err)
+		fmt.Fprintf(os.Stderr, "batch TestMain: skipping — %v\n", err)
 		os.Exit(0)
 	}
 

@@ -1,5 +1,5 @@
-// Package convoy — multi-store resolution for cross-database convoy tracking.
-package convoy
+// Package batch — multi-store resolution for cross-database convoy tracking.
+package batch
 
 import (
 	"context"

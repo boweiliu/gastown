@@ -1,6 +1,6 @@
-// Package convoy provides convoy tracking operations: finding tracking convoys,
+// Package batch provides convoy tracking operations: finding tracking convoys,
 // checking completion, feeding ready issues, and dispatching via gt sling.
-package convoy
+package batch
 
 import (
 	"bytes"

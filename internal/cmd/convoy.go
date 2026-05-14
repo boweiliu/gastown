@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
-	convoyops "github.com/steveyegge/gastown/internal/convoy"
+	batchops "github.com/steveyegge/gastown/internal/batch"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
@@ -584,7 +584,7 @@ func collectEpicChildren(epicID string) ([]string, error) {
 			}
 			visited[child.ID] = true
 
-			if convoyops.IsSlingableType(child.IssueType) {
+			if batchops.IsSlingableType(child.IssueType) {
 				issueIDs = append(issueIDs, child.ID)
 			} else {
 				// Non-slingable types (sub-epics, decisions) — recurse to find slingable descendants
@@ -1556,7 +1556,7 @@ func findStrandedConvoys(townBeads string) ([]strandedConvoyInfo, error) {
 				if !isSlingableBead(townBeads, t.ID) {
 					continue
 				}
-				if !convoyops.IsSlingableType(t.IssueType) {
+				if !batchops.IsSlingableType(t.IssueType) {
 					continue
 				}
 				readyIssues = append(readyIssues, t.ID)

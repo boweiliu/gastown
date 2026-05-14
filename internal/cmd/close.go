@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	beadsdk "github.com/steveyegge/beads"
-	"github.com/steveyegge/gastown/internal/convoy"
+	"github.com/steveyegge/gastown/internal/batch"
 	"github.com/steveyegge/gastown/internal/workspace"
 
 	"github.com/spf13/cobra"
@@ -270,6 +270,6 @@ func checkConvoyCompletion(beadIDs []string) {
 	}
 
 	for _, beadID := range beadIDs {
-		convoy.CheckConvoysForIssue(ctx, store, townRoot, beadID, "Close", nil, gtPath, nil)
+		batch.CheckConvoysForIssue(ctx, store, townRoot, beadID, "Close", nil, gtPath, nil)
 	}
 }

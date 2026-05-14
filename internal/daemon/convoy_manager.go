@@ -13,7 +13,7 @@ import (
 
 	beadsdk "github.com/steveyegge/beads"
 	"github.com/steveyegge/gastown/internal/beads"
-	"github.com/steveyegge/gastown/internal/convoy"
+	"github.com/steveyegge/gastown/internal/batch"
 	"github.com/steveyegge/gastown/internal/util"
 )
 
@@ -44,7 +44,7 @@ type strandedConvoyInfo struct {
 }
 
 // ConvoyManager monitors beads events for issue closes and periodically scans for stranded convoys.
-// It handles both event-driven completion checks (via convoy.CheckConvoysForIssue) and periodic
+// It handles both event-driven completion checks (via batch.CheckConvoysForIssue) and periodic
 // stranded convoy feeding/cleanup.
 //
 // Event polling watches ALL beads stores (town-level hq + per-rig) so that close events from
@@ -88,7 +88,7 @@ type ConvoyManager struct {
 
 	// scanMu serializes calls to scan() from runStrandedScan, runStartupSweep,
 	// and the Dolt recovery callback. Without this, concurrent scans can spawn
-	// duplicate convoy checks for the same stranded convoy.
+	// duplicate convoy checks for the same stranded batch.
 	scanMu sync.Mutex
 
 	// lastEventIDs tracks per-store high-water marks for event polling.
@@ -381,9 +381,9 @@ func (m *ConvoyManager) pollStore(name string, store beadsdk.Storage, stores map
 		}
 
 		m.logger("Convoy: close detected: %s (from %s)", issueID, name)
-		resolver := convoy.NewStoreResolver(m.townRoot, stores)
-		convoy.CheckConvoysForIssue(m.ctx, hqStore, m.townRoot, issueID, "Convoy", m.logger, m.gtPath, m.isRigParked, resolver)
-		convoy.FireCrossRigDepNotifications(m.ctx, issueID, m.townRoot, stores, m.logger)
+		resolver := batch.NewStoreResolver(m.townRoot, stores)
+		batch.CheckConvoysForIssue(m.ctx, hqStore, m.townRoot, issueID, "Convoy", m.logger, m.gtPath, m.isRigParked, resolver)
+		batch.FireCrossRigDepNotifications(m.ctx, issueID, m.townRoot, stores, m.logger)
 	}
 	return nil
 }
@@ -595,7 +595,7 @@ func (m *ConvoyManager) checkConvoyCompletion(convoyID string) {
 	}
 }
 
-// closeEmptyConvoy runs gt convoy check to auto-close an empty convoy.
+// closeEmptyConvoy runs gt convoy check to auto-close an empty batch.
 func (m *ConvoyManager) closeEmptyConvoy(convoyID string) {
 	m.logger("Convoy %s: auto-closing (empty)", convoyID)
 

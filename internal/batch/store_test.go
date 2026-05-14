@@ -1,4 +1,4 @@
-package convoy
+package batch
 
 import (
 	"context"
