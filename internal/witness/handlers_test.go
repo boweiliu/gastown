@@ -1705,7 +1705,6 @@ func TestClearCompletionMetadata_NoBd(t *testing.T) {
 	}
 }
 
-
 // --- Heartbeat v2 tests (gt-3vr5) ---
 
 func TestHeartbeatV2_ExitingStateSkipsZombieDetection(t *testing.T) {
@@ -1872,6 +1871,67 @@ func TestZombieNeverHeartbeated_Classification(t *testing.T) {
 	if !shouldNotFlag {
 		t.Errorf("expected no flag for session age=%v, threshold=%v",
 			time.Since(newSession).Round(time.Second), config.DefaultWitnessHeartbeatStartupGrace)
+	}
+}
+
+func TestSubmittedStillRunningCandidate(t *testing.T) {
+	t.Parallel()
+
+	baseSnap := &agentBeadSnapshot{
+		AgentState: string(beads.AgentStateDone),
+		HookBead:   "gt-work-123",
+		UpdatedAt:  time.Now().Add(-10 * time.Minute).Format(time.RFC3339),
+		Fields: &beads.AgentFields{
+			CleanupStatus: "clean",
+			MRID:          "gt-mr-123",
+		},
+	}
+	staleHB := &polecat.SessionHeartbeat{
+		Timestamp: time.Now().Add(-10 * time.Minute),
+		State:     polecat.HeartbeatWorking,
+	}
+
+	age, ok := isSubmittedStillRunningCandidate(baseSnap, staleHB, "hooked", config.DefaultWitnessHeartbeatStartupGrace)
+	if !ok {
+		t.Fatalf("expected submitted still-running candidate, age=%v", age)
+	}
+
+	freshHB := &polecat.SessionHeartbeat{
+		Timestamp: time.Now(),
+		State:     polecat.HeartbeatWorking,
+	}
+	if _, ok := isSubmittedStillRunningCandidate(baseSnap, freshHB, "hooked", config.DefaultWitnessHeartbeatStartupGrace); ok {
+		t.Error("fresh heartbeat must not be treated as submitted still-running")
+	}
+
+	dirtySnap := *baseSnap
+	dirtyFields := *baseSnap.Fields
+	dirtyFields.CleanupStatus = "has_uncommitted"
+	dirtySnap.Fields = &dirtyFields
+	if _, ok := isSubmittedStillRunningCandidate(&dirtySnap, staleHB, "hooked", config.DefaultWitnessHeartbeatStartupGrace); ok {
+		t.Error("dirty cleanup status must not be treated as safe submitted still-running")
+	}
+
+	noSubmitSnap := *baseSnap
+	noSubmitSnap.AgentState = string(beads.AgentStateWorking)
+	noSubmitSnap.ActiveMR = ""
+	noSubmitSnap.Fields = &beads.AgentFields{CleanupStatus: "clean"}
+	if _, ok := isSubmittedStillRunningCandidate(&noSubmitSnap, staleHB, "hooked", config.DefaultWitnessHeartbeatStartupGrace); ok {
+		t.Error("open hooked work without submission evidence must not be treated as submitted still-running")
+	}
+
+	if _, ok := isSubmittedStillRunningCandidate(baseSnap, staleHB, "closed", config.DefaultWitnessHeartbeatStartupGrace); ok {
+		t.Error("closed hooks are handled by the closed-bead zombie path, not submitted still-running")
+	}
+}
+
+func TestZombieSubmittedStillRunning_Classification(t *testing.T) {
+	t.Parallel()
+	if ZombieSubmittedStillRunning != "submitted-still-running" {
+		t.Errorf("ZombieSubmittedStillRunning = %q, want %q", ZombieSubmittedStillRunning, "submitted-still-running")
+	}
+	if !ZombieSubmittedStillRunning.ImpliesActiveWork() {
+		t.Error("ZombieSubmittedStillRunning should imply active work for patrol receipts")
 	}
 }
 
