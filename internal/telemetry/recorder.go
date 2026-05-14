@@ -174,10 +174,10 @@ func initInstruments() {
 		inst.agentStateTotal, _ = m.Int64Counter("gastown.agent.state_changes.total",
 			metric.WithDescription("Total agent state transitions"),
 		)
-		inst.polecatTotal, _ = m.Int64Counter("gastown.polecat.spawns.total",
+		inst.polecatTotal, _ = m.Int64Counter("gastown.worker.spawns.total",
 			metric.WithDescription("Total polecat spawns"),
 		)
-		inst.polecatRemoveTotal, _ = m.Int64Counter("gastown.polecat.removes.total",
+		inst.polecatRemoveTotal, _ = m.Int64Counter("gastown.worker.removes.total",
 			metric.WithDescription("Total polecat removals"),
 		)
 		inst.slingTotal, _ = m.Int64Counter("gastown.sling.dispatches.total",
@@ -531,7 +531,7 @@ func RecordPolecatSpawn(ctx context.Context, name string, err error) {
 	inst.polecatTotal.Add(ctx, 1,
 		metric.WithAttributes(attribute.String("status", status)),
 	)
-	emit(ctx, "polecat.spawn", severity(err),
+	emit(ctx, "worker.spawn", severity(err),
 		otellog.String("name", name),
 		otellog.String("status", status),
 		errKV(err),
@@ -545,7 +545,7 @@ func RecordPolecatRemove(ctx context.Context, name string, err error) {
 	inst.polecatRemoveTotal.Add(ctx, 1,
 		metric.WithAttributes(attribute.String("status", status)),
 	)
-	emit(ctx, "polecat.remove", severity(err),
+	emit(ctx, "worker.remove", severity(err),
 		otellog.String("name", name),
 		otellog.String("status", status),
 		errKV(err),

@@ -11,7 +11,7 @@ import (
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/git"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
@@ -19,7 +19,7 @@ import (
 )
 
 // runBatchSling handles slinging multiple beads to a rig.
-// Each bead gets its own freshly spawned polecat.
+// Each bead gets its own freshly spawned worker.
 func runBatchSling(beadIDs []string, rigName string, townBeadsDir string) error {
 	// Validate all beads exist before spawning any polecats
 	for _, beadID := range beadIDs {
@@ -246,7 +246,7 @@ func cleanupSpawnedPolecat(spawnInfo *SpawnedPolecatInfo, rigName, convoyID stri
 	}
 	polecatGit := git.NewGit(r.Path)
 	t := tmux.NewTmux()
-	polecatMgr := polecat.NewManager(r, polecatGit, t)
+	polecatMgr := worker.NewManager(r, polecatGit, t)
 	if err := polecatMgr.Remove(spawnInfo.PolecatName, true); err != nil {
 		fmt.Printf("  %s Could not clean up orphaned polecat %s: %v\n",
 			style.Dim.Render("Warning:"), spawnInfo.PolecatName, err)
@@ -347,7 +347,7 @@ func getRepoGitForRig(rigPath string) *git.Git {
 	return git.NewGit(filepath.Join(rigPath, "mayor", "rig"))
 }
 
-// deletePolecatBranch deletes a local git branch for a polecat.
+// deletePolecatBranch deletes a local git branch for a worker.
 // Remote branch is never deleted during nuke — the refinery owns remote
 // branch cleanup after successful merge (gt mq post-merge). (gt-v5ku)
 func deletePolecatBranch(branchName string, repoGit *git.Git, hasPendingMR bool) {

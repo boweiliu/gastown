@@ -21,7 +21,7 @@ import (
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/hooks"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/refinery"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
@@ -325,9 +325,9 @@ var (
 
 var (
 	// Test seams for checkUncommittedWork.
-	listPolecatsForWorkCheck = func(r *rig.Rig) ([]*polecat.Polecat, error) {
+	listPolecatsForWorkCheck = func(r *rig.Rig) ([]*worker.Polecat, error) {
 		polecatGit := git.NewGit(r.Path)
-		polecatMgr := polecat.NewManager(r, polecatGit, nil) // nil tmux: just listing
+		polecatMgr := worker.NewManager(r, polecatGit, nil) // nil tmux: just listing
 		return polecatMgr.List()
 	}
 	checkPolecatWorkStatus = func(clonePath string) (*git.UncommittedWorkStatus, error) {
@@ -1786,7 +1786,7 @@ func runRigShutdown(cmd *cobra.Command, args []string) error {
 
 	// 1. Stop all polecat sessions
 	t := tmux.NewTmux()
-	polecatMgr := polecat.NewSessionManager(t, r)
+	polecatMgr := worker.NewSessionManager(t, r)
 	infos, err := polecatMgr.ListPolecats()
 	if err == nil && len(infos) > 0 {
 		fmt.Printf("  Stopping %d polecat session(s)...\n", len(infos))
@@ -1924,8 +1924,8 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 
 	// Polecats list (involves per-polecat beads + git queries)
 	polecatGit := git.NewGit(r.Path)
-	polecatMgr := polecat.NewManager(r, polecatGit, t)
-	var polecats []*polecat.Polecat
+	polecatMgr := worker.NewManager(r, polecatGit, t)
+	var polecats []*worker.Polecat
 	var polecatsErr error
 	dataWg.Add(1)
 	go func() {
@@ -1948,7 +1948,7 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 	// --- Polecat + Crew session checks (parallel, after List completes) ---
 	type polecatInfo struct {
 		name       string
-		state      polecat.State
+		state      worker.State
 		issue      string
 		hasSession bool
 	}
@@ -1968,7 +1968,7 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 		for i, p := range polecats {
 			pInfos[i] = polecatInfo{name: p.Name, state: p.State, issue: p.Issue}
 			sessionWg.Add(1)
-			go func(idx int, p *polecat.Polecat) {
+			go func(idx int, p *worker.Polecat) {
 				defer sessionWg.Done()
 				sessionName := session.PolecatSessionName(session.PrefixFor(rigName), p.Name)
 				pInfos[idx].hasSession = isAgentSessionHealthy(t, sessionName)
@@ -2040,10 +2040,10 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 			// showed "done" which masked failures where polecats died before
 			// running gt done, leaving work stranded in worktrees.
 			displayState := pi.state
-			if pi.hasSession && displayState == polecat.StateDone {
-				displayState = polecat.StateWorking
-			} else if !pi.hasSession && displayState == polecat.StateWorking {
-				displayState = polecat.StateStalled
+			if pi.hasSession && displayState == worker.StateDone {
+				displayState = worker.StateWorking
+			} else if !pi.hasSession && displayState == worker.StateWorking {
+				displayState = worker.StateStalled
 			}
 
 			stateStr := string(displayState)
@@ -2122,7 +2122,7 @@ func runRigStop(cmd *cobra.Command, args []string) error {
 
 		// 1. Stop all polecat sessions
 		t := tmux.NewTmux()
-		polecatMgr := polecat.NewSessionManager(t, r)
+		polecatMgr := worker.NewSessionManager(t, r)
 		infos, err := polecatMgr.ListPolecats()
 		if err == nil && len(infos) > 0 {
 			fmt.Printf("  Stopping %d polecat session(s)...\n", len(infos))
@@ -2224,7 +2224,7 @@ func runRigRestart(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Stopping...\n")
 
 		// 1. Stop all polecat sessions
-		polecatMgr := polecat.NewSessionManager(t, r)
+		polecatMgr := worker.NewSessionManager(t, r)
 		infos, err := polecatMgr.ListPolecats()
 		if err == nil && len(infos) > 0 {
 			fmt.Printf("    Stopping %d polecat session(s)...\n", len(infos))
@@ -2532,8 +2532,8 @@ func isGitRemoteURL(s string) bool {
 // across rigs (gas-21k). If all built-in themes are taken, falls back to hash-based
 // selection where collisions are possible but unavoidable.
 func autoAssignNamepoolTheme(townRoot, rigName string, mgr *rig.Manager) {
-	usedThemes := mgr.UsedNamepoolThemes(polecat.ThemeForRig)
-	chosenTheme := polecat.ThemeForRigAvoiding(rigName, usedThemes)
+	usedThemes := mgr.UsedNamepoolThemes(worker.ThemeForRig)
+	chosenTheme := worker.ThemeForRigAvoiding(rigName, usedThemes)
 	settingsPath := filepath.Join(townRoot, rigName, "settings", "config.json")
 	if err := os.MkdirAll(filepath.Dir(settingsPath), 0755); err != nil {
 		fmt.Printf("  %s Could not create settings directory: %v\n", style.Warning.Render("!"), err)

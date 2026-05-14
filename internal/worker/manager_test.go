@@ -1,4 +1,4 @@
-package polecat
+package worker
 
 import (
 	"errors"
@@ -413,17 +413,17 @@ func TestGetReturnsWorkingWithoutBeads(t *testing.T) {
 	}
 	m := NewManager(r, git.NewGit(root), nil)
 
-	// Get should return polecat with StateWorking (assume active if beads unavailable)
-	polecat, err := m.Get("Test")
+	// Get should return worker with StateWorking (assume active if beads unavailable)
+	wk, err := m.Get("Test")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
 
-	if polecat.Name != "Test" {
-		t.Errorf("Name = %q, want Test", polecat.Name)
+	if wk.Name != "Test" {
+		t.Errorf("Name = %q, want Test", wk.Name)
 	}
-	if polecat.State != StateWorking {
-		t.Errorf("State = %v, want StateWorking (beads not available)", polecat.State)
+	if wk.State != StateWorking {
+		t.Errorf("State = %v, want StateWorking (beads not available)", wk.State)
 	}
 }
 
@@ -595,13 +595,13 @@ func TestAddWithOptions_HasAgentsMD(t *testing.T) {
 	m := NewManager(r, git.NewGit(root), nil)
 
 	// Create polecat via AddWithOptions
-	polecat, err := m.AddWithOptions("TestAgent", AddOptions{})
+	wk, err := m.AddWithOptions("TestAgent", AddOptions{})
 	if err != nil {
 		t.Fatalf("AddWithOptions: %v", err)
 	}
 
 	// Verify AGENTS.md exists in the worktree
-	worktreeAgentsMD := filepath.Join(polecat.ClonePath, "AGENTS.md")
+	worktreeAgentsMD := filepath.Join(wk.ClonePath, "AGENTS.md")
 	if _, err := os.Stat(worktreeAgentsMD); os.IsNotExist(err) {
 		t.Errorf("AGENTS.md does not exist in worktree at %s", worktreeAgentsMD)
 	}
@@ -1127,20 +1127,20 @@ func TestAddWithOptions_NoPrimeMDCreatedLocally(t *testing.T) {
 	m := NewManager(r, git.NewGit(root), nil)
 
 	// Create polecat
-	polecat, err := m.AddWithOptions("TestNoLocal", AddOptions{})
+	wk, err := m.AddWithOptions("TestNoLocal", AddOptions{})
 	if err != nil {
 		t.Fatalf("AddWithOptions: %v", err)
 	}
 
 	// BUG CHECK: The worktree should NOT have a local .beads/PRIME.md
 	// ProvisionPrimeMDForWorktree should follow redirect to mayor/rig/.beads
-	worktreePrimeMD := filepath.Join(polecat.ClonePath, ".beads", "PRIME.md")
+	worktreePrimeMD := filepath.Join(wk.ClonePath, ".beads", "PRIME.md")
 	if _, err := os.Stat(worktreePrimeMD); err == nil {
 		t.Errorf("PRIME.md should NOT exist in worktree .beads/ (should be at rig level via redirect): %s", worktreePrimeMD)
 	}
 
 	// Verify the redirect file exists
-	worktreeRedirect := filepath.Join(polecat.ClonePath, ".beads", "redirect")
+	worktreeRedirect := filepath.Join(wk.ClonePath, ".beads", "redirect")
 	if _, err := os.Stat(worktreeRedirect); os.IsNotExist(err) {
 		t.Errorf("redirect file should exist at: %s", worktreeRedirect)
 	}
@@ -1162,26 +1162,26 @@ func TestAddWithOptions_UsesCanonicalOriginDefaultBranch(t *testing.T) {
 	}
 	staleSHA := createStalePolecatCommit(t, mayorRig, "main", "polecat/stale-source")
 
-	polecat, err := mgr.AddWithOptions("toast", AddOptions{})
+	wk, err := mgr.AddWithOptions("toast", AddOptions{})
 	if err != nil {
 		t.Fatalf("AddWithOptions: %v", err)
 	}
 
-	worktreeGit := git.NewGit(polecat.ClonePath)
-	staleAncestor, err := worktreeGit.IsAncestor(staleSHA, polecat.Branch)
+	worktreeGit := git.NewGit(wk.ClonePath)
+	staleAncestor, err := worktreeGit.IsAncestor(staleSHA, wk.Branch)
 	if err != nil {
 		t.Fatalf("check stale ancestry: %v", err)
 	}
 	if staleAncestor {
-		t.Fatalf("new polecat branch %q unexpectedly includes stale local commit %s", polecat.Branch, staleSHA)
+		t.Fatalf("new polecat branch %q unexpectedly includes stale local commit %s", wk.Branch, staleSHA)
 	}
 
-	baseAncestor, err := worktreeGit.IsAncestor(baseSHA, polecat.Branch)
+	baseAncestor, err := worktreeGit.IsAncestor(baseSHA, wk.Branch)
 	if err != nil {
 		t.Fatalf("check canonical ancestry: %v", err)
 	}
 	if !baseAncestor {
-		t.Fatalf("new polecat branch %q should descend from origin/main commit %s", polecat.Branch, baseSHA)
+		t.Fatalf("new polecat branch %q should descend from origin/main commit %s", wk.Branch, baseSHA)
 	}
 }
 
@@ -1194,12 +1194,12 @@ func TestReuseIdlePolecat_UsesCanonicalOriginDefaultBranch(t *testing.T) {
 		t.Fatalf("resolve origin/main: %v", err)
 	}
 
-	polecat, err := mgr.AddWithOptions("toast", AddOptions{})
+	wk, err := mgr.AddWithOptions("toast", AddOptions{})
 	if err != nil {
 		t.Fatalf("AddWithOptions: %v", err)
 	}
 
-	staleSHA := createStalePolecatCommit(t, polecat.ClonePath, "HEAD", "polecat/toast-stale")
+	staleSHA := createStalePolecatCommit(t, wk.ClonePath, "HEAD", "polecat/toast-stale")
 
 	reused, err := mgr.ReuseIdlePolecat("toast", AddOptions{HookBead: "gt-next"})
 	if err != nil {
@@ -1243,16 +1243,16 @@ func TestAddWithOptions_ResumeBranch(t *testing.T) {
 		t.Fatalf("update-ref origin/%s: %v\n%s", prBranch, err, out)
 	}
 
-	polecat, err := mgr.AddWithOptions("toast", AddOptions{ResumeBranch: prBranch})
+	wk, err := mgr.AddWithOptions("toast", AddOptions{ResumeBranch: prBranch})
 	if err != nil {
 		t.Fatalf("AddWithOptions with ResumeBranch: %v", err)
 	}
 
-	if polecat.Branch != prBranch {
-		t.Fatalf("polecat.Branch = %q, want %q (ResumeBranch should override fresh-branch naming)", polecat.Branch, prBranch)
+	if wk.Branch != prBranch {
+		t.Fatalf("wk.Branch = %q, want %q (ResumeBranch should override fresh-branch naming)", wk.Branch, prBranch)
 	}
 
-	worktreeGit := git.NewGit(polecat.ClonePath)
+	worktreeGit := git.NewGit(wk.ClonePath)
 	current, err := worktreeGit.CurrentBranch()
 	if err != nil {
 		t.Fatalf("CurrentBranch: %v", err)
@@ -1386,7 +1386,7 @@ func TestAddWithOptions_NoFilesAddedToRepo(t *testing.T) {
 	m := NewManager(r, git.NewGit(root), nil)
 
 	// Create polecat
-	polecat, err := m.AddWithOptions("TestClean", AddOptions{})
+	wk, err := m.AddWithOptions("TestClean", AddOptions{})
 	if err != nil {
 		t.Fatalf("AddWithOptions: %v", err)
 	}
@@ -1394,7 +1394,7 @@ func TestAddWithOptions_NoFilesAddedToRepo(t *testing.T) {
 	// Run git status in worktree - should show nothing except .beads/ (infrastructure)
 	// Settings are at polecats/.claude/settings.json (outside worktree) so won't appear
 	cmd = exec.Command("git", "status", "--porcelain")
-	cmd.Dir = polecat.ClonePath
+	cmd.Dir = wk.ClonePath
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git status: %v\n%s", err, out)
@@ -1507,21 +1507,21 @@ func TestAddWithOptions_SettingsInstalledInPolecatsDir(t *testing.T) {
 	m := NewManager(r, git.NewGit(root), nil)
 
 	// Create polecat
-	polecat, err := m.AddWithOptions("TestSettings", AddOptions{})
+	wk, err := m.AddWithOptions("TestSettings", AddOptions{})
 	if err != nil {
 		t.Fatalf("AddWithOptions: %v", err)
 	}
 
 	// Verify settings.json exists in the SHARED polecats/ parent directory
-	// polecats dir is the parent of polecat.ClonePath's parent (ClonePath = polecats/<name>/<rig>)
-	polecatsDir := filepath.Dir(filepath.Dir(polecat.ClonePath))
+	// polecats dir is the parent of wk.ClonePath's parent (ClonePath = polecats/<name>/<rig>)
+	polecatsDir := filepath.Dir(filepath.Dir(wk.ClonePath))
 	settingsPath := filepath.Join(polecatsDir, ".claude", "settings.json")
 	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
 		t.Errorf("settings.json should exist at %s (shared polecats dir) for Claude Code to find hooks", settingsPath)
 	}
 
 	// Verify settings.json does NOT exist inside the worktree (no longer installed there)
-	worktreeSettingsPath := filepath.Join(polecat.ClonePath, ".claude", "settings.json")
+	worktreeSettingsPath := filepath.Join(wk.ClonePath, ".claude", "settings.json")
 	if _, err := os.Stat(worktreeSettingsPath); err == nil {
 		t.Errorf("settings.json should NOT exist inside worktree at %s (settings are now in shared polecats dir)", worktreeSettingsPath)
 	}

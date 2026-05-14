@@ -1,9 +1,9 @@
 // Package polecat provides polecat lifecycle management.
-package polecat
+package worker
 
 import "time"
 
-// State represents the current lifecycle state of a polecat.
+// State represents the current lifecycle state of a worker.
 //
 // Polecats are PERSISTENT: they survive work completion and can be reused.
 // The four operating states are:
@@ -111,7 +111,7 @@ type Summary struct {
 	Issue string `json:"issue,omitempty"`
 }
 
-// Summary returns a Summary for this polecat.
+// Summary returns a Summary for this worker.
 func (p *Polecat) Summary() Summary {
 	return Summary{
 		Name:  p.Name,

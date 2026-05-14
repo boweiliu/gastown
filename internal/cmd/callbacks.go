@@ -384,7 +384,7 @@ func handleMergeRejected(townRoot string, msg *mail.Message, dryRun bool) (strin
 	return fmt.Sprintf("logged rejection for %s", branch), nil
 }
 
-// handleHelp processes a HELP: request from a polecat.
+// handleHelp processes a HELP: request from a worker.
 // Assesses category and severity to determine priority and routing.
 func handleHelp(townRoot string, msg *mail.Message, dryRun bool) (string, error) {
 	// Parse the help payload for structured assessment
@@ -467,7 +467,7 @@ func handleEscalation(townRoot string, msg *mail.Message, dryRun bool) (string, 
 	return fmt.Sprintf("forwarded escalation to overseer: %s", topic), nil
 }
 
-// handleSling processes a SLING_REQUEST to spawn work on a polecat.
+// handleSling processes a SLING_REQUEST to spawn work on a worker.
 func handleSling(townRoot string, msg *mail.Message, dryRun bool) (string, error) {
 	matches := patternSling.FindStringSubmatch(msg.Subject)
 	if len(matches) < 2 {

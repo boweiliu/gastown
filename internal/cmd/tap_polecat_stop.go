@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -60,10 +60,10 @@ func runTapPolecatStop(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check heartbeat state: if already "exiting" or "idle", gt done already ran
-	hb := polecat.ReadSessionHeartbeat(townRoot, sessionName)
+	hb := worker.ReadSessionHeartbeat(townRoot, sessionName)
 	if hb != nil {
 		state := hb.EffectiveState()
-		if state == polecat.HeartbeatExiting || state == polecat.HeartbeatIdle {
+		if state == worker.HeartbeatExiting || state == worker.HeartbeatIdle {
 			return nil // gt done already ran or polecat is idle — nothing to do
 		}
 	}

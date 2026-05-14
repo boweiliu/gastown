@@ -16,7 +16,7 @@ func TestLoadRoleDirective(t *testing.T) {
 		if err := os.MkdirAll(townDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(townDir, "polecat.md"), []byte("town directive"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(townDir, "worker.md"), []byte("town directive"), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -51,7 +51,7 @@ func TestLoadRoleDirective(t *testing.T) {
 		if err := os.MkdirAll(townDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(townDir, "polecat.md"), []byte("town rules"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(townDir, "worker.md"), []byte("town rules"), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -59,7 +59,7 @@ func TestLoadRoleDirective(t *testing.T) {
 		if err := os.MkdirAll(rigDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(rigDir, "polecat.md"), []byte("rig rules"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(rigDir, "worker.md"), []byte("rig rules"), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -108,7 +108,7 @@ func TestLoadRoleDirective(t *testing.T) {
 		if err := os.MkdirAll(townDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(townDir, "polecat.md"), []byte("  \n\t\n  "), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(townDir, "worker.md"), []byte("  \n\t\n  "), 0644); err != nil {
 			t.Fatal(err)
 		}
 

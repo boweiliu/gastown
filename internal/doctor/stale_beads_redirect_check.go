@@ -456,7 +456,7 @@ func getWorktreePaths(rigDir string) []string {
 	return paths
 }
 
-// polecatClonePath returns the actual git worktree path for a polecat.
+// polecatClonePath returns the actual git worktree path for a worker.
 // Mirrors the logic in polecat/manager.go:clonePath() to handle both:
 //   - New nested structure: polecats/<name>/<rig_name>/ (gives LLMs repo context)
 //   - Old flat structure: polecats/<name>/ (backward compat)

@@ -17,7 +17,7 @@ import (
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/mail"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
@@ -407,7 +407,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 	if issueID == "" {
 		issueID = info.Issue
 	}
-	worker := info.Worker
+	workerName := info.Worker
 
 	// Determine polecat name from sender detection
 	sender := detectSender()
@@ -444,7 +444,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 
 	// Write done-intent label EARLY, before push/MR operations.
 	// If gt done crashes after this point, the Witness can detect the intent
-	// and auto-nuke the zombie polecat.
+	// and auto-nuke the zombie worker.
 	//
 	// Also read existing checkpoints for resume capability (gt-aufru).
 	// If gt done was interrupted (SIGTERM, context exhaustion, SIGKILL),
@@ -466,7 +466,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 	// heartbeat goes stale. No timer-based inference needed.
 	// Parallel to done-intent label for backwards compat during migration.
 	if sessionName := os.Getenv("GT_SESSION"); sessionName != "" && townRoot != "" {
-		polecat.TouchSessionHeartbeatWithState(townRoot, sessionName, polecat.HeartbeatExiting, "gt done", issueID)
+		worker.TouchSessionHeartbeatWithState(townRoot, sessionName, worker.HeartbeatExiting, "gt done", issueID)
 	}
 
 	// Get configured default branch for this rig
@@ -578,7 +578,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 
 			// G15 fix: Close the base issue when completing with no MR.
 			// Without this, no-op polecats (bug already fixed) leave issues stuck
-			// in HOOKED state with assignee pointing to the nuked polecat.
+			// in HOOKED state with assignee pointing to the nuked worker.
 			// Normally the Refinery closes after merge, but with no MR, nothing
 			// would ever close the issue.
 			if issueID != "" {
@@ -941,7 +941,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 						prBodyBuilder.WriteString("```\n\n")
 					}
 					prBodyBuilder.WriteString("---\n")
-					prBodyBuilder.WriteString(fmt.Sprintf("*Polecat: %s | Issue: %s*\n", worker, issueID))
+					prBodyBuilder.WriteString(fmt.Sprintf("*Polecat: %s | Issue: %s*\n", workerName, issueID))
 					prBody := prBodyBuilder.String()
 					ghCmd := exec.CommandContext(context.Background(), "gh", "pr", "create",
 						"--base", defaultBranch,
@@ -1194,8 +1194,8 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 			if doneSkipVerify {
 				description += "\nskip_verify: true"
 			}
-			if worker != "" {
-				description += fmt.Sprintf("\nworker: %s", worker)
+			if workerName != "" {
+				description += fmt.Sprintf("\nworker: %s", workerName)
 			}
 			if agentBeadID != "" {
 				description += fmt.Sprintf("\nagent_bead: %s", agentBeadID)
@@ -1329,8 +1329,8 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		fmt.Printf("  Source: %s\n", branch)
 		fmt.Printf("  Target: %s\n", target)
 		fmt.Printf("  Issue: %s\n", issueID)
-		if worker != "" {
-			fmt.Printf("  Worker: %s\n", worker)
+		if workerName != "" {
+			fmt.Printf("  Worker: %s\n", workerName)
 		}
 		fmt.Printf("  Priority: P%d\n", priority)
 		fmt.Println()
@@ -1903,7 +1903,7 @@ doneStateUpdate:
 	// Agent observes git state and passes cleanup status via --cleanup-status flag
 	if doneCleanupStatus != "" {
 		cleanupStatus := parseCleanupStatus(doneCleanupStatus)
-		if cleanupStatus != polecat.CleanupUnknown {
+		if cleanupStatus != worker.CleanupUnknown {
 			if err := agentBd.UpdateAgentCleanupStatus(agentBeadID, string(cleanupStatus)); err != nil {
 				// Non-fatal: don't return — done-intent labels still need clearing (za-o9e)
 				fmt.Fprintf(os.Stderr, "Warning: couldn't update agent %s cleanup status: %v\n", agentBeadID, err)
@@ -1939,18 +1939,18 @@ func findHookedBeadForAgent(bd *beads.Beads, agentID string) string {
 
 // parseCleanupStatus converts a string flag value to a CleanupStatus.
 // ZFC: Agent observes git state and passes the appropriate status.
-func parseCleanupStatus(s string) polecat.CleanupStatus {
+func parseCleanupStatus(s string) worker.CleanupStatus {
 	switch strings.ToLower(s) {
 	case "clean":
-		return polecat.CleanupClean
+		return worker.CleanupClean
 	case "uncommitted", "has_uncommitted":
-		return polecat.CleanupUncommitted
+		return worker.CleanupUncommitted
 	case "stash", "has_stash":
-		return polecat.CleanupStash
+		return worker.CleanupStash
 	case "unpushed", "has_unpushed":
-		return polecat.CleanupUnpushed
+		return worker.CleanupUnpushed
 	default:
-		return polecat.CleanupUnknown
+		return worker.CleanupUnknown
 	}
 }
 
@@ -2006,7 +2006,7 @@ func selfNukePolecat(roleInfo RoleInfo, _ string) error {
 	return nil
 }
 
-// isPolecatActor checks if a BD_ACTOR value represents a polecat.
+// isPolecatActor checks if a BD_ACTOR value represents a worker.
 // Polecat actors have format: rigname/polecats/polecatname
 // Non-polecat actors have formats like: gastown/crew/name, rigname/witness, etc.
 func isPolecatActor(actor string) bool {

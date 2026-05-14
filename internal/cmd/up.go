@@ -26,7 +26,7 @@ import (
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/mayor"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/refinery"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
@@ -959,7 +959,7 @@ func startPolecatsWithWork(townRoot, rigName string) ([]string, map[string]error
 		return started, errors
 	}
 	t := tmux.NewTmux()
-	polecatMgr := polecat.NewSessionManager(t, r)
+	polecatMgr := worker.NewSessionManager(t, r)
 
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -986,8 +986,8 @@ func startPolecatsWithWork(townRoot, rigName string) ([]string, map[string]error
 		}
 
 		// This polecat has work - start it using SessionManager
-		if err := polecatMgr.Start(polecatName, polecat.SessionStartOptions{}); err != nil {
-			if err == polecat.ErrSessionRunning {
+		if err := polecatMgr.Start(polecatName, worker.SessionStartOptions{}); err != nil {
+			if err == worker.ErrSessionRunning {
 				started = append(started, polecatName)
 			} else {
 				errors[polecatName] = err

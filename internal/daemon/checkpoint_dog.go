@@ -114,7 +114,7 @@ func (d *Daemon) checkpointRigPolecats(rigName string) (int, int) {
 		// nested layout where the outer <name>/ dir is a container with
 		// per-polecat scaffolding and the inner dir is the actual git
 		// worktree). Fall back to <polecatsDir>/<name>/ for the legacy
-		// flat layout still supported by polecat.Manager. Both candidates
+		// flat layout still supported by worker.Manager. Both candidates
 		// must contain `.git` — never fall back to a parent dir, since
 		// the original bug here was exactly that: an empty <name>/
 		// container caused git to walk up to the top-level workspace's
@@ -201,7 +201,7 @@ func isGitWorktree(dir string) bool {
 
 // resolveCheckpointWorkDir picks the actual git-worktree directory for a
 // polecat, supporting both the new nested layout (polecats/<name>/<rigName>/)
-// and the legacy flat layout (polecats/<name>/) that polecat.Manager still
+// and the legacy flat layout (polecats/<name>/) that worker.Manager still
 // recognizes for backward compatibility. Returns "" if neither candidate is
 // a git worktree, in which case the caller MUST skip the polecat — never
 // fall back to a parent directory, since git would walk up to the top-level

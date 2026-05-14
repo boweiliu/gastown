@@ -1,4 +1,4 @@
-package polecat
+package worker
 
 import (
 	"bufio"
@@ -290,7 +290,7 @@ func (p *NamePool) Allocate() (string, error) {
 
 // Release returns a name slot to the available pool.
 // Called when a polecat is nuked - the name becomes available for new polecats.
-// NOTE: This releases the NAME, not the polecat. The polecat is gone (nuked).
+// NOTE: This releases the NAME, not the worker. The polecat is gone (nuked).
 // For overflow names, this is a no-op (they are not reusable).
 func (p *NamePool) Release(name string) {
 	p.mu.Lock()

@@ -876,7 +876,7 @@ func executeWorkflowFormula(f *formula.Formula, formulaName, targetRig string) e
 		}
 
 		if step.Interactive || hasInteractive {
-			// Interactive step: hook to current session instead of slinging to a polecat.
+			// Interactive step: hook to current session instead of slinging to a worker.
 			// The user will execute this step in their current crew session.
 			_ = BdCmd("update", stepBeadID, "--status=hooked").
 				WithAutoCommit().

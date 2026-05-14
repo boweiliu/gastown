@@ -168,7 +168,7 @@ func (h *DefaultWitnessHandler) HandleReworkRequest(payload *ReworkRequestPayloa
 	return nil
 }
 
-// notifyPolecatMerged sends a merge success notification to a polecat.
+// notifyPolecatMerged sends a merge success notification to a worker.
 func (h *DefaultWitnessHandler) notifyPolecatMerged(payload *MergedPayload) error {
 	msg := mail.NewMessage(
 		fmt.Sprintf("%s/witness", h.Rig),
@@ -192,7 +192,7 @@ Thank you for your contribution! Your worktree will be cleaned up shortly.`,
 	return h.Router.Send(msg)
 }
 
-// notifyPolecatFailed sends a merge failure notification to a polecat.
+// notifyPolecatFailed sends a merge failure notification to a worker.
 func (h *DefaultWitnessHandler) notifyPolecatFailed(payload *MergeFailedPayload) error {
 	msg := mail.NewMessage(
 		fmt.Sprintf("%s/witness", h.Rig),
@@ -218,7 +218,7 @@ Please fix the issue and resubmit your work with 'gt done'.`,
 	return h.Router.Send(msg)
 }
 
-// notifyPolecatRebase sends a rebase request notification to a polecat.
+// notifyPolecatRebase sends a rebase request notification to a worker.
 func (h *DefaultWitnessHandler) notifyPolecatRebase(payload *ReworkRequestPayload) error {
 	conflictInfo := ""
 	if len(payload.ConflictFiles) > 0 {

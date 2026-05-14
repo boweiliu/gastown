@@ -41,7 +41,7 @@ func TestParseRecoveredBeadBody(t *testing.T) {
 	}{
 		{
 			name: "standard format",
-			body: `Recovered abandoned bead from dead polecat.
+			body: `Recovered abandoned bead from dead worker.
 
 Bead: gt-abc123
 Polecat: gastown/max

@@ -808,7 +808,7 @@ func nudgeRefinery(rigName, message string) {
 	}
 }
 
-// isPolecatTarget checks if the target string refers to a polecat.
+// isPolecatTarget checks if the target string refers to a worker.
 // Returns true if the target format is "rig/polecats/name".
 // This is used to determine if we should respawn a dead polecat
 // instead of failing when slinging work.

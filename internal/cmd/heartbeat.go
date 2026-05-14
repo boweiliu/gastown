@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -50,9 +50,9 @@ func runHeartbeat(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not find town root: %v", err)
 	}
 
-	state := polecat.HeartbeatState(heartbeatState)
+	state := worker.HeartbeatState(heartbeatState)
 	switch state {
-	case polecat.HeartbeatWorking, polecat.HeartbeatIdle, polecat.HeartbeatExiting, polecat.HeartbeatStuck:
+	case worker.HeartbeatWorking, worker.HeartbeatIdle, worker.HeartbeatExiting, worker.HeartbeatStuck:
 		// valid
 	default:
 		return fmt.Errorf("invalid state %q (must be working, idle, exiting, or stuck)", heartbeatState)
@@ -63,7 +63,7 @@ func runHeartbeat(cmd *cobra.Command, args []string) error {
 		context = strings.Join(args, " ")
 	}
 
-	polecat.TouchSessionHeartbeatWithState(townRoot, sessionName, state, context, "")
+	worker.TouchSessionHeartbeatWithState(townRoot, sessionName, state, context, "")
 	fmt.Printf("Heartbeat updated: state=%s\n", state)
 	return nil
 }

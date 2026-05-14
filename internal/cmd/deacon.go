@@ -278,7 +278,7 @@ Examples:
 var deaconRedispatchCmd = &cobra.Command{
 	Use:   "redispatch <bead-id>",
 	Short: "Re-dispatch a recovered bead to an available polecat",
-	Long: `Re-dispatch a recovered bead from a dead polecat to an available polecat.
+	Long: `Re-dispatch a recovered bead from a dead polecat to an available worker.
 
 When the Witness detects a dead polecat with abandoned work, it resets the bead
 to open status and sends a RECOVERED_BEAD mail to the Deacon. This command

@@ -180,12 +180,12 @@ func TestPolecatThresholds_Defaults(t *testing.T) {
 	t.Parallel()
 
 	op := &OperationalConfig{}
-	polecat := op.GetPolecatConfig()
+	pcfg := op.GetPolecatConfig()
 
-	if got := polecat.HeartbeatStaleThresholdD(); got != DefaultPolecatHeartbeatStale {
+	if got := pcfg.HeartbeatStaleThresholdD(); got != DefaultPolecatHeartbeatStale {
 		t.Errorf("HeartbeatStale: got %v, want %v", got, DefaultPolecatHeartbeatStale)
 	}
-	if got := polecat.DoltMaxRetriesV(); got != DefaultPolecatDoltMaxRetries {
+	if got := pcfg.DoltMaxRetriesV(); got != DefaultPolecatDoltMaxRetries {
 		t.Errorf("DoltMaxRetries: got %v, want %v", got, DefaultPolecatDoltMaxRetries)
 	}
 }

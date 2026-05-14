@@ -173,7 +173,7 @@ func (c *StalledPolecatCheck) findRigs(ctx *CheckContext) []string {
 	return rigs
 }
 
-// resolveClonePath finds the worktree path for a polecat.
+// resolveClonePath finds the worktree path for a worker.
 // Handles both new (polecats/<name>/<rigname>/) and old (polecats/<name>/) structures.
 func (c *StalledPolecatCheck) resolveClonePath(townRoot, rigName, polecatName string) string {
 	// New structure: polecats/<name>/<rigname>/

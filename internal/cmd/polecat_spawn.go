@@ -14,7 +14,7 @@ import (
 	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/git"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
@@ -85,10 +85,10 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 	// Get polecat manager (with tmux for session-aware allocation)
 	polecatGit := git.NewGit(r.Path)
 	t := tmux.NewTmux()
-	polecatMgr := polecat.NewManager(r, polecatGit, t)
+	polecatMgr := worker.NewManager(r, polecatGit, t)
 
 	// Pre-spawn Dolt health check (gt-94llt7): verify Dolt is reachable before
-	// allocating a polecat. Prevents orphaned polecats when Dolt is down.
+	// allocating a worker. Prevents orphaned polecats when Dolt is down.
 	if err := polecatMgr.CheckDoltHealth(); err != nil {
 		return nil, fmt.Errorf("pre-spawn health check failed: %w", err)
 	}
@@ -187,7 +187,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 		// Reuse the idle polecat with branch-only operations (no worktree add/remove).
 		// Phase 3 of persistent-polecat-pool: eliminates ~5s worktree creation overhead.
 		// Falls back to full worktree repair if branch-only reuse fails.
-		addOpts := polecat.AddOptions{
+		addOpts := worker.AddOptions{
 			HookBead:     opts.HookBead,
 			BaseBranch:   baseBranch,
 			ResumeBranch: opts.ResumeBranch,
@@ -214,7 +214,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 				return nil, fmt.Errorf("worktree verification failed for reused %s: %w", polecatName, err)
 			}
 
-			polecatSessMgr := polecat.NewSessionManager(t, r)
+			polecatSessMgr := worker.NewSessionManager(t, r)
 			sessionName := polecatSessMgr.SessionName(polecatName)
 
 			fmt.Printf("%s Polecat %s reused (idle → working, session start deferred)\n", style.Bold.Render("✓"), polecatName)
@@ -272,7 +272,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 	}
 
 	// Build add options with hook_bead set atomically at spawn time
-	addOpts := polecat.AddOptions{
+	addOpts := worker.AddOptions{
 		HookBead:     opts.HookBead,
 		BaseBranch:   baseBranch,
 		ResumeBranch: opts.ResumeBranch,
@@ -303,7 +303,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 	}
 
 	// Get session manager for session name (session start is deferred)
-	polecatSessMgr := polecat.NewSessionManager(t, r)
+	polecatSessMgr := worker.NewSessionManager(t, r)
 	sessionName := polecatSessMgr.SessionName(polecatName)
 
 	fmt.Printf("%s Polecat %s spawned (session start deferred)\n", style.Bold.Render("✓"), polecatName)
@@ -333,7 +333,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 	}, nil
 }
 
-// StartSession starts the tmux session for a spawned polecat.
+// StartSession starts the tmux session for a spawned worker.
 // This is called after the molecule/bead is attached, so the polecat
 // sees its work when gt prime runs on session start.
 // Returns the pane ID after session start.
@@ -370,10 +370,10 @@ func (s *SpawnedPolecatInfo) StartSession() (string, error) {
 
 	// Start session
 	t := tmux.NewTmux()
-	polecatSessMgr := polecat.NewSessionManager(t, r)
+	polecatSessMgr := worker.NewSessionManager(t, r)
 
 	fmt.Printf("Starting session for %s/%s...\n", s.RigName, s.PolecatName)
-	startOpts := polecat.SessionStartOptions{
+	startOpts := worker.SessionStartOptions{
 		RuntimeConfigDir: claudeConfigDir,
 		Agent:            s.agent,
 	}
@@ -411,14 +411,14 @@ func (s *SpawnedPolecatInfo) StartSession() (string, error) {
 	// monitoring visibility, not correctness. Compare with createAgentBeadWithRetry
 	// which fails hard because a polecat without an agent bead is untrackable.
 	polecatGit := git.NewGit(r.Path)
-	polecatMgr := polecat.NewManager(r, polecatGit, t)
+	polecatMgr := worker.NewManager(r, polecatGit, t)
 	if err := polecatMgr.SetAgentStateWithRetry(s.PolecatName, "working"); err != nil {
 		style.PrintWarning("could not update agent state after retries: %v", err)
 	}
 
 	// Update issue status from hooked to in_progress.
 	// Also warn-only for the same reason: session is already running.
-	if err := polecatMgr.SetState(s.PolecatName, polecat.StateWorking); err != nil {
+	if err := polecatMgr.SetState(s.PolecatName, worker.StateWorking); err != nil {
 		style.PrintWarning("could not update issue status to in_progress: %v", err)
 	}
 

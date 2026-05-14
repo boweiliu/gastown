@@ -1,4 +1,4 @@
-package polecat
+package worker
 
 import (
 	"fmt"

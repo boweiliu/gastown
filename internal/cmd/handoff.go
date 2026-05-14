@@ -719,9 +719,9 @@ func resolvePathToSession(path string) (string, error) {
 			// Just "<rig>/polecats" without a name - need more info
 			return "", fmt.Errorf("polecats path requires name: %s/polecats/<name>", rig)
 		default:
-			// Not a known role - check if it's a crew member before assuming polecat.
+			// Not a known role - check if it's a crew member before assuming worker.
 			// Crew members exist at <townRoot>/<rig>/crew/<name>.
-			// This fixes: gt sling gt-375 gastown/max failing because max is crew, not polecat.
+			// This fixes: gt sling gt-375 gastown/max failing because max is crew, not worker.
 			townRoot := detectTownRootFromCwd()
 			if townRoot != "" {
 				crewPath := filepath.Join(townRoot, rig, "crew", second)

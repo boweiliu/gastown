@@ -446,7 +446,7 @@ func getReadySlingContexts(townRoot string) ([]capacity.PendingBead, error) {
 
 	// 2b. Batch-fetch work bead labels so we can defensively filter messaging
 	// beads (gt:message / gt:handoff / gt:merge-request) that should never be
-	// handed to a polecat. See gt-el4 / gastownhall/gastown#3800.
+	// handed to a worker. See gt-el4 / gastownhall/gastown#3800.
 	workBeadIDs := make([]string, 0, len(allContexts))
 	for _, ctx := range allContexts {
 		fields := beads.ParseSlingContextFields(ctx.Description)
@@ -498,7 +498,7 @@ func getReadySlingContexts(townRoot string) ([]capacity.PendingBead, error) {
 		seenWork[fields.WorkBeadID] = true
 
 		// Defensive filter: messaging beads (gt:message / gt:handoff /
-		// gt:merge-request) must never reach a rig polecat. Log the skip so
+		// gt:merge-request) must never reach a rig worker. Log the skip so
 		// the gap is observable and operators can chase the upstream cause.
 		workLabels := workBeadInfo[fields.WorkBeadID].Labels
 		if capacity.IsMessagingBead(workLabels) {

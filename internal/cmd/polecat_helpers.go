@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/steveyegge/gastown/internal/beads"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
 )
@@ -15,7 +15,7 @@ import (
 type polecatTarget struct {
 	rigName     string
 	polecatName string
-	mgr         *polecat.Manager
+	mgr         *worker.Manager
 	r           *rig.Rig
 }
 
@@ -81,12 +81,12 @@ func resolvePolecatTargets(args []string, useAll bool) ([]polecatTarget, error) 
 	return targets, nil
 }
 
-// SafetyCheckResult holds the result of safety checks for a polecat.
+// SafetyCheckResult holds the result of safety checks for a worker.
 type SafetyCheckResult struct {
 	Polecat       string
 	Blocked       bool
 	Reasons       []string
-	CleanupStatus polecat.CleanupStatus
+	CleanupStatus worker.CleanupStatus
 	HookBead      string
 	HookStale     bool // true if hooked bead is closed
 	OpenMR        string
@@ -127,17 +127,17 @@ func checkPolecatSafety(target polecatTarget) *SafetyCheckResult {
 		}
 	} else {
 		// Check cleanup_status from agent bead
-		result.CleanupStatus = polecat.CleanupStatus(fields.CleanupStatus)
+		result.CleanupStatus = worker.CleanupStatus(fields.CleanupStatus)
 		switch result.CleanupStatus {
-		case polecat.CleanupClean:
+		case worker.CleanupClean:
 			// OK
-		case polecat.CleanupUnpushed:
+		case worker.CleanupUnpushed:
 			result.Reasons = append(result.Reasons, "has unpushed commits")
-		case polecat.CleanupUncommitted:
+		case worker.CleanupUncommitted:
 			result.Reasons = append(result.Reasons, "has uncommitted changes")
-		case polecat.CleanupStash:
+		case worker.CleanupStash:
 			result.Reasons = append(result.Reasons, "has stashed changes")
-		case polecat.CleanupUnknown, "":
+		case worker.CleanupUnknown, "":
 			result.Reasons = append(result.Reasons, "cleanup status unknown")
 		default:
 			result.Reasons = append(result.Reasons, fmt.Sprintf("cleanup status: %s", result.CleanupStatus))
@@ -231,7 +231,7 @@ func displayDryRunSafetyCheck(target polecatTarget) {
 		}
 		fmt.Printf("    - Hook: %s\n", style.Dim.Render("unknown (no agent bead)"))
 	} else {
-		cleanupStatus := polecat.CleanupStatus(fields.CleanupStatus)
+		cleanupStatus := worker.CleanupStatus(fields.CleanupStatus)
 		if cleanupStatus.IsSafe() {
 			fmt.Printf("    - Git state: %s\n", style.Success.Render("clean"))
 		} else if cleanupStatus.RequiresRecovery() {

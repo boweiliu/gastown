@@ -1,5 +1,5 @@
 // Package polecat provides polecat workspace and session management.
-package polecat
+package worker
 
 import (
 	"context"
@@ -105,7 +105,7 @@ type SessionInfo struct {
 	LastActivity time.Time `json:"last_activity,omitempty"`
 }
 
-// SessionName generates the tmux session name for a polecat.
+// SessionName generates the tmux session name for a worker.
 // Validates that the polecat name doesn't contain the rig prefix to prevent
 // double-prefix bugs (e.g., "gt-gastown_manager-gastown_manager-142").
 func (m *SessionManager) SessionName(polecat string) string {
@@ -144,7 +144,7 @@ func validateSessionName(sessionName, rigName string) error {
 	return nil
 }
 
-// polecatDir returns the parent directory for a polecat.
+// polecatDir returns the parent directory for a worker.
 // This is polecats/<name>/ - the polecat's home directory.
 func (m *SessionManager) polecatDir(polecat string) string {
 	return filepath.Join(m.rig.Path, "polecats", polecat)
@@ -338,7 +338,7 @@ func (m *SessionManager) polecatSlot(polecat string) int {
 	return slot
 }
 
-// Start creates and starts a new session for a polecat.
+// Start creates and starts a new session for a worker.
 func (m *SessionManager) Start(polecat string, opts SessionStartOptions) error {
 	if !m.hasPolecat(polecat) {
 		return fmt.Errorf("%w: %s", ErrPolecatNotFound, polecat)

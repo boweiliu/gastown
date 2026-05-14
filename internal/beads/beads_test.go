@@ -1198,7 +1198,7 @@ attached_at: 2025-12-21T15:30:00Z`,
 				Description: `attached_molecule: mol-def
 attached_at: 2025-12-21T10:00:00Z
 
-This is a handoff bead for the polecat.
+This is a handoff bead for the worker.
 Keep working on the current task.`,
 			},
 			wantFields: &AttachmentFields{

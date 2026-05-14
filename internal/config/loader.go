@@ -2644,7 +2644,7 @@ func BuildAgentStartupCommandWithAgentOverride(role, rig, townRoot, rigPath, pro
 	return BuildStartupCommandWithAgentOverride(envVars, rigPath, prompt, agentOverride)
 }
 
-// BuildPolecatStartupCommand builds the startup command for a polecat.
+// BuildPolecatStartupCommand builds the startup command for a worker.
 // Sets GT_ROLE, GT_RIG, GT_POLECAT, BD_ACTOR, GIT_AUTHOR_NAME, and GT_ROOT.
 func BuildPolecatStartupCommand(rigName, polecatName, rigPath, prompt string) string {
 	var townRoot string

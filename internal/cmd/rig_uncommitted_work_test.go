@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/steveyegge/gastown/internal/git"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 )
 
 func stubUncommittedWorkCheckDeps(
 	t *testing.T,
-	listFn func(*rig.Rig) ([]*polecat.Polecat, error),
+	listFn func(*rig.Rig) ([]*worker.Polecat, error),
 	checkFn func(string) (*git.UncommittedWorkStatus, error),
 	isTTYFn func() bool,
 	promptFn func(string) bool,
@@ -47,7 +47,7 @@ func testRig() *rig.Rig {
 func TestCheckUncommittedWork_ListErrorBlocksWithoutForce(t *testing.T) {
 	stubUncommittedWorkCheckDeps(
 		t,
-		func(*rig.Rig) ([]*polecat.Polecat, error) {
+		func(*rig.Rig) ([]*worker.Polecat, error) {
 			return nil, errors.New("list failed")
 		},
 		func(string) (*git.UncommittedWorkStatus, error) {
@@ -80,7 +80,7 @@ func TestCheckUncommittedWork_ListErrorBlocksWithoutForce(t *testing.T) {
 func TestCheckUncommittedWork_ListErrorForceTTYPrompts(t *testing.T) {
 	stubUncommittedWorkCheckDeps(
 		t,
-		func(*rig.Rig) ([]*polecat.Polecat, error) {
+		func(*rig.Rig) ([]*worker.Polecat, error) {
 			return nil, errors.New("list failed")
 		},
 		func(string) (*git.UncommittedWorkStatus, error) {
@@ -105,8 +105,8 @@ func TestCheckUncommittedWork_ListErrorForceTTYPrompts(t *testing.T) {
 func TestCheckUncommittedWork_PolecatStatusErrorBlocks(t *testing.T) {
 	stubUncommittedWorkCheckDeps(
 		t,
-		func(*rig.Rig) ([]*polecat.Polecat, error) {
-			return []*polecat.Polecat{
+		func(*rig.Rig) ([]*worker.Polecat, error) {
+			return []*worker.Polecat{
 				{Name: "alpha", ClonePath: "/tmp/alpha"},
 			}, nil
 		},
@@ -139,8 +139,8 @@ func TestCheckUncommittedWork_PolecatStatusErrorBlocks(t *testing.T) {
 func TestCheckUncommittedWork_DirtyForceNonTTYBlocks(t *testing.T) {
 	stubUncommittedWorkCheckDeps(
 		t,
-		func(*rig.Rig) ([]*polecat.Polecat, error) {
-			return []*polecat.Polecat{
+		func(*rig.Rig) ([]*worker.Polecat, error) {
+			return []*worker.Polecat{
 				{Name: "alpha", ClonePath: "/tmp/alpha"},
 			}, nil
 		},
@@ -173,8 +173,8 @@ func TestCheckUncommittedWork_DirtyForceNonTTYBlocks(t *testing.T) {
 func TestCheckUncommittedWork_DirtyForceTTYPrompts(t *testing.T) {
 	stubUncommittedWorkCheckDeps(
 		t,
-		func(*rig.Rig) ([]*polecat.Polecat, error) {
-			return []*polecat.Polecat{
+		func(*rig.Rig) ([]*worker.Polecat, error) {
+			return []*worker.Polecat{
 				{Name: "alpha", ClonePath: "/tmp/alpha"},
 			}, nil
 		},

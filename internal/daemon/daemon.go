@@ -33,7 +33,7 @@ import (
 	"github.com/steveyegge/gastown/internal/feed"
 	gitpkg "github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/mayor"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/refinery"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
@@ -2850,7 +2850,7 @@ func (d *Daemon) reapIdlePolecat(rigName, polecatName string, timeout time.Durat
 	}
 
 	// Read heartbeat to check state and idle duration
-	hb := polecat.ReadSessionHeartbeat(d.config.TownRoot, sessionName)
+	hb := worker.ReadSessionHeartbeat(d.config.TownRoot, sessionName)
 	if hb == nil {
 		return // No heartbeat file — can't determine state
 	}
@@ -2863,7 +2863,7 @@ func (d *Daemon) reapIdlePolecat(rigName, polecatName string, timeout time.Durat
 	state := hb.EffectiveState()
 
 	// Explicitly idle or exiting — safe to reap
-	if state == polecat.HeartbeatIdle || state == polecat.HeartbeatExiting {
+	if state == worker.HeartbeatIdle || state == worker.HeartbeatExiting {
 		d.killIdlePolecat(rigName, polecatName, sessionName, staleDuration, timeout, string(state))
 		return
 	}
@@ -2872,7 +2872,7 @@ func (d *Daemon) reapIdlePolecat(rigName, polecatName string, timeout time.Durat
 	// If agent_state=idle in beads and no hook_bead, the polecat finished gt done
 	// and is sitting idle (heartbeat wasn't updated to "idle" because persistentPreRun
 	// resets to "working" on every gt sub-command during gt done).
-	if state == polecat.HeartbeatWorking {
+	if state == worker.HeartbeatWorking {
 		prefix := beads.GetPrefixForRig(d.config.TownRoot, rigName)
 		agentBeadID := beads.PolecatBeadIDWithPrefix(prefix, rigName, polecatName)
 		info, err := d.getAgentBeadInfo(agentBeadID)
@@ -2936,7 +2936,7 @@ func (d *Daemon) killIdlePolecat(rigName, polecatName, sessionName string, idleD
 	}
 
 	// Clean up heartbeat file
-	polecat.RemoveSessionHeartbeat(d.config.TownRoot, sessionName)
+	worker.RemoveSessionHeartbeat(d.config.TownRoot, sessionName)
 
 	d.logger.Printf("Reaped idle polecat %s/%s — session killed, API slot freed", rigName, polecatName)
 

@@ -460,13 +460,13 @@ func (c *CloneDivergenceCheck) findAllClones(townRoot string) []string {
 		rigName := entry.Name()
 		polecatsPath := filepath.Join(rigPath, "polecats")
 		if polecatEntries, err := os.ReadDir(polecatsPath); err == nil {
-			for _, polecat := range polecatEntries {
-				if polecat.IsDir() && !strings.HasPrefix(polecat.Name(), ".") {
+			for _, wk := range polecatEntries {
+				if wk.IsDir() && !strings.HasPrefix(wk.Name(), ".") {
 					// Try new structure first
-					path := filepath.Join(polecatsPath, polecat.Name(), rigName)
+					path := filepath.Join(polecatsPath, wk.Name(), rigName)
 					if !c.isGitRepo(path) {
 						// Fall back to old structure
-						path = filepath.Join(polecatsPath, polecat.Name())
+						path = filepath.Join(polecatsPath, wk.Name())
 					}
 					if c.isGitRepo(path) {
 						clones = append(clones, path)

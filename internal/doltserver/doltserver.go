@@ -4232,7 +4232,7 @@ func isDoltRetryableError(err error) bool {
 // flow where BD_DOLT_AUTO_COMMIT=off leaves writes in working set only.
 //
 // NOTE: This flushes ALL pending working set changes on the target branch, not just
-// those from a specific polecat. In batch sling, polecat B's flush may capture
+// those from a specific worker. In batch sling, polecat B's flush may capture
 // polecat A's writes. This is benign because beads are keyed by unique ID, so
 // duplicate data across branches merges cleanly.
 func CommitServerWorkingSet(townRoot, rigDB, message string) error {

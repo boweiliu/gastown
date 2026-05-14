@@ -545,9 +545,9 @@ func runNudge(cmd *cobra.Command, args []string) (retErr error) {
 			}
 			sessionName = mgr.SessionName(pcName)
 		} else {
-			// Short address (e.g., "gastown/holden") - could be crew or polecat.
+			// Short address (e.g., "gastown/holden") - could be crew or worker.
 			// Try crew first (matches mail system's addressToSessionIDs pattern),
-			// then fall back to polecat.
+			// then fall back to worker.
 			crewSession := crewSessionName(rigName, polecatName)
 			if exists, _ := t.HasSession(crewSession); exists {
 				sessionName = crewSession

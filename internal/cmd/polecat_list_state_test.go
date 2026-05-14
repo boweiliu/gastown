@@ -3,71 +3,71 @@ package cmd
 import (
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 )
 
 func TestEffectivePolecatState(t *testing.T) {
 	tests := []struct {
 		name string
 		item PolecatListItem
-		want polecat.State
+		want worker.State
 	}{
 		{
 			name: "session-running-done-becomes-working",
 			item: PolecatListItem{
-				State:          polecat.StateDone,
+				State:          worker.StateDone,
 				SessionRunning: true,
 			},
-			want: polecat.StateWorking,
+			want: worker.StateWorking,
 		},
 		{
 			name: "session-dead-working-becomes-stalled",
 			item: PolecatListItem{
-				State:          polecat.StateWorking,
+				State:          worker.StateWorking,
 				SessionRunning: false,
 			},
-			want: polecat.StateStalled,
+			want: worker.StateStalled,
 		},
 		{
 			name: "zombie-is-never-rewritten",
 			item: PolecatListItem{
-				State:          polecat.StateZombie,
+				State:          worker.StateZombie,
 				SessionRunning: false,
 				Zombie:         true,
 			},
-			want: polecat.StateZombie,
+			want: worker.StateZombie,
 		},
 		{
 			name: "idle-session-dead-stays-idle",
 			item: PolecatListItem{
-				State:          polecat.StateIdle,
+				State:          worker.StateIdle,
 				SessionRunning: false,
 			},
-			want: polecat.StateIdle,
+			want: worker.StateIdle,
 		},
 		{
 			name: "idle-session-running-becomes-working",
 			item: PolecatListItem{
-				State:          polecat.StateIdle,
+				State:          worker.StateIdle,
 				SessionRunning: true,
 			},
-			want: polecat.StateWorking,
+			want: worker.StateWorking,
 		},
 		{
 			name: "stalled-stays-stalled-when-session-dead",
 			item: PolecatListItem{
-				State:          polecat.StateStalled,
+				State:          worker.StateStalled,
 				SessionRunning: false,
 			},
-			want: polecat.StateStalled,
+			want: worker.StateStalled,
 		},
 		{
 			name: "stalled-becomes-working-when-session-alive",
 			item: PolecatListItem{
-				State:          polecat.StateStalled,
+				State:          worker.StateStalled,
 				SessionRunning: true,
 			},
-			want: polecat.StateStalled, // stalled is a detected state, session running doesn't override
+			want: worker.StateStalled, // stalled is a detected state, session running doesn't override
 		},
 	}
 

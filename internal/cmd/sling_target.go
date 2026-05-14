@@ -228,7 +228,7 @@ func resolveTarget(target string, opts ResolveTargetOptions) (*ResolvedTarget, e
 			result.Pane = "<new-pane>"
 			return result, nil
 		}
-		fmt.Printf("Target is rig '%s', spawning fresh polecat...\n", rigName)
+		fmt.Printf("Target is rig '%s', spawning fresh worker...\n", rigName)
 		spawnOpts := SlingSpawnOptions{
 			Force:        opts.Force,
 			Account:      opts.Account,

@@ -20,7 +20,7 @@ import (
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/git"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
@@ -492,7 +492,7 @@ func stopAllPolecats(t *tmux.Tmux, townRoot string, rigNames []string, force boo
 			if err != nil {
 				continue
 			}
-			polecatMgr := polecat.NewSessionManager(t, r)
+			polecatMgr := worker.NewSessionManager(t, r)
 			infos, err := polecatMgr.ListPolecats()
 			if err != nil {
 				continue
@@ -522,7 +522,7 @@ func stopAllPolecats(t *tmux.Tmux, townRoot string, rigNames []string, force boo
 			continue
 		}
 
-		polecatMgr := polecat.NewSessionManager(t, r)
+		polecatMgr := worker.NewSessionManager(t, r)
 		infos, err := polecatMgr.ListPolecats()
 		if err != nil {
 			continue
@@ -530,7 +530,7 @@ func stopAllPolecats(t *tmux.Tmux, townRoot string, rigNames []string, force boo
 
 		for _, info := range infos {
 			wg.Add(1)
-			go func(rn, name string, mgr *polecat.SessionManager) {
+			go func(rn, name string, mgr *worker.SessionManager) {
 				defer wg.Done()
 				err := mgr.Stop(name, force)
 				mu.Lock()

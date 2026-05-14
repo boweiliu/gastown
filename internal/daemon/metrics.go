@@ -55,7 +55,7 @@ func newDaemonMetrics() (*daemonMetrics, error) {
 		return nil, err
 	}
 
-	dm.polecatSpawns, err = m.Int64Counter("gastown.polecat.spawns.total",
+	dm.polecatSpawns, err = m.Int64Counter("gastown.worker.spawns.total",
 		metric.WithDescription("Total number of polecat session spawns"),
 	)
 	if err != nil {

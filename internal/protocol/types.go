@@ -92,7 +92,7 @@ type MergeReadyPayload struct {
 	// Polecat is the worker name.
 	Polecat string `json:"polecat"`
 
-	// Rig is the rig name containing the polecat.
+	// Rig is the rig name containing the worker.
 	Rig string `json:"rig"`
 
 	// Verified contains verification notes.

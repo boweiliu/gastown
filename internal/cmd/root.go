@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/cli"
 	"github.com/steveyegge/gastown/internal/config"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/telemetry"
@@ -210,7 +210,7 @@ func touchPolecatHeartbeat() {
 		return
 	}
 
-	polecat.TouchSessionHeartbeat(townRoot, sessionName)
+	worker.TouchSessionHeartbeat(townRoot, sessionName)
 }
 
 // warnIfTownRootOffMain prints a warning if the town root is not on main branch.

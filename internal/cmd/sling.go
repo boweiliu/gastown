@@ -103,7 +103,7 @@ Batch Slinging:
   gt sling gt-abc gt-def gastown --max-concurrent 3  # Spawn 3 at a time
 
   When multiple beads are provided with a rig target, each bead gets its own
-  polecat. This parallelizes work dispatch without running gt sling N times.
+  worker. This parallelizes work dispatch without running gt sling N times.
   Use --max-concurrent to throttle spawn rate and prevent Dolt server overload.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runSling,
@@ -337,7 +337,7 @@ func runSling(cmd *cobra.Command, args []string) (retErr error) {
 	// Batch mode detection: multiple beads with optional rig target
 	// Pattern A (explicit rig):  gt sling gt-abc gt-def gt-ghi gastown
 	// Pattern B (auto-resolve):  gt sling gt-abc gt-def gt-ghi
-	// When len(args) > 2 and last arg is a rig, sling each bead to its own polecat.
+	// When len(args) > 2 and last arg is a rig, sling each bead to its own worker.
 	// When all args look like bead IDs, auto-resolve the rig from their prefix.
 	if len(args) > 2 {
 		lastArg := args[len(args)-1]
@@ -837,7 +837,7 @@ func runSling(cmd *cobra.Command, args []string) (retErr error) {
 		}
 	}
 
-	// Issue #288: Auto-apply mol-polecat-work when slinging bare bead to polecat.
+	// Issue #288: Auto-apply mol-polecat-work when slinging bare bead to worker.
 	// This ensures polecats get structured work guidance through formula-on-bead.
 	// Use --hook-raw-bead to bypass for expert/debugging scenarios.
 	if formulaName == "" && !slingHookRawBead && strings.Contains(targetAgent, "/polecats/") {
@@ -914,7 +914,7 @@ func runSling(cmd *cobra.Command, args []string) (retErr error) {
 		result, err := InstantiateFormulaOnBead(ctx, formulaName, beadID, info.Title, hookWorkDir, townRoot, false, slingVars)
 		if err != nil {
 			// If we spawned a fresh polecat (rig target), rollback the partial artifacts.
-			// Otherwise, a wisp creation failure (e.g., missing required vars) leaves an orphaned polecat.
+			// Otherwise, a wisp creation failure (e.g., missing required vars) leaves an orphaned worker.
 			if newPolecatInfo != nil {
 				fmt.Printf("%s Formula instantiation failed, rolling back spawned polecat %s...\n",
 					style.Warning.Render("⚠"), newPolecatInfo.PolecatName)
@@ -953,7 +953,7 @@ func runSling(cmd *cobra.Command, args []string) (retErr error) {
 	// See: https://github.com/steveyegge/gastown/issues/148
 	//
 	// Acquire a per-assignee lock before writing hook_bead to serialize concurrent slings
-	// targeting the same polecat. Without this, multiple concurrent slings race on the
+	// targeting the same worker. Without this, multiple concurrent slings race on the
 	// same assignee's row in Dolt, causing silent rollbacks (issue #3114).
 	assigneeUnlock, assigneeLockErr := tryAcquireSlingAssigneeLock(townRoot, targetAgent)
 	if assigneeLockErr != nil {
@@ -1085,7 +1085,7 @@ func runSling(cmd *cobra.Command, args []string) (retErr error) {
 
 // checkCrossRigGuard validates that a bead's prefix matches the target rig.
 // Polecats work in their rig's worktree and cannot fix code owned by another rig.
-// Returns an error if the bead belongs to a different rig than the target polecat.
+// Returns an error if the bead belongs to a different rig than the target worker.
 //
 // When the prefix maps to town root, the guard warns rather than errors: this
 // ambiguous case arises when a crew member's redirect chain is broken and their
@@ -1182,7 +1182,7 @@ func tryAcquireSlingBeadLock(townRoot, beadID string) (func(), error) {
 }
 
 // tryAcquireSlingAssigneeLock acquires a per-assignee file lock to serialize concurrent
-// hook writes to the same polecat. The per-bead lock (tryAcquireSlingBeadLock) prevents
+// hook writes to the same worker. The per-bead lock (tryAcquireSlingBeadLock) prevents
 // double-sling of the same bead, but does not prevent concurrent slings from racing on
 // the same assignee's hook_bead field in Dolt. This lock is held only during
 // hookBeadWithRetry. Uses non-blocking try-acquire with retry and timeout to avoid

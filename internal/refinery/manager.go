@@ -652,7 +652,7 @@ func (m *Manager) PostMerge(idOrBranch string) (*PostMergeResult, error) {
 	return result, nil
 }
 
-// notifyWorkerRejected sends a rejection notification to a polecat.
+// notifyWorkerRejected sends a rejection notification to a worker.
 func (m *Manager) notifyWorkerRejected(mr *MergeRequest, reason string) {
 	// Nudge polecat about rejection instead of sending permanent mail.
 	polecatName := strings.TrimPrefix(mr.Worker, "polecats/")

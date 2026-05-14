@@ -78,7 +78,7 @@ func (h *DefaultRefineryHandler) SendMerged(polecat, branch, issue, targetBranch
 }
 
 // SendMergeFailed sends a MERGE_FAILED message to the Witness.
-// LEGACY: Prefer SendFixNeeded which sends directly to the polecat.
+// LEGACY: Prefer SendFixNeeded which sends directly to the worker.
 // Called by the Refinery when a merge fails.
 func (h *DefaultRefineryHandler) SendMergeFailed(polecat, branch, issue, targetBranch, failureType, errorMsg string) error {
 	msg := NewMergeFailedMessage(h.Rig, polecat, branch, issue, targetBranch, failureType, errorMsg)

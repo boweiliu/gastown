@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/git"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
@@ -42,7 +42,7 @@ var sessionCmd = &cobra.Command{
 	RunE:    requireSubcommand,
 	Long: `Manage tmux sessions for polecats.
 
-Sessions are tmux sessions running Claude for each polecat.
+Sessions are tmux sessions running Claude for each worker.
 Use the subcommands to start, stop, attach, and monitor sessions.
 
 TIP: To send messages to a running session, use 'gt nudge' (not 'session inject').
@@ -52,7 +52,7 @@ The nudge command uses reliable delivery that works correctly with Claude Code.`
 var sessionStartCmd = &cobra.Command{
 	Use:   "start <rig>/<polecat>",
 	Short: "Start a polecat session",
-	Long: `Start a new tmux session for a polecat.
+	Long: `Start a new tmux session for a worker.
 
 Creates a tmux session, navigates to the polecat's working directory,
 and launches claude. Optionally inject an initial issue to work on.
@@ -229,14 +229,14 @@ func parseAddress(addr string) (rigName, polecatName string, err error) {
 }
 
 // getSessionManager creates a session manager for the given rig.
-func getSessionManager(rigName string) (*polecat.SessionManager, *rig.Rig, error) {
+func getSessionManager(rigName string) (*worker.SessionManager, *rig.Rig, error) {
 	_, r, err := getRig(rigName)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	t := tmux.NewTmux()
-	polecatMgr := polecat.NewSessionManager(t, r)
+	polecatMgr := worker.NewSessionManager(t, r)
 
 	return polecatMgr, r, nil
 }
@@ -266,7 +266,7 @@ func runSessionStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s", suggest.FormatSuggestion("Polecat", polecatName, suggestions, hint))
 	}
 
-	opts := polecat.SessionStartOptions{
+	opts := worker.SessionStartOptions{
 		Issue: sessionIssue,
 	}
 
@@ -341,7 +341,7 @@ func runSessionAttach(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("checking session: %w", err)
 	}
 	if !running {
-		return polecat.ErrSessionNotFound
+		return worker.ErrSessionNotFound
 	}
 
 	// Hand the terminal off to tmux via syscall.Exec so tmux inherits our
@@ -396,7 +396,7 @@ func runSessionList(cmd *cobra.Command, args []string) error {
 	var allSessions []SessionListItem
 
 	for _, r := range rigs {
-		polecatMgr := polecat.NewSessionManager(t, r)
+		polecatMgr := worker.NewSessionManager(t, r)
 		infos, err := polecatMgr.List()
 		if err != nil {
 			continue
@@ -546,7 +546,7 @@ func runSessionRestart(cmd *cobra.Command, args []string) error {
 
 	// Start fresh session
 	fmt.Printf("Starting session for %s/%s...\n", rigName, polecatName)
-	opts := polecat.SessionStartOptions{}
+	opts := worker.SessionStartOptions{}
 	if err := polecatMgr.Start(polecatName, opts); err != nil {
 		return fmt.Errorf("starting session: %w", err)
 	}

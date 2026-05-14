@@ -19,7 +19,7 @@ import (
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/mayor"
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/tmux"
@@ -101,7 +101,7 @@ type HandlerResult struct {
 	Error         error
 }
 
-// HandlePolecatDone processes a POLECAT_DONE message from a polecat.
+// HandlePolecatDone processes a POLECAT_DONE message from a worker.
 // For PHASE_COMPLETE exits, recycles the polecat (session ends, worktree kept).
 // For exits with pending MR, creates cleanup wisp and sends MERGE_READY to Refinery.
 // For exits without MR, acknowledges completion (polecat goes idle).
@@ -114,7 +114,7 @@ type HandlerResult struct {
 // Polecats persist after work completion - sandbox is preserved for reuse.
 // When work is done, the polecat transitions to idle state (no nuke).
 // The MR lifecycle continues independently in the Refinery.
-// If conflicts arise, Refinery creates a conflict-resolution task for an available polecat.
+// If conflicts arise, Refinery creates a conflict-resolution task for an available worker.
 func HandlePolecatDone(bd *BdCli, workDir, rigName string, msg *mail.Message, router *mail.Router) *HandlerResult {
 	result := &HandlerResult{
 		MessageID:    msg.ID,
@@ -330,7 +330,7 @@ func isStalePolecatDone(workDir, rigName, polecatName string, msg *mail.Message)
 }
 
 // HandleLifecycleShutdown processes a LIFECYCLE:Shutdown message.
-// Similar to POLECAT_DONE but triggered by daemon rather than polecat.
+// Similar to POLECAT_DONE but triggered by daemon rather than worker.
 // Persistent polecat model (gt-4ac): sandbox preserved, polecat goes idle.
 func HandleLifecycleShutdown(workDir, rigName string, msg *mail.Message) *HandlerResult {
 	result := &HandlerResult{
@@ -565,7 +565,7 @@ func createSwarmWisp(bd *BdCli, workDir string, payload *SwarmStartPayload) (str
 	return created.ID, nil
 }
 
-// findCleanupWisp finds an existing cleanup wisp for a polecat.
+// findCleanupWisp finds an existing cleanup wisp for a worker.
 func findCleanupWisp(bd *BdCli, workDir, polecatName string) (string, error) {
 	output, err := bd.Exec(workDir, "list",
 		"--label", fmt.Sprintf("polecat:%s,state:merge-requested", polecatName),
@@ -823,7 +823,7 @@ func RestartPolecatSession(workDir, rigName, polecatName string) error {
 	return nil
 }
 
-// NukePolecat executes the actual nuke operation for a polecat.
+// NukePolecat executes the actual nuke operation for a worker.
 // This kills the tmux session, removes the worktree, and cleans up beads.
 // Refuses to nuke polecats with pending MRs in the refinery queue (gt-6a9d).
 // Refuses to nuke if Mayor ACP session is active (gt-qnp).
@@ -1265,17 +1265,17 @@ func detectZombieLiveSession(bd *BdCli, workDir, townRoot, rigName, polecatName,
 	// Heartbeat v2 check (gt-3vr5): if the agent reports its own state via heartbeat,
 	// trust the agent-reported state instead of inferring from timers.
 	// The witness makes exactly ONE inference: is the heartbeat fresh?
-	hb := polecat.ReadSessionHeartbeat(townRoot, sessionName)
+	hb := worker.ReadSessionHeartbeat(townRoot, sessionName)
 	if hb != nil && hb.IsV2() {
-		stale := time.Since(hb.Timestamp) >= polecat.SessionHeartbeatStaleThreshold
+		stale := time.Since(hb.Timestamp) >= worker.SessionHeartbeatStaleThreshold
 		if !stale {
 			switch hb.EffectiveState() {
-			case polecat.HeartbeatExiting:
+			case worker.HeartbeatExiting:
 				// Agent self-reports exiting — trust it, no timer-based inference.
 				// Replaces done-intent stuck timeout for v2 agents.
 				return ZombieResult{}, false
 
-			case polecat.HeartbeatStuck:
+			case worker.HeartbeatStuck:
 				// Agent self-reports stuck — escalate (don't restart, agent is alive).
 				zombie := ZombieResult{
 					PolecatName:    polecatName,
@@ -1287,7 +1287,7 @@ func detectZombieLiveSession(bd *BdCli, workDir, townRoot, rigName, polecatName,
 				}
 				return zombie, true
 
-			case polecat.HeartbeatWorking, polecat.HeartbeatIdle:
+			case worker.HeartbeatWorking, worker.HeartbeatIdle:
 				// Fresh heartbeat, healthy state — not a zombie.
 				return ZombieResult{}, false
 			}
@@ -1398,7 +1398,7 @@ func detectZombieLiveSession(bd *BdCli, workDir, townRoot, rigName, polecatName,
 	return ZombieResult{}, false
 }
 
-func detectSubmittedStillRunning(bd *BdCli, workDir, polecatName, sessionName string, t *tmux.Tmux, hb *polecat.SessionHeartbeat, snap *agentBeadSnapshot, staleThreshold time.Duration) (ZombieResult, bool) {
+func detectSubmittedStillRunning(bd *BdCli, workDir, polecatName, sessionName string, t *tmux.Tmux, hb *worker.SessionHeartbeat, snap *agentBeadSnapshot, staleThreshold time.Duration) (ZombieResult, bool) {
 	snapState, snapHook := "", ""
 	if snap != nil {
 		snapState, snapHook = snap.AgentState, snap.HookBead
@@ -1433,7 +1433,7 @@ func detectSubmittedStillRunning(bd *BdCli, workDir, polecatName, sessionName st
 	return zombie, true
 }
 
-func isSubmittedStillRunningCandidate(snap *agentBeadSnapshot, hb *polecat.SessionHeartbeat, staleThreshold time.Duration) (time.Duration, bool) {
+func isSubmittedStillRunningCandidate(snap *agentBeadSnapshot, hb *worker.SessionHeartbeat, staleThreshold time.Duration) (time.Duration, bool) {
 	if snap == nil || snap.cleanupStatus() != "clean" || !hasSuccessfulSubmissionEvidence(snap) {
 		return 0, false
 	}
@@ -1496,8 +1496,8 @@ func detectZombieDeadSession(bd *BdCli, workDir, townRoot, rigName, polecatName,
 	// Heartbeat v2 check (gt-3vr5): for dead sessions, a fresh heartbeat means
 	// the session isn't actually dead (race condition). A stale heartbeat confirms death.
 	// This check is supplementary — dead session detection proceeds normally after.
-	if hb := polecat.ReadSessionHeartbeat(townRoot, sessionName); hb != nil && hb.IsV2() {
-		stale := time.Since(hb.Timestamp) >= polecat.SessionHeartbeatStaleThreshold
+	if hb := worker.ReadSessionHeartbeat(townRoot, sessionName); hb != nil && hb.IsV2() {
+		stale := time.Since(hb.Timestamp) >= worker.SessionHeartbeatStaleThreshold
 		if !stale {
 			// Fresh heartbeat but session appears dead — possible race.
 			// Skip zombie detection; the session may have just restarted.
@@ -1825,8 +1825,8 @@ func DetectStalledPolecats(workDir, rigName string) *DetectStalledPolecatsResult
 		// Heartbeat v2 check (gt-3vr5): if the agent has a fresh heartbeat,
 		// it's alive and making progress — skip stall detection entirely.
 		// This replaces tmux activity scraping for v2 agents.
-		if hb := polecat.ReadSessionHeartbeat(townRoot, sessionName); hb != nil && hb.IsV2() {
-			if time.Since(hb.Timestamp) < polecat.SessionHeartbeatStaleThreshold {
+		if hb := worker.ReadSessionHeartbeat(townRoot, sessionName); hb != nil && hb.IsV2() {
+			if time.Since(hb.Timestamp) < worker.SessionHeartbeatStaleThreshold {
 				continue // Fresh v2 heartbeat — agent is alive, not stalled
 			}
 		}
@@ -2290,7 +2290,7 @@ func resetAbandonedBead(bd *BdCli, workDir, rigName, hookBead, polecatName strin
 	// Circuit breaker (clown show #22): if this bead has already been
 	// respawned too many times, escalate to mayor instead of re-dispatching.
 	// This prevents the witness→deacon→spawn feedback loop from creating
-	// unbounded polecats when a task repeatedly kills its polecat.
+	// unbounded polecats when a task repeatedly kills its worker.
 	if ShouldBlockRespawn(workDir, hookBead) {
 		if router != nil {
 			msg := &mail.Message{
@@ -2348,7 +2348,7 @@ then either close the bead or reset the respawn counter.`,
 			To:       "deacon/",
 			Subject:  subject,
 			Priority: priority,
-			Body: fmt.Sprintf(`Recovered abandoned bead from dead polecat.
+			Body: fmt.Sprintf(`Recovered abandoned bead from dead worker.
 
 Bead: %s
 Polecat: %s/%s
@@ -2356,7 +2356,7 @@ Previous Status: %s
 Respawn Count: %d%s
 
 The bead has been reset to open with no assignee.
-Please re-dispatch to an available polecat.`,
+Please re-dispatch to an available worker.`,
 				hookBead, rigName, polecatName, status, respawnCount, stormNote),
 		}
 		if err := router.Send(msg); err != nil {
@@ -2846,7 +2846,7 @@ func findAnyCleanupWisp(bd *BdCli, workDir, polecatName string) string {
 	return items[0].ID
 }
 
-// findAllCleanupWisps returns all open cleanup wisp IDs for a polecat.
+// findAllCleanupWisps returns all open cleanup wisp IDs for a worker.
 // Used for dedup after wisp creation to detect races between concurrent patrol
 // cycles (gt-7vs1). If the query fails, returns nil (caller treats as no race).
 func findAllCleanupWisps(bd *BdCli, workDir, polecatName string) []string {

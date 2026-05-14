@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/tmux"
 )
@@ -459,9 +459,9 @@ func TestReapIdlePolecat_SkipsWhenBeadLookupFailsButHasWork(t *testing.T) {
 
 	hbPath := filepath.Join(townRoot, ".runtime", "heartbeats", "myr-mycat.json")
 	_ = os.MkdirAll(filepath.Dir(hbPath), 0755)
-	staleHB := polecat.SessionHeartbeat{
+	staleHB := worker.SessionHeartbeat{
 		Timestamp: time.Now().UTC().Add(-60 * time.Minute),
-		State:     polecat.HeartbeatWorking,
+		State:     worker.HeartbeatWorking,
 	}
 	data, _ := json.Marshal(staleHB)
 	_ = os.WriteFile(hbPath, data, 0644)
@@ -503,9 +503,9 @@ func TestReapIdlePolecat_ReapsWhenBeadLookupFailsAndNoWork(t *testing.T) {
 
 	hbPath := filepath.Join(townRoot, ".runtime", "heartbeats", "myr-mycat.json")
 	_ = os.MkdirAll(filepath.Dir(hbPath), 0755)
-	staleHB := polecat.SessionHeartbeat{
+	staleHB := worker.SessionHeartbeat{
 		Timestamp: time.Now().UTC().Add(-45 * time.Minute), // 3x the 15m timeout
-		State:     polecat.HeartbeatWorking,
+		State:     worker.HeartbeatWorking,
 	}
 	data, _ := json.Marshal(staleHB)
 	_ = os.WriteFile(hbPath, data, 0644)
@@ -555,12 +555,12 @@ func TestReapIdlePolecat_SkipsActiveAgent(t *testing.T) {
 	}
 
 	// Write a stale heartbeat (working state, 20 minutes old) so the reaper considers it
-	polecat.TouchSessionHeartbeatWithState(townRoot, "myr-mycat", polecat.HeartbeatWorking, "", "")
+	worker.TouchSessionHeartbeatWithState(townRoot, "myr-mycat", worker.HeartbeatWorking, "", "")
 	// Backdate the heartbeat to make it stale
 	hbPath := filepath.Join(townRoot, "heartbeats", "myr-mycat.json")
-	staleHB := polecat.SessionHeartbeat{
+	staleHB := worker.SessionHeartbeat{
 		Timestamp: time.Now().UTC().Add(-20 * time.Minute),
-		State:     polecat.HeartbeatWorking,
+		State:     worker.HeartbeatWorking,
 	}
 	data, _ := json.Marshal(staleHB)
 	_ = os.WriteFile(hbPath, data, 0644)
@@ -606,12 +606,12 @@ func TestReapIdlePolecat_ReapsIdleNoHook(t *testing.T) {
 	}
 
 	// Write a stale heartbeat (working state, 20 minutes old) so the reaper considers it
-	polecat.TouchSessionHeartbeatWithState(townRoot, "myr-mycat", polecat.HeartbeatWorking, "", "")
+	worker.TouchSessionHeartbeatWithState(townRoot, "myr-mycat", worker.HeartbeatWorking, "", "")
 	// Backdate the heartbeat to make it stale
 	hbPath := filepath.Join(townRoot, ".runtime", "heartbeats", "myr-mycat.json")
-	staleHB := polecat.SessionHeartbeat{
+	staleHB := worker.SessionHeartbeat{
 		Timestamp: time.Now().UTC().Add(-20 * time.Minute),
-		State:     polecat.HeartbeatWorking,
+		State:     worker.HeartbeatWorking,
 	}
 	data, _ := json.Marshal(staleHB)
 	_ = os.WriteFile(hbPath, data, 0644)

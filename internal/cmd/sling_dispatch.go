@@ -173,7 +173,7 @@ func executeSling(params SlingParams) (*SlingResult, error) {
 	}
 
 	// Send LIFECYCLE:Shutdown to the witness when force-stealing a bead from a
-	// live polecat. Without this, the old polecat becomes a zombie — still running
+	// live worker. Without this, the old polecat becomes a zombie — still running
 	// but unaware it lost its hook. Mirrors the same logic in runSling (sling.go).
 	if (info.Status == "hooked" || info.Status == "in_progress") && params.Force && info.Assignee != "" {
 		assigneeParts := strings.Split(info.Assignee, "/")
@@ -301,7 +301,7 @@ func executeSling(params SlingParams) (*SlingResult, error) {
 		}
 
 		// GH#gt-zqvj: Inject prior attempt context when re-dispatching an issue
-		// that already has an open MR from a previous polecat. The new polecat
+		// that already has an open MR from a previous worker. The new polecat
 		// gets the old branch name so it can cherry-pick prior work instead of
 		// starting from scratch.
 		if priorVars := lookupPriorAttempt(beadsDir, params.BeadID); len(priorVars) > 0 {
@@ -317,7 +317,7 @@ func executeSling(params SlingParams) (*SlingResult, error) {
 				return result, fmt.Errorf("instantiating formula %s: %w", params.FormulaName, err)
 			}
 			// Best-effort: in batch mode, a formula instantiation failure should not abort or rollback the
-			// spawned polecat. We still hook the raw bead so work can proceed (e.g., missing required vars).
+			// spawned worker. We still hook the raw bead so work can proceed (e.g., missing required vars).
 			fmt.Printf("  %s Could not apply formula: %v (hooking raw bead)\n", style.Dim.Render("Warning:"), err)
 		} else {
 			fmt.Printf("  %s Formula %s applied\n", style.Bold.Render("✓"), params.FormulaName)

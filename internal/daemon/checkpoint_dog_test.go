@@ -119,7 +119,7 @@ func TestResolveCheckpointWorkDir_NestedLayout(t *testing.T) {
 }
 
 func TestResolveCheckpointWorkDir_LegacyFlatLayout(t *testing.T) {
-	// Legacy layout: polecats/<name>/.git directly. polecat.Manager still
+	// Legacy layout: polecats/<name>/.git directly. worker.Manager still
 	// recognizes this; checkpoint_dog must too rather than silently skip.
 	tmp := t.TempDir()
 	rig := "myrig"

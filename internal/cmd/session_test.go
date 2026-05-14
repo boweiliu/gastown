@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steveyegge/gastown/internal/polecat"
+	"github.com/steveyegge/gastown/internal/worker"
 )
 
 func TestSessionInfoJSONOutput(t *testing.T) {
-	info := &polecat.SessionInfo{
+	info := &worker.SessionInfo{
 		Polecat:   "alpha",
 		SessionID: "gt-alpha",
 		Running:   true,
@@ -57,7 +57,7 @@ func TestSessionStatusCmdJSONFlagWiring(t *testing.T) {
 }
 
 func TestSessionInfoJSONOutputNotRunning(t *testing.T) {
-	info := &polecat.SessionInfo{
+	info := &worker.SessionInfo{
 		Polecat:   "beta",
 		SessionID: "gt-beta",
 		Running:   false,

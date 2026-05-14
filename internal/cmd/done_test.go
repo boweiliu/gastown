@@ -693,7 +693,7 @@ func TestMRBeadCreationUsesRig(t *testing.T) {
 // TestDeferredKillNotOnValidationError verifies that the deferred session kill
 // does NOT trigger when runDone returns early due to validation errors (bad flags,
 // wrong role). The sessionCleanupNeeded flag must only be set after role detection
-// confirms this is a polecat.
+// confirms this is a worker.
 func TestDeferredKillNotOnValidationError(t *testing.T) {
 	// Simulate the flag lifecycle:
 	// 1. sessionCleanupNeeded starts false

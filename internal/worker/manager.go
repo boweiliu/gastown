@@ -1,6 +1,6 @@
 // Liftoff test: 2026-02-08T14:00:00
 
-package polecat
+package worker
 
 import (
 	"context"
@@ -205,7 +205,7 @@ func (m *Manager) GetNamePool() *NamePool {
 	return m.namePool
 }
 
-// lockPolecat acquires an exclusive file lock for a specific polecat.
+// lockPolecat acquires an exclusive file lock for a specific worker.
 // This prevents concurrent gt processes from racing on the same polecat's
 // filesystem operations (Add, Remove, RepairWorktree).
 // Caller must defer fl.Unlock().
@@ -375,13 +375,13 @@ func (m *Manager) SetAgentStateWithRetry(name string, state string) error {
 	return fmt.Errorf("setting agent state after %d attempts: %w", doltStateRetries, lastErr)
 }
 
-// assigneeID returns the beads assignee identifier for a polecat.
+// assigneeID returns the beads assignee identifier for a worker.
 // Format: "rig/polecats/polecatName" (e.g., "gastown/polecats/Toast")
 func (m *Manager) assigneeID(name string) string {
 	return fmt.Sprintf("%s/polecats/%s", m.rig.Name, name)
 }
 
-// agentBeadID returns the agent bead ID for a polecat.
+// agentBeadID returns the agent bead ID for a worker.
 // Format: "<prefix>-<rig>-polecat-<name>" (e.g., "gt-gastown-polecat-Toast", "bd-beads-polecat-obsidian")
 // The prefix is looked up from routes.jsonl to support rigs with custom prefixes.
 // Uses the town root computed at Manager construction for deterministic IDs
@@ -466,7 +466,7 @@ func (m *Manager) repoBase() (*git.Git, error) {
 	return git.NewGit(mayorPath), nil
 }
 
-// polecatDir returns the parent directory for a polecat.
+// polecatDir returns the parent directory for a worker.
 // This is polecats/<name>/ - the polecat's home directory.
 func (m *Manager) polecatDir(name string) string {
 	return filepath.Join(m.rig.Path, "polecats", name)
@@ -644,7 +644,7 @@ func (m *Manager) Add(name string) (*Polecat, error) {
 	return m.AddWithOptions(name, AddOptions{})
 }
 
-// AllocateAndAdd atomically allocates a name and creates a polecat.
+// AllocateAndAdd atomically allocates a name and creates a worker.
 // This eliminates the TOCTOU race between AllocateName and AddWithOptions
 // (GH#2215) by holding the pool lock through directory creation, ensuring
 // no concurrent process can allocate the same name.
@@ -876,7 +876,7 @@ func (m *Manager) AddWithOptions(name string, opts AddOptions) (_ *Polecat, retE
 	// Pre-check: Verify sufficient disk space before creating worktree.
 	// Spawning a polecat creates a git worktree, copies overlay files, and writes
 	// beads state — all requiring disk I/O. If the disk is nearly full, fail early
-	// with a clear message rather than leaving a half-created polecat.
+	// with a clear message rather than leaving a half-created worker.
 	// See: disk-space-resilience — 5 polecats died silently on disk exhaustion.
 	if level, msg, err := util.CheckDiskSpace(m.rig.Path); err == nil && level == util.DiskSpaceCritical {
 		return nil, fmt.Errorf("%w: %s", ErrDiskSpaceLow, msg)
@@ -1642,7 +1642,7 @@ func (m *Manager) ReuseIdlePolecat(name string, opts AddOptions) (*Polecat, erro
 	// gt prime --hook cycle to discover the newly hooked bead.
 	//
 	// Previously, non-stale sessions returned ErrSessionRunning here, causing the
-	// caller to allocate a new polecat. But heartbeat freshness can race with
+	// caller to allocate a new worker. But heartbeat freshness can race with
 	// session lifecycle (e.g. a compact/resume hook refreshes the heartbeat while
 	// the session is functionally idle), leaving the old session alive and the
 	// new work undiscovered.
@@ -1731,7 +1731,7 @@ func (m *Manager) ReuseIdlePolecat(name string, opts AddOptions) (*Polecat, erro
 		branchName = opts.ResumeBranch
 		// CheckoutResetBranch (`git checkout -B`) creates or resets the branch to
 		// the start point. Use this instead of CheckoutNewBranch because the local
-		// branch may already exist from a prior run on this idle polecat.
+		// branch may already exist from a prior run on this idle worker.
 		if err := polecatGit.CheckoutResetBranch(branchName, startPoint); err != nil {
 			return nil, fmt.Errorf("checking out resume branch %s from %s: %w", branchName, startPoint, err)
 		}
@@ -1948,7 +1948,7 @@ func isSessionProcessDead(t *tmux.Tmux, sessionName string, townRoot string) boo
 // pendingMaxAge is how long a .pending reservation marker may exist before
 // it is considered stale. gt sling completes in seconds, so 5 minutes is
 // a conservative bound that avoids false positives on slow machines.
-// Configurable via operational.polecat.pending_max_age in settings/config.json.
+// Configurable via operational.worker.pending_max_age in settings/config.json.
 const pendingMaxAge = 5 * time.Minute
 
 // cleanupOrphanPolecatState removes partial/broken polecat state during allocation.
@@ -2036,7 +2036,7 @@ func (m *Manager) List() ([]*Polecat, error) {
 	}
 
 	// Load all polecats in parallel — each loadFromBeads call involves
-	// multiple bd/git subprocess calls that are independent per polecat.
+	// multiple bd/git subprocess calls that are independent per worker.
 	results := make([]*Polecat, len(names))
 	var wg sync.WaitGroup
 	for i, name := range names {
@@ -2173,7 +2173,7 @@ func (m *Manager) AssignIssue(name, issue string) error {
 	return nil
 }
 
-// ClearIssue removes the issue assignment from a polecat.
+// ClearIssue removes the issue assignment from a worker.
 // In the transient model, this transitions to Done state for cleanup.
 // This clears the assignee from the currently assigned issue in beads.
 // If beads is not available, this is a no-op.
@@ -2207,7 +2207,7 @@ func (m *Manager) ClearIssue(name string) error {
 }
 
 // unassignWorkBeads finds all active work beads assigned to a polecat and resets them
-// to status=open with an empty assignee, so they can be picked up by another polecat.
+// to status=open with an empty assignee, so they can be picked up by another worker.
 // This must be called during polecat removal to prevent orphaned beads (gt-e4u1).
 // Agent beads are skipped (handled separately by ResetAgentBeadForReuse).
 // Errors are logged as warnings but do not block removal.
