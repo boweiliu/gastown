@@ -19,21 +19,21 @@ import (
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/daemon"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/mayor"
 	"github.com/steveyegge/gastown/internal/worker"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
 	"github.com/steveyegge/gastown/internal/util"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -137,7 +137,7 @@ Polecats are NOT started by this command - they are transient workers
 spawned on demand by the Mayor or Witnesses.
 
 Use --restore to also start:
-  • Crew       - Per rig settings (settings/config.json crew.startup)
+  • Crew       - Per rig settings (settings/config.json team.startup)
   • Polecats   - Those with pinned beads (work attached)
 
 Running 'gt up' multiple times is safe - it only starts services that
@@ -246,9 +246,9 @@ func runUp(cmd *cobra.Command, args []string) error {
 	// 2. Deacon
 	go func() {
 		defer startupWg.Done()
-		deaconMgr := deacon.NewManager(townRoot)
+		deaconMgr := supervisor.NewManager(townRoot)
 		if err := deaconMgr.Start(""); err != nil {
-			if err == deacon.ErrAlreadyRunning {
+			if err == supervisor.ErrAlreadyRunning {
 				deaconResult = agentStartResult{name: "Deacon", ok: true, detail: deaconMgr.SessionName()}
 			} else {
 				deaconResult = agentStartResult{name: "Deacon", ok: false, detail: err.Error()}
@@ -727,9 +727,9 @@ func upStartWitness(rigName string, r *rig.Rig) agentStartResult {
 		}
 	}
 
-	mgr := witness.NewManager(r)
+	mgr := watcher.NewManager(r)
 	if err := mgr.Start(false, "", nil); err != nil {
-		if err == witness.ErrAlreadyRunning {
+		if err == watcher.ErrAlreadyRunning {
 			return agentStartResult{name: name, ok: true, detail: mgr.SessionName()}
 		}
 		return agentStartResult{name: name, ok: false, detail: err.Error()}
@@ -753,9 +753,9 @@ func upStartRefinery(rigName string, r *rig.Rig) agentStartResult {
 		}
 	}
 
-	mgr := refinery.NewManager(r)
+	mgr := merger.NewManager(r)
 	if err := mgr.Start(false, ""); err != nil {
-		if err == refinery.ErrAlreadyRunning {
+		if err == merger.ErrAlreadyRunning {
 			return agentStartResult{name: name, ok: true, detail: mgr.SessionName()}
 		}
 		return agentStartResult{name: name, ok: false, detail: err.Error()}
@@ -860,8 +860,8 @@ func startCrewFromSettings(townRoot, rigName string) ([]string, map[string]error
 
 	// Start each crew member using Manager
 	for _, crewName := range toStart {
-		if err := crewMgr.Start(crewName, crew.StartOptions{}); err != nil {
-			if err == crew.ErrSessionRunning {
+		if err := crewMgr.Start(crewName, team.StartOptions{}); err != nil {
+			if err == team.ErrSessionRunning {
 				started = append(started, crewName)
 			} else {
 				errors[crewName] = err
@@ -1027,7 +1027,7 @@ func waitForDoltReady(townRoot string) {
 func recoverOrphanedBeads(townRoot string, rigs []string, prefetchedRigs map[string]*rig.Rig) []ServiceStatus {
 	var services []ServiceStatus
 
-	bd := witness.DefaultBdCli()
+	bd := watcher.DefaultBdCli()
 	router := mail.NewRouterWithTownRoot(townRoot, townRoot)
 
 	for _, rigName := range rigs {
@@ -1037,7 +1037,7 @@ func recoverOrphanedBeads(townRoot string, rigs []string, prefetchedRigs map[str
 		}
 
 		rigPath := filepath.Join(townRoot, rigName)
-		result := witness.DetectOrphanedBeads(bd, rigPath, rigName, router)
+		result := watcher.DetectOrphanedBeads(bd, rigPath, rigName, router)
 
 		if len(result.Orphans) == 0 {
 			continue // No orphans in this rig

@@ -12,7 +12,7 @@ import (
 	"github.com/steveyegge/gastown/internal/cli"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/formula"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
@@ -290,7 +290,7 @@ func outputMoleculeContext(ctx RoleContext) {
 // Deacon is a town-level role, so it uses town root beads (not rig beads).
 func outputDeaconPatrolContext(ctx RoleContext) {
 	// Check if Deacon is paused - if so, output PAUSED message and skip patrol context
-	paused, state, err := deacon.IsPaused(ctx.TownRoot)
+	paused, state, err := supervisor.IsPaused(ctx.TownRoot)
 	if err == nil && paused {
 		outputDeaconPausedMessage(state)
 		return

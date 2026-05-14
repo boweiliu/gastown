@@ -11,11 +11,11 @@ import (
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/worker"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -127,8 +127,8 @@ func runRigDock(cmd *cobra.Command, args []string) error {
 	witnessSession := session.WitnessSessionName(session.PrefixFor(rigName))
 	witnessRunning, _ := t.HasSession(witnessSession)
 	if witnessRunning {
-		fmt.Printf("  Stopping witness...\n")
-		witMgr := witness.NewManager(r)
+		fmt.Printf("  Stopping watcher...\n")
+		witMgr := watcher.NewManager(r)
 		if err := witMgr.Stop(); err != nil {
 			fmt.Printf("  %s Failed to stop witness: %v\n", style.Warning.Render("!"), err)
 		} else {
@@ -140,8 +140,8 @@ func runRigDock(cmd *cobra.Command, args []string) error {
 	refinerySession := session.RefinerySessionName(session.PrefixFor(rigName))
 	refineryRunning, _ := t.HasSession(refinerySession)
 	if refineryRunning {
-		fmt.Printf("  Stopping refinery...\n")
-		refMgr := refinery.NewManager(r)
+		fmt.Printf("  Stopping merger...\n")
+		refMgr := merger.NewManager(r)
 		if err := refMgr.Stop(); err != nil {
 			fmt.Printf("  %s Failed to stop refinery: %v\n", style.Warning.Render("!"), err)
 		} else {

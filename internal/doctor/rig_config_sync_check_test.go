@@ -461,12 +461,12 @@ func TestStaleRuntimeFilesCheck_StalePIDFiles(t *testing.T) {
 	if err := os.MkdirAll(pidsDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(pidsDir, "pir-witness.pid"), []byte("12345"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(pidsDir, "pir-watcher.pid"), []byte("12345"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create valid PID file for town agent
-	if err := os.WriteFile(filepath.Join(pidsDir, "hq-deacon.pid"), []byte("12346"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(pidsDir, "hq-supervisor.pid"), []byte("12346"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -538,7 +538,7 @@ func TestStaleRuntimeFilesCheck_Fix(t *testing.T) {
 	if err := os.MkdirAll(pidsDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	stalePID := filepath.Join(pidsDir, "pir-witness.pid")
+	stalePID := filepath.Join(pidsDir, "pir-watcher.pid")
 	if err := os.WriteFile(stalePID, []byte("12345"), 0644); err != nil {
 		t.Fatal(err)
 	}

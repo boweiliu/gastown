@@ -83,7 +83,7 @@ func TestScanAll_DetectsRateLimited(t *testing.T) {
 			"hq-mayor": `❯ /rate-limit-options
   ⎿  You've hit your limit · resets 7pm (America/Los_Angeles)
 
-❯ 📬 You have new mail from laser/witness.`,
+❯ 📬 You have new mail from laser/watcher.`,
 			"gt-crew-bear": `⏺ Working on implementing quota scan...
   Bash: go test ./internal/quota/...
   All tests passed.`,
@@ -139,21 +139,21 @@ func TestScanAll_DetectsRateLimited(t *testing.T) {
 	}
 
 	// gt-crew-bear should NOT be rate-limited
-	crew := resultMap["gt-crew-bear"]
-	if crew.RateLimited {
+	crw := resultMap["gt-crew-bear"]
+	if crw.RateLimited {
 		t.Error("expected gt-crew-bear to NOT be rate-limited")
 	}
-	if crew.AccountHandle != "personal" {
-		t.Errorf("expected gt-crew-bear account 'personal', got %q", crew.AccountHandle)
+	if crw.AccountHandle != "personal" {
+		t.Errorf("expected gt-crew-bear account 'personal', got %q", crw.AccountHandle)
 	}
 
 	// gt-witness should be rate-limited
-	witness := resultMap["gt-witness"]
-	if !witness.RateLimited {
+	wit := resultMap["gt-witness"]
+	if !wit.RateLimited {
 		t.Error("expected gt-witness to be rate-limited")
 	}
-	if witness.ResetsAt != "9pm (America/Los_Angeles)" {
-		t.Errorf("expected resets at '9pm (America/Los_Angeles)', got %q", witness.ResetsAt)
+	if wit.ResetsAt != "9pm (America/Los_Angeles)" {
+		t.Errorf("expected resets at '9pm (America/Los_Angeles)', got %q", wit.ResetsAt)
 	}
 }
 

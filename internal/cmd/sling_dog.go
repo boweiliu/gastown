@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/steveyegge/gastown/internal/config"
-	"github.com/steveyegge/gastown/internal/dog"
+	"github.com/steveyegge/gastown/internal/helper"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
 	"github.com/steveyegge/gastown/internal/workspace"
@@ -51,7 +51,7 @@ func IsDogTarget(target string) (dogName string, isDog bool) {
 	return "", false
 }
 
-// DogDispatchOptions contains options for dispatching work to a dog.
+// DogDispatchOptions contains options for dispatching work to a helper.
 type DogDispatchOptions struct {
 	Create            bool   // Create dog if it doesn't exist
 	WorkDesc          string // Work description (formula or bead ID)
@@ -91,9 +91,9 @@ func DispatchToDog(dogName string, opts DogDispatchOptions) (*DogDispatchInfo, e
 		return nil, fmt.Errorf("loading rigs config: %w", err)
 	}
 
-	mgr := dog.NewManager(townRoot, rigsConfig)
+	mgr := helper.NewManager(townRoot, rigsConfig)
 
-	var targetDog *dog.Dog
+	var targetDog *helper.Dog
 	var spawned bool
 
 	if dogName != "" {
@@ -167,9 +167,9 @@ func DispatchToDog(dogName string, opts DogDispatchOptions) (*DogDispatchInfo, e
 
 	// Ensure dog session is running (start if needed)
 	t := tmux.NewTmux()
-	sessMgr := dog.NewSessionManager(t, townRoot, mgr)
+	sessMgr := helper.NewSessionManager(t, townRoot, mgr)
 
-	sessOpts := dog.SessionStartOptions{
+	sessOpts := helper.SessionStartOptions{
 		WorkDesc:      opts.WorkDesc,
 		AgentOverride: opts.AgentOverride,
 	}
@@ -196,10 +196,10 @@ func (d *DogDispatchInfo) StartDelayedSession() (string, error) {
 	}
 
 	t := tmux.NewTmux()
-	mgr := dog.NewManager(d.townRoot, d.rigsConfig)
-	sessMgr := dog.NewSessionManager(t, d.townRoot, mgr)
+	mgr := helper.NewManager(d.townRoot, d.rigsConfig)
+	sessMgr := helper.NewSessionManager(t, d.townRoot, mgr)
 
-	opts := dog.SessionStartOptions{
+	opts := helper.SessionStartOptions{
 		WorkDesc:      d.workDesc,
 		AgentOverride: d.agentOverride,
 	}
@@ -214,7 +214,7 @@ func (d *DogDispatchInfo) StartDelayedSession() (string, error) {
 }
 
 // generateDogName creates a unique dog name for pool expansion.
-func generateDogName(mgr *dog.Manager) string {
+func generateDogName(mgr *helper.Manager) string {
 	// Use Greek alphabet for dog names
 	names := []string{"alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel"}
 

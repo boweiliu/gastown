@@ -1540,7 +1540,7 @@ func findStrandedConvoys(townBeads string) ([]strandedConvoyInfo, error) {
 
 		// Find ready issues (open, not blocked, no live assignee, slingable).
 		// Town-level beads (hq- prefix with path=".") are excluded because
-		// they can't be dispatched via gt sling -- they're handled by the deacon.
+		// they can't be dispatched via gt sling -- they're handled by the supervisor.
 		// Non-slingable types (epics, convoys, etc.) are also excluded.
 
 		// Batch-check scheduling status for all tracked issues (single DB query).

@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -117,7 +117,7 @@ func runWLStamps(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fast path: query through the Dolt server if the database is registered.
-	dbName := wasteland.ResolveDBName(townRoot)
+	dbName := archive.ResolveDBName(townRoot)
 	if doltserver.DatabaseExists(townRoot, dbName) {
 		query := buildStampsQuery(StampsFilter{
 			Subject:     wlStampsRig,
@@ -194,7 +194,7 @@ func runWLStamps(cmd *cobra.Command, args []string) error {
 
 	// Try wasteland config first (set by gt wl join).
 	var cloneDir string
-	if cfg, cfgErr := wasteland.LoadConfig(townRoot); cfgErr == nil && cfg.LocalDir != "" {
+	if cfg, cfgErr := archive.LoadConfig(townRoot); cfgErr == nil && cfg.LocalDir != "" {
 		if _, statErr := os.Stat(filepath.Join(cfg.LocalDir, ".dolt")); statErr == nil {
 			cloneDir = cfg.LocalDir
 		}
@@ -209,8 +209,8 @@ func runWLStamps(cmd *cobra.Command, args []string) error {
 	if cloneDir == "" {
 		commonsOrg := "hop"
 		commonsDB := "wl-commons"
-		if cfg, cfgErr := wasteland.LoadConfig(townRoot); cfgErr == nil && cfg.Upstream != "" {
-			if o, d, parseErr := wasteland.ParseUpstream(cfg.Upstream); parseErr == nil {
+		if cfg, cfgErr := archive.LoadConfig(townRoot); cfgErr == nil && cfg.Upstream != "" {
+			if o, d, parseErr := archive.ParseUpstream(cfg.Upstream); parseErr == nil {
 				commonsOrg = o
 				commonsDB = d
 			}

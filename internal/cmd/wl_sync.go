@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -55,7 +55,7 @@ func runWLSync(cmd *cobra.Command, args []string) error {
 
 	// Try loading wasteland config first (set by gt wl join)
 	forkDir := ""
-	if cfg, err := wasteland.LoadConfig(townRoot); err == nil {
+	if cfg, err := archive.LoadConfig(townRoot); err == nil {
 		forkDir = cfg.LocalDir
 	}
 

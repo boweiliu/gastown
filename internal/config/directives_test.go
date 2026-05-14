@@ -33,7 +33,7 @@ func TestLoadRoleDirective(t *testing.T) {
 		if err := os.MkdirAll(rigDir, 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(rigDir, "witness.md"), []byte("rig directive"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(rigDir, "watcher.md"), []byte("rig directive"), 0644); err != nil {
 			t.Fatal(err)
 		}
 

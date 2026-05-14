@@ -124,7 +124,7 @@ func TestLoadSaveOverrideRigRole(t *testing.T) {
 		t.Fatalf("SaveOverride failed: %v", err)
 	}
 
-	expectedPath := filepath.Join(tmpDir, ".gt", "hooks-overrides", "gastown__crew.json")
+	expectedPath := filepath.Join(tmpDir, ".gt", "hooks-overrides", "gastown__team.json")
 	if _, err := os.Stat(expectedPath); err != nil {
 		t.Fatalf("expected override file at %s: %v", expectedPath, err)
 	}
@@ -564,30 +564,30 @@ func TestComputeExpectedNoBase(t *testing.T) {
 	}
 
 	// Crew should get DefaultBase + built-in crew override (PreCompact)
-	crew, err := ComputeExpected("crew")
+	crw, err := ComputeExpected("crew")
 	if err != nil {
 		t.Fatalf("ComputeExpected(crew) failed: %v", err)
 	}
 	// Crew has a built-in PreCompact override, so it won't equal bare DefaultBase
-	if len(crew.PreCompact) == 0 {
+	if len(crw.PreCompact) == 0 {
 		t.Error("expected crew to have PreCompact hook from DefaultOverrides")
 	}
 	// But it should still have the base SessionStart hooks
-	if len(crew.SessionStart) != len(defaultBase.SessionStart) {
+	if len(crw.SessionStart) != len(defaultBase.SessionStart) {
 		t.Error("expected crew to inherit SessionStart from DefaultBase")
 	}
 
 	// Witness should get DefaultBase + built-in patrol-formula-guard (gt-e47hxn)
-	witness, err := ComputeExpected("witness")
+	wit, err := ComputeExpected("witness")
 	if err != nil {
 		t.Fatalf("ComputeExpected(witness) failed: %v", err)
 	}
 	// Witness has built-in PreToolUse overrides for patrol-formula-guard
-	if len(witness.PreToolUse) < 4 {
-		t.Errorf("expected witness to have at least 4 PreToolUse hooks from DefaultOverrides (patrol-formula-guard), got %d", len(witness.PreToolUse))
+	if len(wit.PreToolUse) < 4 {
+		t.Errorf("expected witness to have at least 4 PreToolUse hooks from DefaultOverrides (patrol-formula-guard), got %d", len(wit.PreToolUse))
 	}
 	// Should still inherit base SessionStart
-	if len(witness.SessionStart) != len(defaultBase.SessionStart) {
+	if len(wit.SessionStart) != len(defaultBase.SessionStart) {
 		t.Error("expected witness to inherit SessionStart from DefaultBase")
 	}
 	// Verify patrol matchers are present
@@ -597,7 +597,7 @@ func TestComputeExpectedNoBase(t *testing.T) {
 		"Bash(*bd mol pour *mol-deacon*)":   false,
 		"Bash(*bd mol pour *mol-refinery*)": false,
 	}
-	for _, entry := range witness.PreToolUse {
+	for _, entry := range wit.PreToolUse {
 		if _, ok := patrolMatchers[entry.Matcher]; ok {
 			patrolMatchers[entry.Matcher] = true
 		}
@@ -609,14 +609,14 @@ func TestComputeExpectedNoBase(t *testing.T) {
 	}
 
 	// Deacon should get DefaultBase + built-in patrol-formula-guard plus anti-batch guards.
-	deacon, err := ComputeExpected("deacon")
+	dea, err := ComputeExpected("deacon")
 	if err != nil {
 		t.Fatalf("ComputeExpected(deacon) failed: %v", err)
 	}
-	if len(deacon.PreToolUse) < 7 {
-		t.Errorf("expected deacon to have at least 7 PreToolUse hooks from DefaultOverrides (anti-batch + patrol-formula-guard), got %d", len(deacon.PreToolUse))
+	if len(dea.PreToolUse) < 7 {
+		t.Errorf("expected deacon to have at least 7 PreToolUse hooks from DefaultOverrides (anti-batch + patrol-formula-guard), got %d", len(dea.PreToolUse))
 	}
-	if len(deacon.SessionStart) != len(defaultBase.SessionStart) {
+	if len(dea.SessionStart) != len(defaultBase.SessionStart) {
 		t.Error("expected deacon to inherit SessionStart from DefaultBase")
 	}
 	deaconPatrolMatchers := map[string]bool{
@@ -628,7 +628,7 @@ func TestComputeExpectedNoBase(t *testing.T) {
 		"Bash(*bd mol pour *mol-deacon*)":   false,
 		"Bash(*bd mol pour *mol-refinery*)": false,
 	}
-	for _, entry := range deacon.PreToolUse {
+	for _, entry := range dea.PreToolUse {
 		if _, ok := deaconPatrolMatchers[entry.Matcher]; ok {
 			deaconPatrolMatchers[entry.Matcher] = true
 		}
@@ -640,14 +640,14 @@ func TestComputeExpectedNoBase(t *testing.T) {
 	}
 
 	// Refinery should get DefaultBase + built-in patrol-formula-guard (same as witness)
-	refinery, err := ComputeExpected("refinery")
+	ref, err := ComputeExpected("refinery")
 	if err != nil {
 		t.Fatalf("ComputeExpected(refinery) failed: %v", err)
 	}
-	if len(refinery.PreToolUse) < 4 {
-		t.Errorf("expected refinery to have at least 4 PreToolUse hooks from DefaultOverrides (patrol-formula-guard), got %d", len(refinery.PreToolUse))
+	if len(ref.PreToolUse) < 4 {
+		t.Errorf("expected refinery to have at least 4 PreToolUse hooks from DefaultOverrides (patrol-formula-guard), got %d", len(ref.PreToolUse))
 	}
-	if len(refinery.SessionStart) != len(defaultBase.SessionStart) {
+	if len(ref.SessionStart) != len(defaultBase.SessionStart) {
 		t.Error("expected refinery to inherit SessionStart from DefaultBase")
 	}
 	refineryPatrolMatchers := map[string]bool{
@@ -656,7 +656,7 @@ func TestComputeExpectedNoBase(t *testing.T) {
 		"Bash(*bd mol pour *mol-deacon*)":   false,
 		"Bash(*bd mol pour *mol-refinery*)": false,
 	}
-	for _, entry := range refinery.PreToolUse {
+	for _, entry := range ref.PreToolUse {
 		if _, ok := refineryPatrolMatchers[entry.Matcher]; ok {
 			refineryPatrolMatchers[entry.Matcher] = true
 		}

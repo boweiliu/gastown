@@ -9,15 +9,15 @@ import (
 
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/dog"
+	"github.com/steveyegge/gastown/internal/helper"
 )
 
 // =============================================================================
 // Test Fixtures
 // =============================================================================
 
-// testDogManager creates a dog.Manager with a temporary town root for testing.
-func testDogManager(t *testing.T) (*dog.Manager, string) {
+// testDogManager creates a helper.Manager with a temporary town root for testing.
+func testDogManager(t *testing.T) (*helper.Manager, string) {
 	t.Helper()
 	tmpDir := t.TempDir()
 
@@ -29,12 +29,12 @@ func testDogManager(t *testing.T) (*dog.Manager, string) {
 		},
 	}
 
-	m := dog.NewManager(tmpDir, rigsConfig)
+	m := helper.NewManager(tmpDir, rigsConfig)
 	return m, tmpDir
 }
 
 // setupTestDog creates a dog directory with a state file for testing.
-func setupTestDog(t *testing.T, m *dog.Manager, townRoot, name string, state *dog.DogState) {
+func setupTestDog(t *testing.T, m *helper.Manager, townRoot, name string, state *helper.DogState) {
 	t.Helper()
 
 	dogPath := filepath.Join(townRoot, "deacon", "dogs", name)
@@ -47,7 +47,7 @@ func setupTestDog(t *testing.T, m *dog.Manager, townRoot, name string, state *do
 		t.Fatalf("Failed to marshal state: %v", err)
 	}
 
-	statePath := filepath.Join(dogPath, ".dog.json")
+	statePath := filepath.Join(dogPath, ".helper.json")
 	if err := os.WriteFile(statePath, data, 0644); err != nil {
 		t.Fatalf("Failed to write state file: %v", err)
 	}
@@ -195,9 +195,9 @@ func TestDogDone_AlreadyIdle(t *testing.T) {
 	m, tmpDir := testDogManager(t)
 
 	now := time.Now()
-	state := &dog.DogState{
+	state := &helper.DogState{
 		Name:       "alpha",
-		State:      dog.StateIdle,
+		State:      helper.StateIdle,
 		Work:       "",
 		LastActive: now,
 		CreatedAt:  now,
@@ -211,8 +211,8 @@ func TestDogDone_AlreadyIdle(t *testing.T) {
 		t.Fatalf("Get() error = %v", err)
 	}
 
-	if d.State != dog.StateIdle {
-		t.Errorf("State = %q, want %q", d.State, dog.StateIdle)
+	if d.State != helper.StateIdle {
+		t.Errorf("State = %q, want %q", d.State, helper.StateIdle)
 	}
 	if d.Work != "" {
 		t.Errorf("Work = %q, want empty", d.Work)
@@ -225,8 +225,8 @@ func TestDogDone_AlreadyIdle(t *testing.T) {
 
 	// Verify still idle
 	d, _ = m.Get("alpha")
-	if d.State != dog.StateIdle {
-		t.Errorf("After ClearWork: State = %q, want %q", d.State, dog.StateIdle)
+	if d.State != helper.StateIdle {
+		t.Errorf("After ClearWork: State = %q, want %q", d.State, helper.StateIdle)
 	}
 }
 
@@ -236,9 +236,9 @@ func TestDogDone_WorkingToIdle(t *testing.T) {
 	m, tmpDir := testDogManager(t)
 
 	now := time.Now()
-	state := &dog.DogState{
+	state := &helper.DogState{
 		Name:       "alpha",
-		State:      dog.StateWorking,
+		State:      helper.StateWorking,
 		Work:       "hq-convoy-xyz",
 		LastActive: now,
 		CreatedAt:  now,
@@ -251,8 +251,8 @@ func TestDogDone_WorkingToIdle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if d.State != dog.StateWorking {
-		t.Errorf("Initial State = %q, want %q", d.State, dog.StateWorking)
+	if d.State != helper.StateWorking {
+		t.Errorf("Initial State = %q, want %q", d.State, helper.StateWorking)
 	}
 	if d.Work != "hq-convoy-xyz" {
 		t.Errorf("Initial Work = %q, want 'hq-convoy-xyz'", d.Work)
@@ -265,20 +265,20 @@ func TestDogDone_WorkingToIdle(t *testing.T) {
 
 	// Verify now idle with no work
 	d, _ = m.Get("alpha")
-	if d.State != dog.StateIdle {
-		t.Errorf("After ClearWork: State = %q, want %q", d.State, dog.StateIdle)
+	if d.State != helper.StateIdle {
+		t.Errorf("After ClearWork: State = %q, want %q", d.State, helper.StateIdle)
 	}
 	if d.Work != "" {
 		t.Errorf("After ClearWork: Work = %q, want empty", d.Work)
 	}
 }
 
-// TestDogDone_NotFound verifies error handling for non-existent dog.
+// TestDogDone_NotFound verifies error handling for non-existent helper.
 func TestDogDone_NotFound(t *testing.T) {
 	m, _ := testDogManager(t)
 
 	err := m.ClearWork("nonexistent")
-	if err != dog.ErrDogNotFound {
+	if err != helper.ErrDogNotFound {
 		t.Errorf("ClearWork() error = %v, want ErrDogNotFound", err)
 	}
 }
@@ -293,9 +293,9 @@ func TestDogClear_WorkingToIdle(t *testing.T) {
 	m, tmpDir := testDogManager(t)
 
 	now := time.Now()
-	state := &dog.DogState{
+	state := &helper.DogState{
 		Name:       "alpha",
-		State:      dog.StateWorking,
+		State:      helper.StateWorking,
 		Work:       constants.MolConvoyFeed,
 		LastActive: now,
 		CreatedAt:  now,
@@ -308,8 +308,8 @@ func TestDogClear_WorkingToIdle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if d.State != dog.StateWorking {
-		t.Errorf("Initial State = %q, want %q", d.State, dog.StateWorking)
+	if d.State != helper.StateWorking {
+		t.Errorf("Initial State = %q, want %q", d.State, helper.StateWorking)
 	}
 
 	// Clear the dog (simulates gt dog clear alpha)
@@ -323,8 +323,8 @@ func TestDogClear_WorkingToIdle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() after clear error = %v", err)
 	}
-	if d.State != dog.StateIdle {
-		t.Errorf("After ClearWork: State = %q, want %q", d.State, dog.StateIdle)
+	if d.State != helper.StateIdle {
+		t.Errorf("After ClearWork: State = %q, want %q", d.State, helper.StateIdle)
 	}
 	if d.Work != "" {
 		t.Errorf("After ClearWork: Work = %q, want empty", d.Work)
@@ -337,9 +337,9 @@ func TestDogClear_AlreadyIdle(t *testing.T) {
 	m, tmpDir := testDogManager(t)
 
 	now := time.Now()
-	state := &dog.DogState{
+	state := &helper.DogState{
 		Name:       "alpha",
-		State:      dog.StateIdle,
+		State:      helper.StateIdle,
 		Work:       "",
 		LastActive: now,
 		CreatedAt:  now,
@@ -352,8 +352,8 @@ func TestDogClear_AlreadyIdle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if d.State != dog.StateIdle {
-		t.Errorf("Initial State = %q, want %q", d.State, dog.StateIdle)
+	if d.State != helper.StateIdle {
+		t.Errorf("Initial State = %q, want %q", d.State, helper.StateIdle)
 	}
 
 	// ClearWork on an already idle dog should succeed (idempotent)
@@ -367,17 +367,17 @@ func TestDogClear_AlreadyIdle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() after clear error = %v", err)
 	}
-	if d.State != dog.StateIdle {
-		t.Errorf("After ClearWork: State = %q, want %q", d.State, dog.StateIdle)
+	if d.State != helper.StateIdle {
+		t.Errorf("After ClearWork: State = %q, want %q", d.State, helper.StateIdle)
 	}
 }
 
-// TestDogClear_NotFound verifies error handling for non-existent dog.
+// TestDogClear_NotFound verifies error handling for non-existent helper.
 func TestDogClear_NotFound(t *testing.T) {
 	m, _ := testDogManager(t)
 
 	err := m.ClearWork("nonexistent")
-	if err != dog.ErrDogNotFound {
+	if err != helper.ErrDogNotFound {
 		t.Errorf("ClearWork() error = %v, want ErrDogNotFound", err)
 	}
 }

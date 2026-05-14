@@ -18,7 +18,7 @@ import (
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -118,7 +118,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 	// Track how many times this bead has been slung. Block after N attempts
 	// to prevent witness→deacon→sling feedback loops.
 	if opts.HookBead != "" && !opts.Force {
-		if witness.ShouldBlockRespawn(townRoot, opts.HookBead) {
+		if watcher.ShouldBlockRespawn(townRoot, opts.HookBead) {
 			maxRespawns := config.LoadOperationalConfig(townRoot).GetWitnessConfig().MaxBeadRespawnsV()
 			return nil, fmt.Errorf("respawn limit reached for %s (%d attempts). "+
 				"This bead keeps failing — investigate before re-dispatching.\n"+
@@ -127,7 +127,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 				opts.HookBead, maxRespawns,
 				opts.HookBead, rigName, opts.HookBead)
 		}
-		witness.RecordBeadRespawn(townRoot, opts.HookBead)
+		watcher.RecordBeadRespawn(townRoot, opts.HookBead)
 	}
 
 	// Per-rig directory cap: prevent unbounded worktree accumulation even when

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 // TestCheckBlockedRigsForLaunch_NoParkedRigs verifies that checkBlockedRigsForLaunch
@@ -38,12 +38,12 @@ func TestCheckBlockedRigsForLaunch_ParkedRig_BlocksWithoutForce(t *testing.T) {
 
 	// Set up wisp config with parked status
 	rigName := "parkedrig"
-	configDir := filepath.Join(townRoot, wisp.WispConfigDir, wisp.ConfigSubdir)
+	configDir := filepath.Join(townRoot, ephemeral.WispConfigDir, ephemeral.ConfigSubdir)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("failed to create wisp config dir: %v", err)
 	}
 	configFile := filepath.Join(configDir, rigName+".json")
-	data, _ := json.Marshal(wisp.ConfigFile{
+	data, _ := json.Marshal(ephemeral.ConfigFile{
 		Rig:    rigName,
 		Values: map[string]interface{}{"status": "parked"},
 	})
@@ -78,12 +78,12 @@ func TestCheckBlockedRigsForLaunch_ParkedRig_AllowedWithForce(t *testing.T) {
 
 	// Set up wisp config with parked status
 	rigName := "parkedrig"
-	configDir := filepath.Join(townRoot, wisp.WispConfigDir, wisp.ConfigSubdir)
+	configDir := filepath.Join(townRoot, ephemeral.WispConfigDir, ephemeral.ConfigSubdir)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("failed to create wisp config dir: %v", err)
 	}
 	configFile := filepath.Join(configDir, rigName+".json")
-	data, _ := json.Marshal(wisp.ConfigFile{
+	data, _ := json.Marshal(ephemeral.ConfigFile{
 		Rig:    rigName,
 		Values: map[string]interface{}{"status": "parked"},
 	})
@@ -112,12 +112,12 @@ func TestCollectBlockedRigsInDAG(t *testing.T) {
 
 	// Set up wisp config with parked status for one rig
 	parkedRig := "parkedrig"
-	configDir := filepath.Join(townRoot, wisp.WispConfigDir, wisp.ConfigSubdir)
+	configDir := filepath.Join(townRoot, ephemeral.WispConfigDir, ephemeral.ConfigSubdir)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("failed to create wisp config dir: %v", err)
 	}
 	configFile := filepath.Join(configDir, parkedRig+".json")
-	data, _ := json.Marshal(wisp.ConfigFile{
+	data, _ := json.Marshal(ephemeral.ConfigFile{
 		Rig:    parkedRig,
 		Values: map[string]interface{}{"status": "parked"},
 	})

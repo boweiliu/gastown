@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -41,13 +41,13 @@ func runWlClaim(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	wlCfg, err := wasteland.LoadConfig(townRoot)
+	wlCfg, err := archive.LoadConfig(townRoot)
 	if err != nil {
 		return fmt.Errorf("loading wasteland config: %w", err)
 	}
 	rigHandle := wlCfg.RigHandle
 
-	dbName := wasteland.ResolveDBName(townRoot)
+	dbName := archive.ResolveDBName(townRoot)
 	var item *doltserver.WantedItem
 	if !doltserver.DatabaseExists(townRoot, dbName) {
 		// Fallback for wl-commons clone-based workspaces (join creates .wasteland clone).

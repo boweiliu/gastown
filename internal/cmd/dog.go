@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
-	"github.com/steveyegge/gastown/internal/dog"
+	"github.com/steveyegge/gastown/internal/helper"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/plugin"
 	"github.com/steveyegge/gastown/internal/style"
@@ -124,7 +124,7 @@ var dogCallCmd = &cobra.Command{
 	Short: "Wake idle dog(s) for work",
 	Long: `Wake an idle dog to prepare for work.
 
-With a name, wakes the specific dog.
+With a name, wakes the specific helper.
 With --all, wakes all idle dogs.
 Without arguments, wakes one idle dog (if available).
 
@@ -298,14 +298,14 @@ func init() {
 	rootCmd.AddCommand(dogCmd)
 }
 
-// getDogManager creates a dog.Manager with the current town root.
+// getDogManager creates a helper.Manager with the current town root.
 //
 // Use FindFromCwdOrError so we honor GT_TOWN_ROOT/GT_ROOT env vars when
 // invoked from a dog worktree (e.g. ~/gt/deacon/dogs/alpha/<rig>/), where
 // FindFromCwd alone might walk up to a non-town ancestor or stop at a path
 // without mayor/rigs.json — which previously broke `gt dog done` and
 // blocked DOG_DONE delivery (hq-zyvo).
-func getDogManager() (*dog.Manager, error) {
+func getDogManager() (*helper.Manager, error) {
 	townRoot, err := workspace.FindFromCwdOrError()
 	if err != nil {
 		return nil, fmt.Errorf("finding town root: %w", err)
@@ -317,7 +317,7 @@ func getDogManager() (*dog.Manager, error) {
 		return nil, fmt.Errorf("loading rigs config: %w", err)
 	}
 
-	return dog.NewManager(townRoot, rigsConfig), nil
+	return helper.NewManager(townRoot, rigsConfig), nil
 }
 
 func runDogAdd(cmd *cobra.Command, args []string) error {
@@ -404,7 +404,7 @@ func runDogRemove(cmd *cobra.Command, args []string) error {
 		}
 
 		// Check if working
-		if d.State == dog.StateWorking && !dogForce {
+		if d.State == helper.StateWorking && !dogForce {
 			removeErrors = append(removeErrors, fmt.Sprintf("%s: is working (use --force to remove anyway)", name))
 			continue
 		}
@@ -467,7 +467,7 @@ func runDogList(cmd *cobra.Command, args []string) error {
 	if dogListJSON {
 		type DogListItem struct {
 			Name          string            `json:"name"`
-			State         dog.State         `json:"state"`
+			State         helper.State         `json:"state"`
 			Work          string            `json:"work,omitempty"`
 			WorkStartedAt *time.Time        `json:"work_started_at,omitempty"`
 			LastActive    time.Time         `json:"last_active"`
@@ -505,7 +505,7 @@ func runDogList(cmd *cobra.Command, args []string) error {
 	for _, d := range dogs {
 		stateIcon := "○"
 		stateStyle := style.Dim
-		if d.State == dog.StateWorking {
+		if d.State == helper.StateWorking {
 			stateIcon = "●"
 			stateStyle = style.Bold
 			workingCount++
@@ -541,8 +541,8 @@ func runDogCall(cmd *cobra.Command, args []string) error {
 
 		woken := 0
 		for _, d := range dogs {
-			if d.State == dog.StateIdle {
-				if err := mgr.SetState(d.Name, dog.StateIdle); err != nil {
+			if d.State == helper.StateIdle {
+				if err := mgr.SetState(d.Name, helper.StateIdle); err != nil {
 					style.PrintWarning("failed to wake %s: %v", d.Name, err)
 					continue
 				}
@@ -567,12 +567,12 @@ func runDogCall(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("getting dog %s: %w", name, err)
 		}
 
-		if d.State == dog.StateWorking {
+		if d.State == helper.StateWorking {
 			fmt.Printf("Dog %s is already working (use 'gt dog done %s' when complete)\n", name, name)
 			return nil
 		}
 
-		if err := mgr.SetState(name, dog.StateIdle); err != nil {
+		if err := mgr.SetState(name, helper.StateIdle); err != nil {
 			return fmt.Errorf("waking dog %s: %w", name, err)
 		}
 
@@ -591,7 +591,7 @@ func runDogCall(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if err := mgr.SetState(d.Name, dog.StateIdle); err != nil {
+	if err := mgr.SetState(d.Name, helper.StateIdle); err != nil {
 		return fmt.Errorf("waking dog %s: %w", d.Name, err)
 	}
 
@@ -613,7 +613,7 @@ func runDogClear(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if already idle
-	if d.State == dog.StateIdle && d.Work == "" {
+	if d.State == helper.StateIdle && d.Work == "" {
 		fmt.Printf("Dog %s is already idle\n", name)
 		return nil
 	}
@@ -680,7 +680,7 @@ func runDogDone(cmd *cobra.Command, args []string) error {
 	// regardless of current work state.
 	closePluginMails(name)
 
-	if d.State == dog.StateIdle && d.Work == "" {
+	if d.State == helper.StateIdle && d.Work == "" {
 		fmt.Printf("Dog %s is already idle with no work\n", name)
 		return nil
 	}
@@ -788,7 +788,7 @@ func runDogStatus(cmd *cobra.Command, args []string) error {
 	return showPackStatus(mgr)
 }
 
-func showDogStatus(mgr *dog.Manager, name string) error {
+func showDogStatus(mgr *helper.Manager, name string) error {
 	d, err := mgr.Get(name)
 	if err != nil {
 		return fmt.Errorf("getting dog %s: %w", name, err)
@@ -833,7 +833,7 @@ func showDogStatus(mgr *dog.Manager, name string) error {
 	return nil
 }
 
-func showPackStatus(mgr *dog.Manager) error {
+func showPackStatus(mgr *helper.Manager) error {
 	dogs, err := mgr.List()
 	if err != nil {
 		return fmt.Errorf("listing dogs: %w", err)
@@ -853,7 +853,7 @@ func showPackStatus(mgr *dog.Manager) error {
 			KennelDir: filepath.Join(townRoot, "deacon", "dogs"),
 		}
 		for _, d := range dogs {
-			if d.State == dog.StateIdle {
+			if d.State == helper.StateIdle {
 				status.Idle++
 			} else {
 				status.Working++
@@ -878,7 +878,7 @@ func showPackStatus(mgr *dog.Manager) error {
 	idleCount := 0
 	workingCount := 0
 	for _, d := range dogs {
-		if d.State == dog.StateIdle {
+		if d.State == helper.StateIdle {
 			idleCount++
 		} else {
 			workingCount++
@@ -935,9 +935,9 @@ func runDogHealthCheck(cmd *cobra.Command, args []string) error {
 	}
 
 	tm := tmux.NewTmux()
-	hc := dog.NewHealthChecker(mgr, tm)
+	hc := helper.NewHealthChecker(mgr, tm)
 
-	var results []dog.DogHealthResult
+	var results []helper.DogHealthResult
 
 	if len(args) > 0 {
 		// Single dog
@@ -946,7 +946,7 @@ func runDogHealthCheck(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("getting dog %s: %w", args[0], err)
 		}
 		r := hc.Check(d, dogHealthMaxInactivity, dogHealthAutoClear)
-		results = []dog.DogHealthResult{r}
+		results = []helper.DogHealthResult{r}
 	} else {
 		// All dogs
 		results, err = hc.CheckAll(dogHealthMaxInactivity, dogHealthAutoClear)
@@ -955,11 +955,11 @@ func runDogHealthCheck(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	attention := dog.NeedsAttentionCount(results)
+	attention := helper.NeedsAttentionCount(results)
 
 	if dogHealthJSON {
 		type HealthReport struct {
-			Dogs           []dog.DogHealthResult `json:"dogs"`
+			Dogs           []helper.DogHealthResult `json:"dogs"`
 			NeedsAttention int                   `json:"needs_attention"`
 		}
 		enc := json.NewEncoder(os.Stdout)
@@ -1042,10 +1042,10 @@ func runDogDispatch(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get dog manager (reuse rigsConfig from above)
-	mgr := dog.NewManager(townRoot, rigsConfig)
+	mgr := helper.NewManager(townRoot, rigsConfig)
 
 	// Find target dog
-	var targetDog *dog.Dog
+	var targetDog *helper.Dog
 	var dogCreated bool
 	if dogDispatchDog != "" {
 		// Specific dog requested
@@ -1053,7 +1053,7 @@ func runDogDispatch(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("getting dog %s: %w", dogDispatchDog, err)
 		}
-		if targetDog.State == dog.StateWorking {
+		if targetDog.State == helper.StateWorking {
 			return fmt.Errorf("dog %s is already working", dogDispatchDog)
 		}
 	} else {
@@ -1065,10 +1065,10 @@ func runDogDispatch(cmd *cobra.Command, args []string) error {
 
 		if targetDog == nil {
 			if dogDispatchCreate {
-				// Create a new dog (reuse generateDogName from sling_dog.go)
+				// Create a new dog (reuse generateDogName from sling_helper.go)
 				newName := generateDogName(mgr)
 				if dogDispatchDryRun {
-					targetDog = &dog.Dog{Name: newName, State: dog.StateIdle}
+					targetDog = &helper.Dog{Name: newName, State: helper.StateIdle}
 					dogCreated = true
 				} else {
 					targetDog, err = mgr.Add(newName)
@@ -1173,8 +1173,8 @@ func runDogDispatch(cmd *cobra.Command, args []string) error {
 	// Ensure dog session is running so it can read the mail.
 	// Without this, dispatched work sits in mail with no session to read it.
 	t := tmux.NewTmux()
-	sessMgr := dog.NewSessionManager(t, townRoot, mgr)
-	sessOpts := dog.SessionStartOptions{
+	sessMgr := helper.NewSessionManager(t, townRoot, mgr)
+	sessOpts := helper.SessionStartOptions{
 		WorkDesc: workDesc,
 	}
 	result.SessionStarted = true

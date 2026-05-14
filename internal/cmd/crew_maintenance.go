@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
 )
@@ -42,13 +42,13 @@ func runCrewRename(cmd *cobra.Command, args []string) error {
 
 	// Perform the rename
 	if err := crewMgr.Rename(oldName, newName); err != nil {
-		if errors.Is(err, crew.ErrInvalidCrewName) {
+		if errors.Is(err, team.ErrInvalidCrewName) {
 			return fmt.Errorf("invalid new name '%s': %w", newName, err)
 		}
-		if err == crew.ErrCrewNotFound {
+		if err == team.ErrCrewNotFound {
 			return fmt.Errorf("crew workspace '%s' not found", oldName)
 		}
-		if err == crew.ErrCrewExists {
+		if err == team.ErrCrewExists {
 			return fmt.Errorf("crew workspace '%s' already exists", newName)
 		}
 		return fmt.Errorf("renaming crew workspace: %w", err)
@@ -67,7 +67,7 @@ func runCrewPristine(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var workers []*crew.CrewWorker
+	var workers []*team.CrewWorker
 
 	if len(args) > 0 {
 		// Specific worker
@@ -78,12 +78,12 @@ func runCrewPristine(cmd *cobra.Command, args []string) error {
 		}
 		worker, err := crewMgr.Get(name)
 		if err != nil {
-			if err == crew.ErrCrewNotFound {
+			if err == team.ErrCrewNotFound {
 				return fmt.Errorf("crew workspace '%s' not found", name)
 			}
 			return fmt.Errorf("getting crew worker: %w", err)
 		}
-		workers = []*crew.CrewWorker{worker}
+		workers = []*team.CrewWorker{worker}
 	} else {
 		// All workers
 		workers, err = crewMgr.List()
@@ -97,7 +97,7 @@ func runCrewPristine(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	var results []*crew.PristineResult
+	var results []*team.PristineResult
 
 	for _, w := range workers {
 		result, err := crewMgr.Pristine(w.Name)

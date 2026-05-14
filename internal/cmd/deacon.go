@@ -15,7 +15,7 @@ import (
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/runtime"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
@@ -664,10 +664,10 @@ func runDeaconStatus(cmd *cobra.Command, args []string) error {
 
 	// Gather state
 	paused := false
-	var pauseState *deacon.PauseState
+	var pauseState *supervisor.PauseState
 	if townRoot != "" {
 		var err error
-		paused, pauseState, err = deacon.IsPaused(townRoot)
+		paused, pauseState, err = supervisor.IsPaused(townRoot)
 		if err != nil {
 			paused = false
 		}
@@ -681,7 +681,7 @@ func runDeaconStatus(cmd *cobra.Command, args []string) error {
 	// Read heartbeat
 	var hbStatus *HeartbeatStatus
 	if townRoot != "" {
-		if hb := deacon.ReadHeartbeat(townRoot); hb != nil {
+		if hb := supervisor.ReadHeartbeat(townRoot); hb != nil {
 			hbStatus = &HeartbeatStatus{
 				Timestamp:  hb.Timestamp,
 				AgeSec:     hb.Age().Seconds(),
@@ -810,7 +810,7 @@ func runDeaconHeartbeat(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if Deacon is paused - if so, refuse to update heartbeat
-	paused, state, err := deacon.IsPaused(townRoot)
+	paused, state, err := supervisor.IsPaused(townRoot)
 	if err != nil {
 		return fmt.Errorf("checking pause state: %w", err)
 	}
@@ -828,12 +828,12 @@ func runDeaconHeartbeat(cmd *cobra.Command, args []string) error {
 	}
 
 	if action != "" {
-		if err := deacon.TouchWithAction(townRoot, action, 0, 0); err != nil {
+		if err := supervisor.TouchWithAction(townRoot, action, 0, 0); err != nil {
 			return fmt.Errorf("updating heartbeat: %w", err)
 		}
 		fmt.Printf("%s Heartbeat updated: %s\n", style.Bold.Render("✓"), action)
 	} else {
-		if err := deacon.Touch(townRoot); err != nil {
+		if err := supervisor.Touch(townRoot); err != nil {
 			return fmt.Errorf("updating heartbeat: %w", err)
 		}
 		fmt.Printf("%s Heartbeat updated\n", style.Bold.Render("✓"))
@@ -853,7 +853,7 @@ func runDeaconHealthCheck(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load health check state
-	state, err := deacon.LoadHealthCheckState(townRoot)
+	state, err := supervisor.LoadHealthCheckState(townRoot)
 	if err != nil {
 		return fmt.Errorf("loading health check state: %w", err)
 	}
@@ -956,7 +956,7 @@ Done:
 	// Record result
 	if responded {
 		agentState.RecordResponse()
-		if err := deacon.SaveHealthCheckState(townRoot, state); err != nil {
+		if err := supervisor.SaveHealthCheckState(townRoot, state); err != nil {
 			style.PrintWarning("failed to save health check state: %v", err)
 		}
 		fmt.Printf("%s Agent %s responded (failures reset to 0)\n",
@@ -966,7 +966,7 @@ Done:
 
 	// No response - record failure
 	agentState.RecordFailure()
-	if err := deacon.SaveHealthCheckState(townRoot, state); err != nil {
+	if err := supervisor.SaveHealthCheckState(townRoot, state); err != nil {
 		style.PrintWarning("failed to save health check state: %v", err)
 	}
 
@@ -993,7 +993,7 @@ func runDeaconForceKill(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load health check state
-	state, err := deacon.LoadHealthCheckState(townRoot)
+	state, err := supervisor.LoadHealthCheckState(townRoot)
 	if err != nil {
 		return fmt.Errorf("loading health check state: %w", err)
 	}
@@ -1056,7 +1056,7 @@ func runDeaconForceKill(cmd *cobra.Command, args []string) error {
 
 	// Record force-kill in state
 	agentState.RecordForceKill()
-	if err := deacon.SaveHealthCheckState(townRoot, state); err != nil {
+	if err := supervisor.SaveHealthCheckState(townRoot, state); err != nil {
 		style.PrintWarning("failed to save health check state: %v", err)
 	}
 
@@ -1074,7 +1074,7 @@ func runDeaconHealthState(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	state, err := deacon.LoadHealthCheckState(townRoot)
+	state, err := supervisor.LoadHealthCheckState(townRoot)
 	if err != nil {
 		return fmt.Errorf("loading health check state: %w", err)
 	}
@@ -1202,12 +1202,12 @@ func runDeaconStaleHooks(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	cfg := &deacon.StaleHookConfig{
+	cfg := &supervisor.StaleHookConfig{
 		MaxAge: staleHooksMaxAge,
 		DryRun: staleHooksDryRun,
 	}
 
-	result, err := deacon.ScanStaleHooks(townRoot, cfg)
+	result, err := supervisor.ScanStaleHooks(townRoot, cfg)
 	if err != nil {
 		return fmt.Errorf("scanning stale hooks: %w", err)
 	}
@@ -1297,7 +1297,7 @@ func runDeaconPause(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if already paused
-	paused, state, err := deacon.IsPaused(townRoot)
+	paused, state, err := supervisor.IsPaused(townRoot)
 	if err != nil {
 		return fmt.Errorf("checking pause state: %w", err)
 	}
@@ -1310,7 +1310,7 @@ func runDeaconPause(cmd *cobra.Command, args []string) error {
 	}
 
 	// Pause the Deacon
-	if err := deacon.Pause(townRoot, pauseReason, "human"); err != nil {
+	if err := supervisor.Pause(townRoot, pauseReason, "human"); err != nil {
 		return fmt.Errorf("pausing Deacon: %w", err)
 	}
 
@@ -1325,7 +1325,7 @@ func runDeaconPause(cmd *cobra.Command, args []string) error {
 	if pauseReason != "" {
 		fmt.Printf("  Reason: %s\n", pauseReason)
 	}
-	fmt.Printf("  Pause file: %s\n", deacon.GetPauseFile(townRoot))
+	fmt.Printf("  Pause file: %s\n", supervisor.GetPauseFile(townRoot))
 	fmt.Println()
 	fmt.Printf("The Deacon will not perform any patrol actions until resumed.\n")
 	fmt.Printf("Resume with: %s\n", style.Dim.Render("gt deacon resume"))
@@ -1341,7 +1341,7 @@ func runDeaconResume(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if paused
-	paused, _, err := deacon.IsPaused(townRoot)
+	paused, _, err := supervisor.IsPaused(townRoot)
 	if err != nil {
 		return fmt.Errorf("checking pause state: %w", err)
 	}
@@ -1351,7 +1351,7 @@ func runDeaconResume(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resume the Deacon
-	if err := deacon.Resume(townRoot); err != nil {
+	if err := supervisor.Resume(townRoot); err != nil {
 		return fmt.Errorf("resuming Deacon: %w", err)
 	}
 
@@ -1504,7 +1504,7 @@ func runDeaconRedispatch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	result := deacon.Redispatch(townRoot, beadID, redispatchRig, redispatchMaxAttempts, redispatchCooldown)
+	result := supervisor.Redispatch(townRoot, beadID, redispatchRig, redispatchMaxAttempts, redispatchCooldown)
 
 	switch result.Action {
 	case "redispatched":
@@ -1548,7 +1548,7 @@ func runDeaconRedispatchState(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	state, err := deacon.LoadRedispatchState(townRoot)
+	state, err := supervisor.LoadRedispatchState(townRoot)
 	if err != nil {
 		return fmt.Errorf("loading redispatch state: %w", err)
 	}
@@ -1576,7 +1576,7 @@ func runDeaconRedispatchState(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  Escalated: YES (at %s)\n", beadState.EscalatedAt.Format(time.RFC3339))
 		}
 
-		cooldown := deacon.DefaultRedispatchCooldown
+		cooldown := supervisor.DefaultRedispatchCooldown
 		if beadState.IsInCooldown(cooldown) {
 			remaining := beadState.CooldownRemaining(cooldown)
 			fmt.Printf("  Cooldown: %s remaining\n", remaining.Round(time.Second))
@@ -1594,7 +1594,7 @@ func runDeaconFeedStranded(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	result := deacon.FeedStranded(townRoot, feedStrandedMaxFeeds, feedStrandedCooldown)
+	result := supervisor.FeedStranded(townRoot, feedStrandedMaxFeeds, feedStrandedCooldown)
 
 	// JSON output
 	if feedStrandedJSON {
@@ -1644,7 +1644,7 @@ func runDeaconFeedStrandedState(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	state, err := deacon.LoadFeedStrandedState(townRoot)
+	state, err := supervisor.LoadFeedStrandedState(townRoot)
 	if err != nil {
 		return fmt.Errorf("loading feed-stranded state: %w", err)
 	}
@@ -1666,7 +1666,7 @@ func runDeaconFeedStrandedState(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  Last feed: %s ago\n", time.Since(convoyState.LastFeedTime).Round(time.Second))
 		}
 
-		cooldown := deacon.DefaultFeedCooldown
+		cooldown := supervisor.DefaultFeedCooldown
 		if convoyState.IsInCooldown(cooldown) {
 			remaining := convoyState.CooldownRemaining(cooldown)
 			fmt.Printf("  Cooldown: %s remaining\n", remaining.Round(time.Second))

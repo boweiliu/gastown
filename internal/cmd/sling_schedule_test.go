@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 // TestAreScheduledFailClosed verifies that areScheduled fails closed when
@@ -82,7 +82,7 @@ func TestResolveFormula(t *testing.T) {
 		rigName := "testrig"
 		_ = os.MkdirAll(filepath.Join(tmpDir, rigName), 0o755)
 
-		wispCfg := wisp.NewConfig(tmpDir, rigName)
+		wispCfg := ephemeral.NewConfig(tmpDir, rigName)
 		if err := wispCfg.Set("default_formula", "mol-evolve"); err != nil {
 			t.Fatalf("wisp set: %v", err)
 		}
@@ -99,7 +99,7 @@ func TestResolveFormula(t *testing.T) {
 		rigName := "testrig"
 		_ = os.MkdirAll(filepath.Join(tmpDir, rigName), 0o755)
 
-		wispCfg := wisp.NewConfig(tmpDir, rigName)
+		wispCfg := ephemeral.NewConfig(tmpDir, rigName)
 		if err := wispCfg.Set("default_formula", "mol-evolve"); err != nil {
 			t.Fatalf("wisp set: %v", err)
 		}

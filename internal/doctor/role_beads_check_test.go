@@ -37,7 +37,7 @@ scope = "rig"
 [session]
 start_command = "exec echo test"
 `
-		if err := os.WriteFile(filepath.Join(rolesDir, "witness.toml"), []byte(override), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(rolesDir, "watcher.toml"), []byte(override), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -61,7 +61,7 @@ start_command = "exec echo test"
 		}
 
 		// Create an invalid TOML file
-		if err := os.WriteFile(filepath.Join(rolesDir, "witness.toml"), []byte("invalid { toml"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(rolesDir, "watcher.toml"), []byte("invalid { toml"), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -99,7 +99,7 @@ scope = "rig"
 [session]
 needs_pre_sync = true
 `
-		if err := os.WriteFile(filepath.Join(rigRolesDir, "refinery.toml"), []byte(override), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(rigRolesDir, "merger.toml"), []byte(override), 0644); err != nil {
 			t.Fatal(err)
 		}
 

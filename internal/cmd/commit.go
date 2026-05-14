@@ -33,7 +33,7 @@ Examples:
 
 Identity mapping:
   Agent: gastown/crew/jack  →  Name: gastown/crew/jack
-                                Email: gastown.crew.jack@gastown.local
+                                Email: gastown.team.jack@gastown.local
 
 When run without GT_ROLE (human), passes through to git commit with no changes.`,
 	RunE:               runCommit,
@@ -70,7 +70,7 @@ func runCommit(cmd *cobra.Command, args []string) error {
 	}
 
 	// Convert identity to git-friendly email
-	// "gastown/crew/jack" → "gastown.crew.jack@domain"
+	// "gastown/crew/jack" → "gastown.team.jack@domain"
 	email := identityToEmail(identity, domain)
 
 	// Use identity as the author name (human-readable)
@@ -80,7 +80,7 @@ func runCommit(cmd *cobra.Command, args []string) error {
 }
 
 // identityToEmail converts a Gas Town identity to a git email address.
-// "gastown/crew/jack" → "gastown.crew.jack@domain"
+// "gastown/crew/jack" → "gastown.team.jack@domain"
 // "mayor/" → "mayor@domain"
 func identityToEmail(identity, domain string) string {
 	// Remove trailing slash if present

@@ -2337,20 +2337,20 @@ func TestAddRigToDaemonPatrols(t *testing.T) {
 			t.Fatalf("LoadDaemonPatrolConfig: %v", err)
 		}
 
-		witness := cfg.Patrols["witness"]
-		if len(witness.Rigs) != 2 || witness.Rigs[0] != "gastown" || witness.Rigs[1] != "newrig" {
-			t.Errorf("witness rigs = %v, want [gastown newrig]", witness.Rigs)
+		wit := cfg.Patrols["witness"]
+		if len(wit.Rigs) != 2 || wit.Rigs[0] != "gastown" || wit.Rigs[1] != "newrig" {
+			t.Errorf("witness rigs = %v, want [gastown newrig]", wit.Rigs)
 		}
 
-		refinery := cfg.Patrols["refinery"]
-		if len(refinery.Rigs) != 2 || refinery.Rigs[0] != "gastown" || refinery.Rigs[1] != "newrig" {
-			t.Errorf("refinery rigs = %v, want [gastown newrig]", refinery.Rigs)
+		ref := cfg.Patrols["refinery"]
+		if len(ref.Rigs) != 2 || ref.Rigs[0] != "gastown" || ref.Rigs[1] != "newrig" {
+			t.Errorf("refinery rigs = %v, want [gastown newrig]", ref.Rigs)
 		}
 
 		// Deacon should be untouched
-		deacon := cfg.Patrols["deacon"]
-		if len(deacon.Rigs) != 0 {
-			t.Errorf("deacon rigs = %v, want empty", deacon.Rigs)
+		dea := cfg.Patrols["deacon"]
+		if len(dea.Rigs) != 0 {
+			t.Errorf("deacon rigs = %v, want empty", dea.Rigs)
 		}
 	})
 
@@ -2383,9 +2383,9 @@ func TestAddRigToDaemonPatrols(t *testing.T) {
 			t.Fatalf("LoadDaemonPatrolConfig: %v", err)
 		}
 
-		witness := cfg.Patrols["witness"]
-		if len(witness.Rigs) != 2 {
-			t.Errorf("witness rigs = %v, want [gastown beads] (no duplicate)", witness.Rigs)
+		wit := cfg.Patrols["witness"]
+		if len(wit.Rigs) != 2 {
+			t.Errorf("witness rigs = %v, want [gastown beads] (no duplicate)", wit.Rigs)
 		}
 	})
 
@@ -2512,14 +2512,14 @@ func TestRemoveRigFromDaemonPatrols(t *testing.T) {
 			t.Fatalf("LoadDaemonPatrolConfig: %v", err)
 		}
 
-		witness := cfg.Patrols["witness"]
-		if len(witness.Rigs) != 2 || witness.Rigs[0] != "gastown" || witness.Rigs[1] != "myrig" {
-			t.Errorf("witness rigs = %v, want [gastown myrig]", witness.Rigs)
+		wit := cfg.Patrols["witness"]
+		if len(wit.Rigs) != 2 || wit.Rigs[0] != "gastown" || wit.Rigs[1] != "myrig" {
+			t.Errorf("witness rigs = %v, want [gastown myrig]", wit.Rigs)
 		}
 
-		refinery := cfg.Patrols["refinery"]
-		if len(refinery.Rigs) != 2 || refinery.Rigs[0] != "gastown" || refinery.Rigs[1] != "myrig" {
-			t.Errorf("refinery rigs = %v, want [gastown myrig]", refinery.Rigs)
+		ref := cfg.Patrols["refinery"]
+		if len(ref.Rigs) != 2 || ref.Rigs[0] != "gastown" || ref.Rigs[1] != "myrig" {
+			t.Errorf("refinery rigs = %v, want [gastown myrig]", ref.Rigs)
 		}
 	})
 
@@ -2552,9 +2552,9 @@ func TestRemoveRigFromDaemonPatrols(t *testing.T) {
 			t.Fatalf("LoadDaemonPatrolConfig: %v", err)
 		}
 
-		witness := cfg.Patrols["witness"]
-		if len(witness.Rigs) != 1 || witness.Rigs[0] != "gastown" {
-			t.Errorf("witness rigs = %v, want [gastown]", witness.Rigs)
+		wit := cfg.Patrols["witness"]
+		if len(wit.Rigs) != 1 || wit.Rigs[0] != "gastown" {
+			t.Errorf("witness rigs = %v, want [gastown]", wit.Rigs)
 		}
 	})
 
@@ -2671,14 +2671,14 @@ func TestRemoveRigFromDaemonPatrols(t *testing.T) {
 			t.Fatalf("LoadDaemonPatrolConfig: %v", err)
 		}
 
-		witness := cfg.Patrols["witness"]
-		if len(witness.Rigs) != 1 || witness.Rigs[0] != "gastown" {
-			t.Errorf("witness rigs = %v, want [gastown]", witness.Rigs)
+		wit := cfg.Patrols["witness"]
+		if len(wit.Rigs) != 1 || wit.Rigs[0] != "gastown" {
+			t.Errorf("witness rigs = %v, want [gastown]", wit.Rigs)
 		}
 
-		refinery := cfg.Patrols["refinery"]
-		if len(refinery.Rigs) != 1 || refinery.Rigs[0] != "gastown" {
-			t.Errorf("refinery rigs = %v, want [gastown]", refinery.Rigs)
+		ref := cfg.Patrols["refinery"]
+		if len(ref.Rigs) != 1 || ref.Rigs[0] != "gastown" {
+			t.Errorf("refinery rigs = %v, want [gastown]", ref.Rigs)
 		}
 	})
 }

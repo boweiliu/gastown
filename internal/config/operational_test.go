@@ -166,12 +166,12 @@ func TestDeaconThresholds_Defaults(t *testing.T) {
 	t.Parallel()
 
 	op := &OperationalConfig{}
-	deacon := op.GetDeaconConfig()
+	dcfg := op.GetDeaconConfig()
 
-	if got := deacon.PingTimeoutD(); got != DefaultDeaconPingTimeout {
+	if got := dcfg.PingTimeoutD(); got != DefaultDeaconPingTimeout {
 		t.Errorf("PingTimeout: got %v, want %v", got, DefaultDeaconPingTimeout)
 	}
-	if got := deacon.ConsecutiveFailuresV(); got != DefaultDeaconConsecutiveFailures {
+	if got := dcfg.ConsecutiveFailuresV(); got != DefaultDeaconConsecutiveFailures {
 		t.Errorf("ConsecutiveFailures: got %v, want %v", got, DefaultDeaconConsecutiveFailures)
 	}
 }

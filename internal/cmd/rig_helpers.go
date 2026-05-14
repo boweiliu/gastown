@@ -11,7 +11,7 @@ import (
 	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/rig"
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -107,7 +107,7 @@ func hasRigBeadLabel(townRoot, rigName, label string) bool {
 // the rig identity bead's status:docked label.
 func IsRigParkedOrDocked(townRoot, rigName string) (bool, string) {
 	// Check wisp layer first (fast, local) — only relevant for parked state
-	wispCfg := wisp.NewConfig(townRoot, rigName)
+	wispCfg := ephemeral.NewConfig(townRoot, rigName)
 	if wispCfg.GetString(RigStatusKey) == RigStatusParked {
 		return true, "parked"
 	}

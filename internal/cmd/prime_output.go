@@ -14,7 +14,7 @@ import (
 	"github.com/steveyegge/gastown/internal/cli"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
@@ -546,7 +546,7 @@ func outputStartupDirective(ctx RoleContext) {
 		fmt.Println("     Sit idle at your prompt — a nudge or user message will arrive.")
 	case RoleDeacon:
 		// Skip startup protocol if paused - the pause message was already shown
-		paused, _, _ := deacon.IsPaused(ctx.TownRoot)
+		paused, _, _ := supervisor.IsPaused(ctx.TownRoot)
 		if paused {
 			return
 		}
@@ -801,7 +801,7 @@ func outputCheckpointContext(ctx RoleContext) {
 
 // outputDeaconPausedMessage outputs a prominent PAUSED message for the Deacon.
 // When paused, the Deacon must not perform any patrol actions.
-func outputDeaconPausedMessage(state *deacon.PauseState) {
+func outputDeaconPausedMessage(state *supervisor.PauseState) {
 	fmt.Println()
 	fmt.Printf("%s\n\n", style.Bold.Render("## ⏸️  DEACON PAUSED"))
 	fmt.Println("You are paused and must NOT perform any patrol actions.")

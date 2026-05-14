@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/git"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/style"
 )
 
@@ -382,7 +382,7 @@ func calculateMRScore(issue *beads.Issue, fields *beads.MRFields, now time.Time)
 	}
 
 	// Build score input
-	input := refinery.ScoreInput{
+	input := merger.ScoreInput{
 		Priority:    issue.Priority,
 		MRCreatedAt: mrCreatedAt,
 		Now:         now,
@@ -400,7 +400,7 @@ func calculateMRScore(issue *beads.Issue, fields *beads.MRFields, now time.Time)
 		}
 	}
 
-	return refinery.ScoreMRWithDefaults(input)
+	return merger.ScoreMRWithDefaults(input)
 }
 
 // branchVerifier abstracts git branch existence checks for testability.

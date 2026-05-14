@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/runtime"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
@@ -76,7 +76,7 @@ func runCrewAt(cmd *cobra.Command, args []string) error {
 	// Get the crew worker
 	worker, err := crewMgr.Get(name)
 	if err != nil {
-		if err == crew.ErrCrewNotFound {
+		if err == team.ErrCrewNotFound {
 			return fmt.Errorf("crew workspace '%s' not found", name)
 		}
 		return fmt.Errorf("getting crew worker: %w", err)

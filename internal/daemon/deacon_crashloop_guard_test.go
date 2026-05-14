@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/tmux"
 )
 
@@ -71,7 +71,7 @@ func TestCheckDeaconHeartbeat_RespectsCrashLoopGuard(t *testing.T) {
 	t.Setenv("TMUX_LOG", tmuxLog)
 
 	// Stale heartbeat triggers restart path.
-	if err := deacon.WriteHeartbeat(townRoot, &deacon.Heartbeat{
+	if err := supervisor.WriteHeartbeat(townRoot, &supervisor.Heartbeat{
 		Timestamp: time.Now().Add(-20 * time.Minute),
 		Cycle:     1,
 	}); err != nil {

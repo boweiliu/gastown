@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
-	"github.com/steveyegge/gastown/internal/wisp"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/ephemeral"
+	"github.com/steveyegge/gastown/internal/watcher"
 )
 
 // RigStatusKey is the wisp config key for rig operational status.
@@ -99,8 +99,8 @@ func parkOneRig(rigName string) error {
 	witnessSession := session.WitnessSessionName(session.PrefixFor(rigName))
 	witnessRunning, _ := t.HasSession(witnessSession)
 	if witnessRunning {
-		fmt.Printf("  Stopping witness...\n")
-		witMgr := witness.NewManager(r)
+		fmt.Printf("  Stopping watcher...\n")
+		witMgr := watcher.NewManager(r)
 		if err := witMgr.Stop(); err != nil {
 			fmt.Printf("  %s Failed to stop witness: %v\n", style.Warning.Render("!"), err)
 		} else {
@@ -112,8 +112,8 @@ func parkOneRig(rigName string) error {
 	refinerySession := session.RefinerySessionName(session.PrefixFor(rigName))
 	refineryRunning, _ := t.HasSession(refinerySession)
 	if refineryRunning {
-		fmt.Printf("  Stopping refinery...\n")
-		refMgr := refinery.NewManager(r)
+		fmt.Printf("  Stopping merger...\n")
+		refMgr := merger.NewManager(r)
 		if err := refMgr.Stop(); err != nil {
 			fmt.Printf("  %s Failed to stop refinery: %v\n", style.Warning.Render("!"), err)
 		} else {
@@ -122,7 +122,7 @@ func parkOneRig(rigName string) error {
 	}
 
 	// Set parked status in wisp layer
-	wispCfg := wisp.NewConfig(townRoot, rigName)
+	wispCfg := ephemeral.NewConfig(townRoot, rigName)
 	if err := wispCfg.Set(RigStatusKey, RigStatusParked); err != nil {
 		return fmt.Errorf("setting parked status: %w", err)
 	}
@@ -164,7 +164,7 @@ func unparkOneRig(rigName string) error {
 	}
 
 	// Remove parked status from wisp layer
-	wispCfg := wisp.NewConfig(townRoot, rigName)
+	wispCfg := ephemeral.NewConfig(townRoot, rigName)
 	if err := wispCfg.Unset(RigStatusKey); err != nil {
 		return fmt.Errorf("clearing parked status: %w", err)
 	}
@@ -182,7 +182,7 @@ func unparkOneRig(rigName string) error {
 // state survives wisp cleanup. (Fixes upstream #2079)
 func IsRigParked(townRoot, rigName string) bool {
 	// Check wisp layer first (fast, local)
-	wispCfg := wisp.NewConfig(townRoot, rigName)
+	wispCfg := ephemeral.NewConfig(townRoot, rigName)
 	if wispCfg.GetString(RigStatusKey) == RigStatusParked {
 		return true
 	}

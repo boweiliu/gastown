@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 // Regression test for gt-arz:
@@ -26,10 +26,10 @@ func TestGetPatrolRigs_FiltersNonOperationalRigs(t *testing.T) {
 	}
 
 	// Mark beta/gamma as non-operational via wisp status.
-	if err := wisp.NewConfig(townRoot, "beta").Set("status", "parked"); err != nil {
+	if err := ephemeral.NewConfig(townRoot, "beta").Set("status", "parked"); err != nil {
 		t.Fatalf("set beta parked: %v", err)
 	}
-	if err := wisp.NewConfig(townRoot, "gamma").Set("status", "docked"); err != nil {
+	if err := ephemeral.NewConfig(townRoot, "gamma").Set("status", "docked"); err != nil {
 		t.Fatalf("set gamma docked: %v", err)
 	}
 

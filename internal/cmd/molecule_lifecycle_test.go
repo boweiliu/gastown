@@ -158,7 +158,7 @@ func TestSquashJitterContextCancellation(t *testing.T) {
 // - gt done closes wisp, not the actual work item
 // - Orphaned base beads accumulate
 //
-// Expected behavior: Hook the base bead, store attached_molecule pointing to wisp.
+// Expected behavior: Hook the base bead, store attached_molecule pointing to ephemeral.
 // gt hook/gt prime can follow attached_molecule to find the workflow steps.
 func TestSlingFormulaOnBeadHooksBaseBead(t *testing.T) {
 	townRoot := t.TempDir()
@@ -334,7 +334,7 @@ exit /b 0
 	if hookedBeadID != "gt-abc123" {
 		t.Errorf("wrong bead hooked: got %q, want %q (base bead)\n"+
 			"Current behavior hooks the wisp instead of the base bead.\n"+
-			"This causes orphaned base beads when gt done closes only the wisp.\n"+
+			"This causes orphaned base beads when gt done closes only the ephemeral.\n"+
 			"Log:\n%s", hookedBeadID, "gt-abc123", string(logBytes))
 	}
 }
@@ -343,11 +343,11 @@ exit /b 0
 // "gt sling <formula> --on <bead>", the attached_molecule field is set in the
 // BASE bead's description (pointing to the wisp), not in the wisp itself.
 //
-// Current bug: attached_molecule is stored as a self-reference in the wisp.
+// Current bug: attached_molecule is stored as a self-reference in the ephemeral.
 // This is semantically meaningless (wisp points to itself) and breaks
 // compound resolution from the base bead.
 //
-// Expected behavior: Store attached_molecule in the base bead pointing to wisp.
+// Expected behavior: Store attached_molecule in the base bead pointing to ephemeral.
 // This enables:
 // - Compound resolution: base bead -> attached_molecule -> wisp
 // - gt hook/gt prime: read base bead, follow attached_molecule to show wisp steps

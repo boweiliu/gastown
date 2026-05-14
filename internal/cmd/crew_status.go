@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/rig"
@@ -74,18 +74,18 @@ func runCrewStatus(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		var workers []*crew.CrewWorker
+		var workers []*team.CrewWorker
 
 		if targetName != "" {
 			// Specific worker
 			worker, err := crewMgr.Get(targetName)
 			if err != nil {
-				if err == crew.ErrCrewNotFound {
+				if err == team.ErrCrewNotFound {
 					return fmt.Errorf("crew workspace '%s' not found", targetName)
 				}
 				return fmt.Errorf("getting crew worker: %w", err)
 			}
-			workers = []*crew.CrewWorker{worker}
+			workers = []*team.CrewWorker{worker}
 		} else {
 			// All workers
 			workers, err = crewMgr.List()
@@ -146,7 +146,7 @@ func runCrewStatus(cmd *cobra.Command, args []string) error {
 }
 
 func listCrewStatusItems(r *rig.Rig, t *tmux.Tmux) ([]CrewStatusItem, error) {
-	crewMgr := crew.NewManager(r, git.NewGit(r.Path))
+	crewMgr := team.NewManager(r, git.NewGit(r.Path))
 	workers, err := crewMgr.List()
 	if err != nil {
 		return nil, fmt.Errorf("listing crew workers: %w", err)
@@ -154,7 +154,7 @@ func listCrewStatusItems(r *rig.Rig, t *tmux.Tmux) ([]CrewStatusItem, error) {
 	return buildCrewStatusItems(r, workers, t), nil
 }
 
-func buildCrewStatusItems(r *rig.Rig, workers []*crew.CrewWorker, t *tmux.Tmux) []CrewStatusItem {
+func buildCrewStatusItems(r *rig.Rig, workers []*team.CrewWorker, t *tmux.Tmux) []CrewStatusItem {
 	items := make([]CrewStatusItem, 0, len(workers))
 
 	for _, w := range workers {

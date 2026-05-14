@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
@@ -93,14 +93,14 @@ func runCrewAdd(cmd *cobra.Command, args []string) error {
 
 	// Create crew manager
 	crewGit := git.NewGit(r.Path)
-	crewMgr := crew.NewManager(r, crewGit)
+	crewMgr := team.NewManager(r, crewGit)
 
 	bd := beads.New(beads.ResolveBeadsDir(r.Path))
 
 	// Track results
 	var created []string
 	var failed []string
-	var lastWorker *crew.CrewWorker
+	var lastWorker *team.CrewWorker
 
 	// Process each name
 	for _, arg := range args {
@@ -121,7 +121,7 @@ func runCrewAdd(cmd *cobra.Command, args []string) error {
 
 		worker, err := crewMgr.Add(name, crewBranch)
 		if err != nil {
-			if err == crew.ErrCrewExists {
+			if err == team.ErrCrewExists {
 				style.PrintWarning("crew workspace '%s' already exists, skipping", name)
 				failed = append(failed, name+" (exists)")
 				continue

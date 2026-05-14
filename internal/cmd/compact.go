@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 var (
@@ -104,7 +104,7 @@ func loadTTLConfigWithRole(townRoot, rigName string) map[string]time.Duration {
 
 	// Layer 2: Rig config - wisp layer (middle precedence)
 	if rigName != "" {
-		cfg := wisp.NewConfig(townRoot, rigName)
+		cfg := ephemeral.NewConfig(townRoot, rigName)
 		raw := cfg.Get("wisp_ttl")
 		if raw != nil {
 			// wisp_ttl is stored as map[string]interface{} in JSON config
@@ -259,7 +259,7 @@ func runCompact(cmd *cobra.Command, args []string) error {
 
 	// Clean up orphaned wisp_dependencies left behind by deleted wisps.
 	// When bd delete removes a wisp, it doesn't cascade-delete dependency
-	// records in wisp_dependencies that reference the deleted wisp. Over many
+	// records in wisp_dependencies that reference the deleted ephemeral. Over many
 	// compaction cycles these accumulate as dangling refs. We sweep them here.
 	if !compactDryRun {
 		cleanOrphanedWispDeps(bd, result)

@@ -25,7 +25,7 @@ import (
 	"github.com/steveyegge/gastown/internal/boot"
 	agentconfig "github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/deps"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/estop"
@@ -34,14 +34,14 @@ import (
 	gitpkg "github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/mayor"
 	"github.com/steveyegge/gastown/internal/worker"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/telemetry"
 	"github.com/steveyegge/gastown/internal/tmux"
 	"github.com/steveyegge/gastown/internal/util"
-	"github.com/steveyegge/gastown/internal/wisp"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/ephemeral"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -839,7 +839,7 @@ func (d *Daemon) heartbeat(state *State) {
 
 	// 0a. Reload prefix registry so new/changed rigs get correct session names.
 	// Without this, rigs added after daemon startup get the "gt" default prefix,
-	// causing ghost sessions like gt-witness instead of ti-witness. (hq-ouz, hq-eqf, hq-3i4)
+	// causing ghost sessions like gt-witness instead of ti-watcher. (hq-ouz, hq-eqf, hq-3i4)
 	if err := session.InitRegistry(d.config.TownRoot); err != nil {
 		d.logger.Printf("Warning: failed to reload prefix registry: %v", err)
 	}
@@ -1294,7 +1294,7 @@ func (d *Daemon) ensureBootRunning() {
 	// We deliberately do NOT update bootLastSpawned on an idle skip: the cooldown
 	// is about rate-limiting real spawns; the idle check should re-run every
 	// heartbeat so Boot fires promptly when work actually appears.
-	hb := deacon.ReadHeartbeat(d.config.TownRoot)
+	hb := supervisor.ReadHeartbeat(d.config.TownRoot)
 	if hb != nil && hb.IsFresh() && !d.hasActiveWork() {
 		d.logger.Println("Boot spawn skipped: Deacon is healthy and no active work in flight")
 		return
@@ -1419,7 +1419,7 @@ func (d *Daemon) runDegradedBootTriage(b *boot.Boot) {
 }
 
 // ensureDeaconRunning ensures the Deacon is running.
-// Uses deacon.Manager for consistent startup behavior (WaitForShellReady, GUPP, etc.).
+// Uses supervisor.Manager for consistent startup behavior (WaitForShellReady, GUPP, etc.).
 func (d *Daemon) ensureDeaconRunning() {
 	const agentID = "deacon"
 
@@ -1436,10 +1436,10 @@ func (d *Daemon) ensureDeaconRunning() {
 		}
 	}
 
-	mgr := deacon.NewManager(d.config.TownRoot)
+	mgr := supervisor.NewManager(d.config.TownRoot)
 
 	if err := mgr.Start(""); err != nil {
-		if err == deacon.ErrAlreadyRunning {
+		if err == supervisor.ErrAlreadyRunning {
 			// Deacon is running - record success to reset backoff
 			if d.restartTracker != nil {
 				d.restartTracker.RecordSuccess(agentID)
@@ -1492,7 +1492,7 @@ func (d *Daemon) checkDeaconHeartbeat() {
 	}
 
 	// Always read heartbeat first (PATCH-005)
-	hb := deacon.ReadHeartbeat(d.config.TownRoot)
+	hb := supervisor.ReadHeartbeat(d.config.TownRoot)
 
 	sessionName := d.getDeaconSessionName()
 
@@ -1644,7 +1644,7 @@ func (d *Daemon) restartStuckDeacon(sessionName, reason string) {
 	// Brief pause for tmux cleanup
 	time.Sleep(2 * time.Second)
 
-	// Respawn via ensureDeaconRunning (which uses deacon.Manager)
+	// Respawn via ensureDeaconRunning (which uses supervisor.Manager)
 	d.ensureDeaconRunning()
 
 	// Verify it came back
@@ -1731,7 +1731,7 @@ func (d *Daemon) ensureWitnessRunning(rigName string) {
 		Name: rigName,
 		Path: filepath.Join(d.config.TownRoot, rigName),
 	}
-	mgr := witness.NewManager(r)
+	mgr := watcher.NewManager(r)
 
 	// NOTE: Hung session detection removed for witnesses (serial killer bug).
 	// Idle witnesses legitimately produce no tmux output while waiting for work.
@@ -1740,7 +1740,7 @@ func (d *Daemon) ensureWitnessRunning(rigName string) {
 	// See: daemon.log "is hung (no activity for 30m0s), killing for restart"
 
 	if err := mgr.Start(false, "", nil); err != nil {
-		if err == witness.ErrAlreadyRunning {
+		if err == watcher.ErrAlreadyRunning {
 			// Already running - this is the expected case
 			d.logger.Printf("Witness for %s already running, skipping spawn", rigName)
 			return
@@ -1794,7 +1794,7 @@ func (d *Daemon) ensureRefineryRunning(rigName string) {
 			Name: rigName,
 			Path: filepath.Join(d.config.TownRoot, rigName),
 		}
-		mgr := refinery.NewManager(r)
+		mgr := merger.NewManager(r)
 		if running, _ := mgr.IsRunning(); !running {
 			d.logger.Printf("No pending refinery events and no session running for %s, skipping spawn", rigName)
 			return
@@ -1808,7 +1808,7 @@ func (d *Daemon) ensureRefineryRunning(rigName string) {
 		Name: rigName,
 		Path: filepath.Join(d.config.TownRoot, rigName),
 	}
-	mgr := refinery.NewManager(r)
+	mgr := merger.NewManager(r)
 
 	// NOTE: Hung session detection removed for refineries (serial killer bug).
 	// Idle refineries legitimately produce no tmux output while waiting for MRs.
@@ -1817,7 +1817,7 @@ func (d *Daemon) ensureRefineryRunning(rigName string) {
 	// See: daemon.log "is hung (no activity for 30m0s), killing for restart"
 
 	if err := mgr.Start(false, ""); err != nil {
-		if err == refinery.ErrAlreadyRunning {
+		if err == merger.ErrAlreadyRunning {
 			// Already running - this is the expected case when fix is working
 			d.logger.Printf("Refinery for %s already running, skipping spawn", rigName)
 			return
@@ -2129,7 +2129,7 @@ func (d *Daemon) getPatrolRigs(patrol string) []string {
 // and reduce drift risk. Not done here due to circular import constraints
 // (daemon cannot import cmd).
 func (d *Daemon) isRigOperational(rigName string) (bool, string) {
-	cfg := wisp.NewConfig(d.config.TownRoot, rigName)
+	cfg := ephemeral.NewConfig(d.config.TownRoot, rigName)
 
 	// Warn if wisp config is missing - parked/docked state may have been lost
 	if _, err := os.Stat(cfg.ConfigPath()); os.IsNotExist(err) {

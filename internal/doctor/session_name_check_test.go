@@ -175,7 +175,7 @@ func TestMalformedSessionNameCheck_Run_DetectsMismatch(t *testing.T) {
 }
 
 // TestMalformedSessionNameCheck_Run_LegacyWAWitness verifies the stated use
-// case: gt-whatsapp_automation-witness → wa-witness.
+// case: gt-whatsapp_automation-witness → wa-watcher.
 func TestMalformedSessionNameCheck_Run_LegacyWAWitness(t *testing.T) {
 	check := NewMalformedSessionNameCheck()
 	check.registryForTest = testRegistryForNameCheck()

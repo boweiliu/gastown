@@ -207,7 +207,7 @@ var configAgentEmailDomainCmd = &cobra.Command{
 
 When agents commit code via 'gt commit', their identity is converted
 to a git email address. For example, "gastown/crew/jack" becomes
-"gastown.crew.jack@{domain}".
+"gastown.team.jack@{domain}".
 
 With no arguments, shows the current domain.
 With an argument, sets the domain.
@@ -582,7 +582,7 @@ func runConfigAgentEmailDomain(cmd *cobra.Command, args []string) error {
 			domain = DefaultAgentEmailDomain
 		}
 		fmt.Printf("Agent email domain: %s\n", style.Bold.Render(domain))
-		fmt.Printf("\nExample: gastown/crew/jack → gastown.crew.jack@%s\n", domain)
+		fmt.Printf("\nExample: gastown/crew/jack → gastown.team.jack@%s\n", domain)
 		return nil
 	}
 
@@ -606,7 +606,7 @@ func runConfigAgentEmailDomain(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Agent email domain set to '%s'\n", style.Bold.Render(domain))
-	fmt.Printf("\nExample: gastown/crew/jack → gastown.crew.jack@%s\n", domain)
+	fmt.Printf("\nExample: gastown/crew/jack → gastown.team.jack@%s\n", domain)
 	return nil
 }
 

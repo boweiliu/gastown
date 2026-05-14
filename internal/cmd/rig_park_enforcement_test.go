@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 func TestIsRigParked_WhenParked(t *testing.T) {
@@ -14,13 +14,13 @@ func TestIsRigParked_WhenParked(t *testing.T) {
 	rigName := "testrig"
 
 	// Set up wisp config with parked status
-	configDir := filepath.Join(townRoot, wisp.WispConfigDir, wisp.ConfigSubdir)
+	configDir := filepath.Join(townRoot, ephemeral.WispConfigDir, ephemeral.ConfigSubdir)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("failed to create wisp config dir: %v", err)
 	}
 
 	configFile := filepath.Join(configDir, rigName+".json")
-	data, _ := json.Marshal(wisp.ConfigFile{
+	data, _ := json.Marshal(ephemeral.ConfigFile{
 		Rig:    rigName,
 		Values: map[string]interface{}{"status": "parked"},
 	})
@@ -48,13 +48,13 @@ func TestIsRigParked_WhenUnparked(t *testing.T) {
 	rigName := "testrig"
 
 	// Set up wisp config with empty status (unparked)
-	configDir := filepath.Join(townRoot, wisp.WispConfigDir, wisp.ConfigSubdir)
+	configDir := filepath.Join(townRoot, ephemeral.WispConfigDir, ephemeral.ConfigSubdir)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("failed to create wisp config dir: %v", err)
 	}
 
 	configFile := filepath.Join(configDir, rigName+".json")
-	data, _ := json.Marshal(wisp.ConfigFile{
+	data, _ := json.Marshal(ephemeral.ConfigFile{
 		Rig:    rigName,
 		Values: map[string]interface{}{},
 	})
@@ -73,13 +73,13 @@ func TestIsRigParked_WhenDocked(t *testing.T) {
 
 	// Wisp config with docked status — IsRigParked should return false
 	// (docked is a separate check via IsRigDocked)
-	configDir := filepath.Join(townRoot, wisp.WispConfigDir, wisp.ConfigSubdir)
+	configDir := filepath.Join(townRoot, ephemeral.WispConfigDir, ephemeral.ConfigSubdir)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("failed to create wisp config dir: %v", err)
 	}
 
 	configFile := filepath.Join(configDir, rigName+".json")
-	data, _ := json.Marshal(wisp.ConfigFile{
+	data, _ := json.Marshal(ephemeral.ConfigFile{
 		Rig:    rigName,
 		Values: map[string]interface{}{"status": "docked"},
 	})

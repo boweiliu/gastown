@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/steveyegge/gastown/internal/config"
-	"github.com/steveyegge/gastown/internal/dog"
+	"github.com/steveyegge/gastown/internal/helper"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/plugin"
 	"github.com/steveyegge/gastown/internal/tmux"
@@ -48,9 +48,9 @@ func (d *Daemon) handleDogs() {
 
 	opCfg := d.loadOperationalConfig().GetDaemonConfig()
 
-	mgr := dog.NewManager(d.config.TownRoot, rigsConfig)
+	mgr := helper.NewManager(d.config.TownRoot, rigsConfig)
 	t := tmux.NewTmux()
-	sm := dog.NewSessionManager(t, d.config.TownRoot, mgr)
+	sm := helper.NewSessionManager(t, d.config.TownRoot, mgr)
 
 	d.cleanupStuckDogs(mgr, sm)
 	d.detectStaleWorkingDogs(mgr, sm, opCfg)
@@ -69,9 +69,9 @@ func (d *Daemon) handleDogsCleanupOnly() {
 
 	opCfg := d.loadOperationalConfig().GetDaemonConfig()
 
-	mgr := dog.NewManager(d.config.TownRoot, rigsConfig)
+	mgr := helper.NewManager(d.config.TownRoot, rigsConfig)
 	t := tmux.NewTmux()
-	sm := dog.NewSessionManager(t, d.config.TownRoot, mgr)
+	sm := helper.NewSessionManager(t, d.config.TownRoot, mgr)
 
 	d.cleanupStuckDogs(mgr, sm)
 	d.detectStaleWorkingDogs(mgr, sm, opCfg)
@@ -81,7 +81,7 @@ func (d *Daemon) handleDogsCleanupOnly() {
 
 // cleanupStuckDogs finds dogs in state=working whose tmux session is dead and
 // clears their work so they return to idle.
-func (d *Daemon) cleanupStuckDogs(mgr *dog.Manager, sm *dog.SessionManager) {
+func (d *Daemon) cleanupStuckDogs(mgr *helper.Manager, sm *helper.SessionManager) {
 	dogs, err := mgr.List()
 	if err != nil {
 		d.logger.Printf("Handler: failed to list dogs: %v", err)
@@ -89,7 +89,7 @@ func (d *Daemon) cleanupStuckDogs(mgr *dog.Manager, sm *dog.SessionManager) {
 	}
 
 	for _, dg := range dogs {
-		if dg.State != dog.StateWorking {
+		if dg.State != helper.StateWorking {
 			continue
 		}
 
@@ -115,7 +115,7 @@ func (d *Daemon) cleanupStuckDogs(mgr *dog.Manager, sm *dog.SessionManager) {
 // staleWorkingTimeout. These dogs have live tmux sessions sitting idle at a
 // prompt — neither cleanupStuckDogs (needs dead session) nor reapIdleDogs
 // (needs state=idle) will catch them.
-func (d *Daemon) detectStaleWorkingDogs(mgr *dog.Manager, sm *dog.SessionManager, daemonCfg *config.DaemonThresholds) {
+func (d *Daemon) detectStaleWorkingDogs(mgr *helper.Manager, sm *helper.SessionManager, daemonCfg *config.DaemonThresholds) {
 	dogs, err := mgr.List()
 	if err != nil {
 		d.logger.Printf("Handler: failed to list dogs for stale-working check: %v", err)
@@ -125,7 +125,7 @@ func (d *Daemon) detectStaleWorkingDogs(mgr *dog.Manager, sm *dog.SessionManager
 	threshold := daemonCfg.StaleWorkingTimeoutD()
 	now := time.Now()
 	for _, dg := range dogs {
-		if dg.State != dog.StateWorking {
+		if dg.State != helper.StateWorking {
 			continue
 		}
 
@@ -158,7 +158,7 @@ func (d *Daemon) detectStaleWorkingDogs(mgr *dog.Manager, sm *dog.SessionManager
 
 // reapIdleDogs kills tmux sessions for dogs that have been idle too long, and
 // removes long-idle dogs from the kennel when the pool is oversized.
-func (d *Daemon) reapIdleDogs(mgr *dog.Manager, sm *dog.SessionManager, daemonCfg *config.DaemonThresholds) {
+func (d *Daemon) reapIdleDogs(mgr *helper.Manager, sm *helper.SessionManager, daemonCfg *config.DaemonThresholds) {
 	dogs, err := mgr.List()
 	if err != nil {
 		d.logger.Printf("Handler: failed to list dogs for reaping: %v", err)
@@ -173,7 +173,7 @@ func (d *Daemon) reapIdleDogs(mgr *dog.Manager, sm *dog.SessionManager, daemonCf
 	poolSize := len(dogs)
 
 	for _, dg := range dogs {
-		if dg.State != dog.StateIdle {
+		if dg.State != helper.StateIdle {
 			continue
 		}
 
@@ -216,7 +216,7 @@ func (d *Daemon) reapIdleDogs(mgr *dog.Manager, sm *dog.SessionManager, daemonCf
 
 // dispatchPlugins scans for plugins, evaluates cooldown gates, and dispatches
 // eligible plugins to idle dogs.
-func (d *Daemon) dispatchPlugins(mgr *dog.Manager, sm *dog.SessionManager, rigsConfig *config.RigsConfig) {
+func (d *Daemon) dispatchPlugins(mgr *helper.Manager, sm *helper.SessionManager, rigsConfig *config.RigsConfig) {
 	// Get rig names for scanner
 	var rigNames []string
 	if rigsConfig != nil {
@@ -302,7 +302,7 @@ func (d *Daemon) dispatchPlugins(mgr *dog.Manager, sm *dog.SessionManager, rigsC
 			continue
 		}
 
-		if err := sm.Start(idleDog.Name, dog.SessionStartOptions{
+		if err := sm.Start(idleDog.Name, helper.SessionStartOptions{
 			WorkDesc: workDesc,
 		}); err != nil {
 			d.logger.Printf("Handler: failed to start session for dog %s: %v", idleDog.Name, err)
@@ -341,14 +341,14 @@ func (d *Daemon) dispatchPlugins(mgr *dog.Manager, sm *dog.SessionManager, rigsC
 //
 // IsRunning errors are logged and treated as "not dispatchable" so a flaky
 // tmux check can't wedge the whole dispatch cycle.
-func findDispatchableDog(mgr *dog.Manager, sm *dog.SessionManager, logger *log.Logger) *dog.Dog {
+func findDispatchableDog(mgr *helper.Manager, sm *helper.SessionManager, logger *log.Logger) *helper.Dog {
 	dogs, err := mgr.List()
 	if err != nil {
 		logger.Printf("Handler: failed to list dogs while picking dispatch target: %v", err)
 		return nil
 	}
 	for _, d := range dogs {
-		if d.State != dog.StateIdle {
+		if d.State != helper.StateIdle {
 			continue
 		}
 		running, err := sm.IsRunning(d.Name)

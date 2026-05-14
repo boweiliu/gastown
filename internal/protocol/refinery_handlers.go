@@ -56,7 +56,7 @@ func (h *DefaultRefineryHandler) HandleMergeReady(payload *MergeReadyPayload) er
 	_, _ = fmt.Fprintf(h.Output, "  Verified: %s\n", payload.Verified)
 
 	// Belt-and-suspenders: check if this is from an owned+direct convoy.
-	// The Verified field may contain "owned+direct" marker from witness.
+	// The Verified field may contain "owned+direct" marker from watcher.
 	if payload.Verified == "owned+direct: skip merge" {
 		_, _ = fmt.Fprintf(h.Output, "[Refinery] ⚠ Owned+direct convoy — skipping merge (belt-and-suspenders)\n")
 		return nil

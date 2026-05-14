@@ -173,7 +173,7 @@ type Target struct {
 	Path     string // Full path to .claude/settings.json or .gemini/settings.json
 	Key      string // Override key: "gastown/crew", "mayor", etc.
 	Rig      string // Rig name or empty for town-level
-	Role     string // Informational only — does NOT participate in override resolution (Key does). Singular form matching RoleSettingsDir: crew, witness, refinery, polecat, mayor, deacon.
+	Role     string // Informational only — does NOT participate in override resolution (Key does). Singular form matching RoleSettingsDir: crew, witness, refinery, polecat, mayor, supervisor.
 	Provider string // Hook provider: "claude" (default/empty) or "gemini", etc.
 }
 

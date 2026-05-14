@@ -56,8 +56,8 @@ scope = "rig"
 [session]
 start_command = "exec echo custom-town-command"
 `
-	if err := os.WriteFile(filepath.Join(rolesDir, "witness.toml"), []byte(witnessOverride), 0644); err != nil {
-		t.Fatalf("write witness.toml: %v", err)
+	if err := os.WriteFile(filepath.Join(rolesDir, "watcher.toml"), []byte(witnessOverride), 0644); err != nil {
+		t.Fatalf("write watcher.toml: %v", err)
 	}
 
 	d := &Daemon{
@@ -103,8 +103,8 @@ scope = "rig"
 [session]
 start_command = "exec echo town-command"
 `
-	if err := os.WriteFile(filepath.Join(townRolesDir, "witness.toml"), []byte(townOverride), 0644); err != nil {
-		t.Fatalf("write town witness.toml: %v", err)
+	if err := os.WriteFile(filepath.Join(townRolesDir, "watcher.toml"), []byte(townOverride), 0644); err != nil {
+		t.Fatalf("write town watcher.toml: %v", err)
 	}
 
 	// Create rig-level override (should take precedence)
@@ -119,8 +119,8 @@ scope = "rig"
 [session]
 start_command = "exec echo rig-command"
 `
-	if err := os.WriteFile(filepath.Join(rigRolesDir, "witness.toml"), []byte(rigOverride), 0644); err != nil {
-		t.Fatalf("write rig witness.toml: %v", err)
+	if err := os.WriteFile(filepath.Join(rigRolesDir, "watcher.toml"), []byte(rigOverride), 0644); err != nil {
+		t.Fatalf("write rig watcher.toml: %v", err)
 	}
 
 	d := &Daemon{

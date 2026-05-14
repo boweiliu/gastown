@@ -75,7 +75,7 @@ type TownSettings struct {
 	CrewAgents map[string]string `json:"crew_agents,omitempty"`
 
 	// AgentEmailDomain is the domain used for agent git identity emails.
-	// Agent addresses like "gastown/crew/jack" become "gastown.crew.jack@{domain}".
+	// Agent addresses like "gastown/crew/jack" become "gastown.team.jack@{domain}".
 	// Default: "gastown.local"
 	AgentEmailDomain string `json:"agent_email_domain,omitempty"`
 

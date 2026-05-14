@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/git"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
 )
@@ -117,7 +117,7 @@ var mqRetryCmd = &cobra.Command{
 	Short: "Retry a failed merge request",
 	Long: `Retry a failed merge request.
 
-Resets a failed MR so it can be processed again by the refinery.
+Resets a failed MR so it can be processed again by the merger.
 The MR must be in a failed state (open with an error).
 
 Examples:
@@ -423,7 +423,7 @@ func runMQRetry(cmd *cobra.Command, args []string) error {
 	// Get the MR first to show info
 	mr, err := mgr.GetMR(mrID)
 	if err != nil {
-		if err == refinery.ErrMRNotFound {
+		if err == merger.ErrMRNotFound {
 			return fmt.Errorf("merge request '%s' not found in rig '%s'", mrID, rigName)
 		}
 		return fmt.Errorf("getting merge request: %w", err)
@@ -439,7 +439,7 @@ func runMQRetry(cmd *cobra.Command, args []string) error {
 
 	// Perform the retry
 	if err := mgr.Retry(mrID, mqRetryNow); err != nil {
-		if err == refinery.ErrMRNotFailed {
+		if err == merger.ErrMRNotFailed {
 			return fmt.Errorf("merge request '%s' has not failed (status: %s)", mrID, mr.Status)
 		}
 		return fmt.Errorf("retrying merge request: %w", err)

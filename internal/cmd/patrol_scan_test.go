@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 )
 
 func TestPatrolScanOutputJSON(t *testing.T) {
@@ -25,15 +25,15 @@ func TestPatrolScanOutputJSON(t *testing.T) {
 				},
 			},
 		},
-		Receipts: []witness.PatrolReceipt{
+		Receipts: []watcher.PatrolReceipt{
 			{
 				Rig:               "gastown",
 				Polecat:           "alpha",
-				Verdict:           witness.PatrolVerdictStale,
+				Verdict:           watcher.PatrolVerdictStale,
 				RecommendedAction: "restarted",
-				Evidence: witness.PatrolReceiptEvidence{
+				Evidence: watcher.PatrolReceiptEvidence{
 					AgentState:     "working",
-					Classification: witness.ZombieSessionDeadActive,
+					Classification: watcher.ZombieSessionDeadActive,
 					HookBead:       "gas-abc",
 				},
 			},
@@ -75,14 +75,14 @@ func TestPatrolScanOutputJSON(t *testing.T) {
 	if len(parsed.Receipts) != 1 {
 		t.Fatalf("len(Receipts) = %d, want 1", len(parsed.Receipts))
 	}
-	if parsed.Receipts[0].Verdict != witness.PatrolVerdictStale {
-		t.Errorf("receipt Verdict = %q, want %q", parsed.Receipts[0].Verdict, witness.PatrolVerdictStale)
+	if parsed.Receipts[0].Verdict != watcher.PatrolVerdictStale {
+		t.Errorf("receipt Verdict = %q, want %q", parsed.Receipts[0].Verdict, watcher.PatrolVerdictStale)
 	}
 }
 
 func TestCountActiveWorkZombies(t *testing.T) {
-	result := &witness.DetectZombiePolecatsResult{
-		Zombies: []witness.ZombieResult{
+	result := &watcher.DetectZombiePolecatsResult{
+		Zombies: []watcher.ZombieResult{
 			{PolecatName: "alpha", WasActive: true},
 			{PolecatName: "beta", WasActive: false},
 			{PolecatName: "gamma", WasActive: true},
@@ -96,7 +96,7 @@ func TestCountActiveWorkZombies(t *testing.T) {
 }
 
 func TestCountActiveWorkZombies_Empty(t *testing.T) {
-	result := &witness.DetectZombiePolecatsResult{}
+	result := &watcher.DetectZombiePolecatsResult{}
 	got := countActiveWorkZombies(result)
 	if got != 0 {
 		t.Errorf("countActiveWorkZombies() = %d, want 0", got)

@@ -12,7 +12,7 @@ import (
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 var rigConfigCmd = &cobra.Command{
@@ -165,7 +165,7 @@ func runRigConfigSet(cmd *cobra.Command, args []string) error {
 
 	if rigConfigSetBlock {
 		// Block inheritance via wisp layer
-		wispCfg := wisp.NewConfig(townRoot, r.Name)
+		wispCfg := ephemeral.NewConfig(townRoot, r.Name)
 		if err := wispCfg.Block(key); err != nil {
 			return fmt.Errorf("blocking %s: %w", key, err)
 		}
@@ -183,7 +183,7 @@ func runRigConfigSet(cmd *cobra.Command, args []string) error {
 		fmt.Printf("%s Set %s=%s in bead layer for rig %s\n", style.Success.Render("✓"), key, value, rigName)
 	} else {
 		// Set in wisp layer
-		wispCfg := wisp.NewConfig(townRoot, r.Name)
+		wispCfg := ephemeral.NewConfig(townRoot, r.Name)
 		// Try to parse as appropriate type
 		var typedValue interface{} = value
 		if b, err := strconv.ParseBool(value); err == nil {
@@ -210,7 +210,7 @@ func runRigConfigUnset(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	wispCfg := wisp.NewConfig(townRoot, r.Name)
+	wispCfg := ephemeral.NewConfig(townRoot, r.Name)
 	if err := wispCfg.Unset(key); err != nil {
 		return fmt.Errorf("unsetting %s: %w", key, err)
 	}
@@ -229,7 +229,7 @@ func getConfigKeys(townRoot string, r *rig.Rig) []string {
 	}
 
 	// Wisp keys
-	wispCfg := wisp.NewConfig(townRoot, r.Name)
+	wispCfg := ephemeral.NewConfig(townRoot, r.Name)
 	for _, k := range wispCfg.Keys() {
 		keySet[k] = true
 	}

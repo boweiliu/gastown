@@ -13,7 +13,7 @@ func TestIdentityToEmail(t *testing.T) {
 			name:     "crew member",
 			identity: "gastown/crew/jack",
 			domain:   "gastown.local",
-			want:     "gastown.crew.jack@gastown.local",
+			want:     "gastown.team.jack@gastown.local",
 		},
 		{
 			name:     "polecat",
@@ -49,7 +49,7 @@ func TestIdentityToEmail(t *testing.T) {
 			name:     "custom domain",
 			identity: "myrig/crew/alice",
 			domain:   "example.com",
-			want:     "myrig.crew.alice@example.com",
+			want:     "myrig.team.alice@example.com",
 		},
 		{
 			name:     "deeply nested",

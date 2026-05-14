@@ -11,7 +11,7 @@ import (
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/townlog"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -388,13 +388,13 @@ func handleMergeRejected(townRoot string, msg *mail.Message, dryRun bool) (strin
 // Assesses category and severity to determine priority and routing.
 func handleHelp(townRoot string, msg *mail.Message, dryRun bool) (string, error) {
 	// Parse the help payload for structured assessment
-	payload, err := witness.ParseHelp(msg.Subject, msg.Body)
+	payload, err := watcher.ParseHelp(msg.Subject, msg.Body)
 	if err != nil {
 		return "", fmt.Errorf("could not parse help request: %w", err)
 	}
 
 	// Assess category and severity from content
-	assessment := witness.AssessHelp(payload)
+	assessment := watcher.AssessHelp(payload)
 
 	if dryRun {
 		return fmt.Sprintf("would forward help request to overseer: %s [%s/%s]",
@@ -404,9 +404,9 @@ func handleHelp(townRoot string, msg *mail.Message, dryRun bool) (string, error)
 	// Map assessed severity to mail priority
 	var priority mail.Priority
 	switch assessment.Severity {
-	case witness.HelpSeverityCritical:
+	case watcher.HelpSeverityCritical:
 		priority = mail.PriorityUrgent
-	case witness.HelpSeverityHigh:
+	case watcher.HelpSeverityHigh:
 		priority = mail.PriorityHigh
 	default:
 		priority = mail.PriorityNormal

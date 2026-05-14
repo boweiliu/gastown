@@ -1827,7 +1827,7 @@ func updateAgentStateOnDone(cwd, townRoot, exitType, issueID string) {
 
 			// BUG FIX: Close attached molecule (wisp) BEFORE closing hooked bead.
 			// When using formula-on-bead (gt sling formula --on bead), the base bead
-			// has attached_molecule pointing to the wisp. Without this fix, gt done
+			// has attached_molecule pointing to the ephemeral. Without this fix, gt done
 			// only closed the hooked bead, leaving the wisp orphaned.
 			// Order matters: wisp closes -> unblocks base bead -> base bead closes.
 			attachment := beads.ParseAttachmentFields(hookedBead)

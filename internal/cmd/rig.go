@@ -16,20 +16,20 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/deps"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/hooks"
 	"github.com/steveyegge/gastown/internal/worker"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/suggest"
 	"github.com/steveyegge/gastown/internal/tmux"
-	"github.com/steveyegge/gastown/internal/wisp"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/ephemeral"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 	"golang.org/x/term"
 )
@@ -1621,9 +1621,9 @@ func runRigBoot(cmd *cobra.Command, args []string) error {
 	// 1. Start the witness
 	// Start() treats healthy sessions as already running and recreates zombie
 	// sessions whose tmux pane remains after the agent exits.
-	witMgr := witness.NewManager(r)
+	witMgr := watcher.NewManager(r)
 	if err := witMgr.Start(false, "", nil); err != nil {
-		if err == witness.ErrAlreadyRunning {
+		if err == watcher.ErrAlreadyRunning {
 			skipped = append(skipped, "witness (already running)")
 		} else {
 			return fmt.Errorf("starting witness: %w", err)
@@ -1633,9 +1633,9 @@ func runRigBoot(cmd *cobra.Command, args []string) error {
 	}
 
 	// 2. Start the refinery
-	refMgr := refinery.NewManager(r)
+	refMgr := merger.NewManager(r)
 	if err := refMgr.Start(false, ""); err != nil { // false = background mode
-		if err == refinery.ErrAlreadyRunning {
+		if err == merger.ErrAlreadyRunning {
 			skipped = append(skipped, "refinery (already running)")
 		} else {
 			return fmt.Errorf("starting refinery: %w", err)
@@ -1699,9 +1699,9 @@ func runRigStart(cmd *cobra.Command, args []string) error {
 		// 1. Start the witness
 		// Start() treats healthy sessions as already running and recreates zombie
 		// sessions whose tmux pane remains after the agent exits.
-		witMgr := witness.NewManager(r)
+		witMgr := watcher.NewManager(r)
 		if err := witMgr.Start(false, "", nil); err != nil {
-			if err == witness.ErrAlreadyRunning {
+			if err == watcher.ErrAlreadyRunning {
 				skipped = append(skipped, "witness")
 			} else {
 				fmt.Printf("  %s Failed to start witness: %v\n", style.Warning.Render("⚠"), err)
@@ -1712,9 +1712,9 @@ func runRigStart(cmd *cobra.Command, args []string) error {
 		}
 
 		// 2. Start the refinery
-		refMgr := refinery.NewManager(r)
+		refMgr := merger.NewManager(r)
 		if err := refMgr.Start(false, ""); err != nil {
-			if err == refinery.ErrAlreadyRunning {
+			if err == merger.ErrAlreadyRunning {
 				skipped = append(skipped, "refinery")
 			} else {
 				fmt.Printf("  %s Failed to start refinery: %v\n", style.Warning.Render("⚠"), err)
@@ -1796,18 +1796,18 @@ func runRigShutdown(cmd *cobra.Command, args []string) error {
 	}
 
 	// 2. Stop the refinery
-	refMgr := refinery.NewManager(r)
+	refMgr := merger.NewManager(r)
 	if running, _ := refMgr.IsRunning(); running {
-		fmt.Printf("  Stopping refinery...\n")
+		fmt.Printf("  Stopping merger...\n")
 		if err := refMgr.Stop(); err != nil {
 			errors = append(errors, fmt.Sprintf("refinery: %v", err))
 		}
 	}
 
 	// 3. Stop the witness
-	witMgr := witness.NewManager(r)
+	witMgr := watcher.NewManager(r)
 	if running, _ := witMgr.IsRunning(); running {
-		fmt.Printf("  Stopping witness...\n")
+		fmt.Printf("  Stopping watcher...\n")
 		if err := witMgr.Stop(); err != nil {
 			errors = append(errors, fmt.Sprintf("witness: %v", err))
 		}
@@ -1901,7 +1901,7 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 	var dataWg sync.WaitGroup
 
 	// Witness status
-	witMgr := witness.NewManager(r)
+	witMgr := watcher.NewManager(r)
 	var witnessRunning bool
 	dataWg.Add(1)
 	go func() {
@@ -1910,9 +1910,9 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 	}()
 
 	// Refinery status + queue
-	refMgr := refinery.NewManager(r)
+	refMgr := merger.NewManager(r)
 	var refineryRunning bool
-	var refineryQueue []refinery.QueueItem
+	var refineryQueue []merger.QueueItem
 	dataWg.Add(1)
 	go func() {
 		defer dataWg.Done()
@@ -1934,8 +1934,8 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 	}()
 
 	// Crew list
-	crewMgr := crew.NewManager(r, git.NewGit(townRoot))
-	var crewWorkers []*crew.CrewWorker
+	crewMgr := team.NewManager(r, git.NewGit(townRoot))
+	var crewWorkers []*team.CrewWorker
 	var crewErr error
 	dataWg.Add(1)
 	go func() {
@@ -1981,7 +1981,7 @@ func runRigStatus(cmd *cobra.Command, args []string) error {
 		for i, w := range crewWorkers {
 			cInfos[i] = crewInfo{name: w.Name}
 			sessionWg.Add(1)
-			go func(idx int, w *crew.CrewWorker) {
+			go func(idx int, w *team.CrewWorker) {
 				defer sessionWg.Done()
 				sessionName := crewSessionName(rigName, w.Name)
 				cInfos[idx].hasSession = isAgentSessionHealthy(t, sessionName)
@@ -2132,18 +2132,18 @@ func runRigStop(cmd *cobra.Command, args []string) error {
 		}
 
 		// 2. Stop the refinery
-		refMgr := refinery.NewManager(r)
+		refMgr := merger.NewManager(r)
 		if running, _ := refMgr.IsRunning(); running {
-			fmt.Printf("  Stopping refinery...\n")
+			fmt.Printf("  Stopping merger...\n")
 			if err := refMgr.Stop(); err != nil {
 				errors = append(errors, fmt.Sprintf("refinery: %v", err))
 			}
 		}
 
 		// 3. Stop the witness
-		witMgr := witness.NewManager(r)
+		witMgr := watcher.NewManager(r)
 		if running, _ := witMgr.IsRunning(); running {
-			fmt.Printf("  Stopping witness...\n")
+			fmt.Printf("  Stopping watcher...\n")
 			if err := witMgr.Stop(); err != nil {
 				errors = append(errors, fmt.Sprintf("witness: %v", err))
 			}
@@ -2234,18 +2234,18 @@ func runRigRestart(cmd *cobra.Command, args []string) error {
 		}
 
 		// 2. Stop the refinery
-		refMgr := refinery.NewManager(r)
+		refMgr := merger.NewManager(r)
 		if running, _ := refMgr.IsRunning(); running {
-			fmt.Printf("    Stopping refinery...\n")
+			fmt.Printf("    Stopping merger...\n")
 			if err := refMgr.Stop(); err != nil {
 				stopErrors = append(stopErrors, fmt.Sprintf("refinery: %v", err))
 			}
 		}
 
 		// 3. Stop the witness
-		witMgr := witness.NewManager(r)
+		witMgr := watcher.NewManager(r)
 		if running, _ := witMgr.IsRunning(); running {
-			fmt.Printf("    Stopping witness...\n")
+			fmt.Printf("    Stopping watcher...\n")
 			if err := witMgr.Stop(); err != nil {
 				stopErrors = append(stopErrors, fmt.Sprintf("witness: %v", err))
 			}
@@ -2270,7 +2270,7 @@ func runRigRestart(cmd *cobra.Command, args []string) error {
 		// Start() treats healthy sessions as already running and recreates zombie
 		// sessions whose tmux pane remains after the agent exits.
 		if err := witMgr.Start(false, "", nil); err != nil {
-			if err == witness.ErrAlreadyRunning {
+			if err == watcher.ErrAlreadyRunning {
 				skipped = append(skipped, "witness")
 			} else {
 				fmt.Printf("    %s Failed to start witness: %v\n", style.Warning.Render("⚠"), err)
@@ -2282,7 +2282,7 @@ func runRigRestart(cmd *cobra.Command, args []string) error {
 
 		// 2. Start the refinery
 		if err := refMgr.Start(false, ""); err != nil {
-			if err == refinery.ErrAlreadyRunning {
+			if err == merger.ErrAlreadyRunning {
 				skipped = append(skipped, "refinery")
 			} else {
 				fmt.Printf("    %s Failed to start refinery: %v\n", style.Warning.Render("⚠"), err)
@@ -2334,7 +2334,7 @@ func runRigRestart(cmd *cobra.Command, args []string) error {
 // Returns state ("OPERATIONAL", "PARKED", or "DOCKED") and source ("local", "global - synced", or "default").
 func getRigOperationalState(townRoot, rigName string) (state string, source string) {
 	// Check wisp layer first (local/ephemeral overrides)
-	wispConfig := wisp.NewConfig(townRoot, rigName)
+	wispConfig := ephemeral.NewConfig(townRoot, rigName)
 	if status := wispConfig.GetString("status"); status != "" {
 		switch strings.ToLower(status) {
 		case "parked":

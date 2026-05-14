@@ -308,7 +308,7 @@ func TestCheckPolecatHealth_NotifiesWitnessOnCrash(t *testing.T) {
 // even if its hook_bead is still open. This is the race-window regression test for
 // bug #2795 part 2: between gt done setting agent_state=done and the hook_bead
 // being closed, the daemon heartbeat fires on the dead session + open hook_bead
-// combination, causing repeated false CRASHED_POLECAT alerts to the witness.
+// combination, causing repeated false CRASHED_POLECAT alerts to the watcher.
 func TestCheckPolecatHealth_SkipsDonePolecat(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test uses Unix shell script mocks for tmux and bd")

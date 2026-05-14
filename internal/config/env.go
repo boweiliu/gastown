@@ -131,7 +131,7 @@ func AgentEnv(cfg AgentEnvConfig) map[string]string {
 
 	case "dog":
 		// Dogs are town-level workers with role_agents key "dog".
-		// GT_ROLE must be set so startup command resolution can honor role_agents.dog.
+		// GT_ROLE must be set so startup command resolution can honor role_agents.helper.
 		env["GT_ROLE"] = "dog"
 		if cfg.AgentName != "" {
 			env["GT_DOG_NAME"] = cfg.AgentName

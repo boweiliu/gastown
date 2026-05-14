@@ -312,7 +312,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create boot directory (deacon/dogs/boot/) for Boot watchdog.
+	// Create boot directory (deacon/dogs/boot/) for Boot watchhelper.
 	// This avoids gt doctor warning on fresh install.
 	bootDir := filepath.Join(deaconDir, "dogs", "boot")
 	if err := os.MkdirAll(bootDir, 0755); err != nil {

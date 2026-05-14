@@ -81,7 +81,7 @@ func TestNudgeRefinerySessionName(t *testing.T) {
 }
 
 // TestWakeRigAgentsDoesNotNudgeRefinery verifies that wakeRigAgents only
-// nudges the witness, not the refinery. The refinery should only be nudged
+// nudges the witness, not the merger. The refinery should only be nudged
 // when an MR is actually created (via nudgeRefinery), not at polecat dispatch time.
 func TestWakeRigAgentsDoesNotNudgeRefinery(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "nudge.log")

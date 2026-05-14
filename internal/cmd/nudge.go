@@ -76,7 +76,7 @@ var nudgeCmd = &cobra.Command{
 	Long: `Universal messaging API for Gas Town worker-to-worker communication.
 
 Delivers a message to any worker's Claude Code session: polecats, crew,
-witness, refinery, mayor, or deacon.
+witness, refinery, mayor, or supervisor.
 
 Delivery modes (--mode):
   wait-idle  Wait for agent to become idle (prompt visible), then deliver
@@ -375,7 +375,7 @@ func runNudge(cmd *cobra.Command, args []string) (retErr error) {
 	}
 
 	// --if-fresh: skip nudge if the caller's tmux session is older than 60s.
-	// This prevents compaction/clear SessionStart hooks from spamming the deacon.
+	// This prevents compaction/clear SessionStart hooks from spamming the supervisor.
 	if nudgeIfFreshFlag {
 		sessionName := tmux.CurrentSessionName()
 		if sessionName != "" {
@@ -734,7 +734,7 @@ func runNudgeChannel(channelName, message, sender string) error {
 //   - Role: "*/witness" → all witness sessions
 //   - Special: "mayor", "deacon" → gt-{town}-mayor, gt-{town}-deacon
 //
-// townName is used to generate the correct session names for mayor/deacon.
+// townName is used to generate the correct session names for mayor/supervisor.
 func resolveNudgePattern(pattern string, agents []*AgentSession) []string {
 	var results []string
 

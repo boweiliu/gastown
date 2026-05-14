@@ -204,7 +204,7 @@ func runSlingFormula(ctx context.Context, args []string) error {
 	telemetry.RecordMolCook(ctx, formulaName, nil)
 
 	// Step 2: Create wisp instance (ephemeral)
-	fmt.Printf("  Creating wisp...\n")
+	fmt.Printf("  Creating ephemeral...\n")
 	wispArgs := []string{"mol", "wisp", formulaName}
 	for _, v := range slingVars {
 		wispArgs = append(wispArgs, "--var", v)

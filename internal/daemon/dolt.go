@@ -742,7 +742,7 @@ func sendDoltAlertMail(townRoot, recipient, subject, body string, logger func(fo
 }
 
 // sendDoltAlertToWitnesses sends a Dolt alert to all rig witnesses.
-// Discovers rigs from mayor/rigs.json and sends to each <rig>/witness.
+// Discovers rigs from mayor/rigs.json and sends to each <rig>/watcher.
 func sendDoltAlertToWitnesses(townRoot, subject, body string, logger func(format string, v ...interface{})) {
 	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
 	data, err := os.ReadFile(rigsPath)

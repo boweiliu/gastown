@@ -92,7 +92,7 @@ var roleListCmd = &cobra.Command{
 	Short: "List all known roles",
 	Long: `List all known Gas Town agent roles and their descriptions.
 
-Roles include mayor, deacon, witness, refinery, polecat, and crew.
+Roles include mayor, deacon, witness, refinery, polecat, and team.
 Each role has a specific scope and responsibilities within the
 Gas Town multi-agent architecture.`,
 	RunE: runRoleList,

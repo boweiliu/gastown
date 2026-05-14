@@ -736,7 +736,7 @@ func TestInstantiateFormulaOnBead_FallbackCleansUpOrphanedWisp(t *testing.T) {
 	logPath := filepath.Join(townRoot, "bd.log")
 
 	// Legacy path: mol wisp succeeds, mol bond <wisp-id> fails.
-	// After fallback succeeds, a close command should be issued for the orphaned wisp.
+	// After fallback succeeds, a close command should be issued for the orphaned ephemeral.
 	bdScript := `#!/bin/sh
 set -e
 echo "CMD:$*" >> "${BD_LOG}"

@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -66,7 +66,7 @@ type PatrolScanOutput struct {
 	Zombies     *PatrolScanZombieOutput   `json:"zombies"`
 	Stalls      *PatrolScanStallOutput    `json:"stalls,omitempty"`
 	Completions *PatrolScanCompleteOutput `json:"completions,omitempty"`
-	Receipts    []witness.PatrolReceipt   `json:"receipts,omitempty"`
+	Receipts    []watcher.PatrolReceipt   `json:"receipts,omitempty"`
 }
 
 // PatrolScanZombieOutput holds zombie detection results.
@@ -142,7 +142,7 @@ func runPatrolScan(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	bd := witness.DefaultBdCli()
+	bd := watcher.DefaultBdCli()
 	router := mail.NewRouter(townRoot)
 	workDir := townRoot
 
@@ -152,12 +152,12 @@ func runPatrolScan(cmd *cobra.Command, args []string) error {
 	// Note: DetectZombiePolecats takes a router param but does NOT send mail
 	// internally — it only uses the router for workspace context. Notifications
 	// are sent exclusively below via --notify, avoiding double-send.
-	zombieResult := witness.DetectZombiePolecats(bd, workDir, rigName, router)
-	stallResult := witness.DetectStalledPolecats(workDir, rigName)
-	completionResult := witness.DiscoverCompletions(bd, workDir, rigName, router)
+	zombieResult := watcher.DetectZombiePolecats(bd, workDir, rigName, router)
+	stallResult := watcher.DetectStalledPolecats(workDir, rigName)
+	completionResult := watcher.DiscoverCompletions(bd, workDir, rigName, router)
 
 	// Build patrol receipts for zombies
-	receipts := witness.BuildPatrolReceipts(rigName, zombieResult)
+	receipts := watcher.BuildPatrolReceipts(rigName, zombieResult)
 
 	// Notify when zombies with active work are detected.
 	// Always notify the mayor for active-work zombies (dead polecats with hooked
@@ -177,7 +177,7 @@ func runPatrolScan(cmd *cobra.Command, args []string) error {
 	return outputPatrolScanHuman(rigName, zombieResult, stallResult, completionResult, receipts)
 }
 
-func countActiveWorkZombies(result *witness.DetectZombiePolecatsResult) int {
+func countActiveWorkZombies(result *watcher.DetectZombiePolecatsResult) int {
 	count := 0
 	for _, z := range result.Zombies {
 		if z.WasActive {
@@ -187,7 +187,7 @@ func countActiveWorkZombies(result *witness.DetectZombiePolecatsResult) int {
 	return count
 }
 
-func sendZombieNotification(router *mail.Router, rigName string, result *witness.DetectZombiePolecatsResult, activeCount int) {
+func sendZombieNotification(router *mail.Router, rigName string, result *watcher.DetectZombiePolecatsResult, activeCount int) {
 	var lines []string
 	lines = append(lines, fmt.Sprintf("Patrol scan detected %d zombie(s) with active work in rig %s:", activeCount, rigName))
 	lines = append(lines, "")
@@ -229,7 +229,7 @@ func sendZombieNotification(router *mail.Router, rigName string, result *witness
 	_ = router.Send(mayorMsg)
 }
 
-func outputPatrolScanJSON(rigName, timestamp string, zombieResult *witness.DetectZombiePolecatsResult, stallResult *witness.DetectStalledPolecatsResult, completionResult *witness.DiscoverCompletionsResult, receipts []witness.PatrolReceipt) error {
+func outputPatrolScanJSON(rigName, timestamp string, zombieResult *watcher.DetectZombiePolecatsResult, stallResult *watcher.DetectStalledPolecatsResult, completionResult *watcher.DiscoverCompletionsResult, receipts []watcher.PatrolReceipt) error {
 	output := PatrolScanOutput{
 		Rig:       rigName,
 		Timestamp: timestamp,
@@ -310,7 +310,7 @@ func outputPatrolScanJSON(rigName, timestamp string, zombieResult *witness.Detec
 	return enc.Encode(output)
 }
 
-func outputPatrolScanHuman(rigName string, zombieResult *witness.DetectZombiePolecatsResult, stallResult *witness.DetectStalledPolecatsResult, completionResult *witness.DiscoverCompletionsResult, _ []witness.PatrolReceipt) error {
+func outputPatrolScanHuman(rigName string, zombieResult *watcher.DetectZombiePolecatsResult, stallResult *watcher.DetectStalledPolecatsResult, completionResult *watcher.DiscoverCompletionsResult, _ []watcher.PatrolReceipt) error {
 	fmt.Printf("%s Patrol scan: %s\n\n", style.Bold.Render("🔍"), rigName)
 
 	// Zombies

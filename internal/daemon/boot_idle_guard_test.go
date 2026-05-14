@@ -13,7 +13,7 @@ import (
 	"time"
 
 	beadsdk "github.com/steveyegge/beads"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/tmux"
 )
 
@@ -42,8 +42,8 @@ func (s *searchStorage) SearchIssues(_ context.Context, _ string, filter beadsdk
 func writeDeaconHeartbeat(t *testing.T, townRoot string, age time.Duration) {
 	t.Helper()
 	ts := time.Now().Add(-age)
-	hb := &deacon.Heartbeat{Timestamp: ts}
-	if err := deacon.WriteHeartbeat(townRoot, hb); err != nil {
+	hb := &supervisor.Heartbeat{Timestamp: ts}
+	if err := supervisor.WriteHeartbeat(townRoot, hb); err != nil {
 		t.Fatalf("writeDeaconHeartbeat: %v", err)
 	}
 }

@@ -16,7 +16,7 @@ var heartbeatCmd = &cobra.Command{
 	Short:   "Update agent heartbeat state",
 	Long: `Update the agent heartbeat with a specific state.
 
-Used by agents to self-report their state to the witness. The witness reads
+Used by agents to self-report their state to the watcher. The witness reads
 the heartbeat state instead of inferring it from timers (ZFC: gt-3vr5).
 
 States:

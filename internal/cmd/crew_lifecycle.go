@@ -14,7 +14,7 @@ import (
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/runtime"
 	"github.com/steveyegge/gastown/internal/style"
@@ -102,9 +102,9 @@ func runCrewRemove(cmd *cobra.Command, args []string) error {
 		} else {
 			// For regular clones, use the crew manager
 			if err := crewMgr.Remove(name, forceRemove); err != nil {
-				if err == crew.ErrCrewNotFound {
+				if err == team.ErrCrewNotFound {
 					fmt.Printf("Error removing %s: crew workspace not found\n", arg)
-				} else if err == crew.ErrHasChanges {
+				} else if err == team.ErrHasChanges {
 					fmt.Printf("Error removing %s: uncommitted changes (use --force)\n", arg)
 				} else {
 					fmt.Printf("Error removing %s: %v\n", arg, err)
@@ -205,7 +205,7 @@ func runCrewRefresh(cmd *cobra.Command, args []string) error {
 	// Get the crew worker (must exist for refresh)
 	worker, err := crewMgr.Get(name)
 	if err != nil {
-		if err == crew.ErrCrewNotFound {
+		if err == team.ErrCrewNotFound {
 			return fmt.Errorf("crew workspace '%s' not found", name)
 		}
 		return fmt.Errorf("getting crew worker: %w", err)
@@ -239,7 +239,7 @@ func runCrewRefresh(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Sent handoff mail to %s/%s\n", r.Name, name)
 
 	// Use manager's Start() with refresh options
-	err = crewMgr.Start(name, crew.StartOptions{
+	err = crewMgr.Start(name, team.StartOptions{
 		KillExisting:  true,      // Kill old session if running
 		Topic:         "refresh", // Startup nudge topic
 		Interactive:   true,      // No --dangerously-skip-permissions
@@ -342,7 +342,7 @@ func runCrewStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Build start options (shared across all crew members)
-	opts := crew.StartOptions{
+	opts := team.StartOptions{
 		Account:         crewAccount,
 		ClaudeConfigDir: claudeConfigDir,
 		AgentOverride:   crewAgentOverride,
@@ -366,7 +366,7 @@ func runCrewStart(cmd *cobra.Command, args []string) error {
 		go func(crewName string) {
 			defer wg.Done()
 			err := crewMgr.Start(crewName, opts)
-			skipped := errors.Is(err, crew.ErrSessionRunning)
+			skipped := errors.Is(err, team.ErrSessionRunning)
 			if skipped {
 				err = nil // Not an error, just already running
 			}
@@ -436,7 +436,7 @@ func runCrewRestart(cmd *cobra.Command, args []string) error {
 
 		// Use manager's Start() with restart options
 		// Start() will create workspace if needed (idempotent)
-		err = crewMgr.Start(name, crew.StartOptions{
+		err = crewMgr.Start(name, team.StartOptions{
 			KillExisting:  true,      // Kill old session if running
 			Topic:         "restart", // Startup nudge topic
 			AgentOverride: crewAgentOverride,
@@ -516,7 +516,7 @@ func runCrewRestartAll() error {
 		}
 
 		// Use manager's Start() with restart options
-		err = crewMgr.Start(agent.AgentName, crew.StartOptions{
+		err = crewMgr.Start(agent.AgentName, team.StartOptions{
 			KillExisting:  true,      // Kill old session if running
 			Topic:         "restart", // Startup nudge topic
 			AgentOverride: crewAgentOverride,

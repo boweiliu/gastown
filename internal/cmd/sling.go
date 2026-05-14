@@ -18,7 +18,7 @@ import (
 	"github.com/steveyegge/gastown/internal/nudge"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/telemetry"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -190,7 +190,7 @@ func runSlingRespawnReset(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
-	if err := witness.ResetBeadRespawnCount(townRoot, beadID); err != nil {
+	if err := watcher.ResetBeadRespawnCount(townRoot, beadID); err != nil {
 		return fmt.Errorf("resetting respawn count for %s: %w", beadID, err)
 	}
 	fmt.Printf("Reset respawn counter for %s. It can be slung again.\n", beadID)
@@ -932,14 +932,14 @@ func runSling(cmd *cobra.Command, args []string) (retErr error) {
 		fmt.Printf("%s Formula bonded to %s\n", style.Bold.Render("✓"), beadID)
 
 		// Record attached molecule - will be stored in BASE bead (not wisp).
-		// The base bead is hooked, and its attached_molecule points to the wisp.
+		// The base bead is hooked, and its attached_molecule points to the ephemeral.
 		// This enables:
 		// - gt hook/gt prime: read base bead, follow attached_molecule to show wisp steps
 		// - gt done: close attached_molecule (wisp) first, then close base bead
 		// - Compound resolution: base bead -> attached_molecule -> wisp
 		attachedMoleculeID = result.WispRootID
 
-		// NOTE: We intentionally keep beadID as the ORIGINAL base bead, not the wisp.
+		// NOTE: We intentionally keep beadID as the ORIGINAL base bead, not the ephemeral.
 		// The base bead is hooked so that:
 		// 1. gt done closes both the base bead AND the attached molecule (wisp)
 		// 2. The base bead's attached_molecule field points to the wisp for compound resolution

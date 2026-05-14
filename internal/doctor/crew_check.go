@@ -201,14 +201,14 @@ func (c *CrewStateCheck) findAllCrewDirs(townRoot string) []crewDir {
 			continue
 		}
 
-		for _, crew := range crewEntries {
-			if !crew.IsDir() || strings.HasPrefix(crew.Name(), ".") {
+		for _, cm := range crewEntries {
+			if !cm.IsDir() || strings.HasPrefix(cm.Name(), ".") {
 				continue
 			}
 			dirs = append(dirs, crewDir{
-				path:     filepath.Join(crewPath, crew.Name()),
+				path:     filepath.Join(crewPath, cm.Name()),
 				rigName:  rigName,
-				crewName: crew.Name(),
+				crewName: cm.Name(),
 			})
 		}
 	}
@@ -319,12 +319,12 @@ func (c *CrewWorktreeCheck) findCrewWorktrees(townRoot string) []staleWorktree {
 			continue
 		}
 
-		for _, crew := range crewEntries {
-			if !crew.IsDir() || strings.HasPrefix(crew.Name(), ".") {
+		for _, cm := range crewEntries {
+			if !cm.IsDir() || strings.HasPrefix(cm.Name(), ".") {
 				continue
 			}
 
-			name := crew.Name()
+			name := cm.Name()
 			path := filepath.Join(crewPath, name)
 
 			// Check if it's a worktree (has .git file, not directory)

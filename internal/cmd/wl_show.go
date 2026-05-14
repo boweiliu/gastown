@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -48,7 +48,7 @@ func runWLShow(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fast path: query through the Dolt server if the database is registered.
-	dbName := wasteland.ResolveDBName(townRoot)
+	dbName := archive.ResolveDBName(townRoot)
 	if doltserver.DatabaseExists(townRoot, dbName) {
 		store := doltserver.NewWLCommonsWithDB(townRoot, dbName)
 		return showWanted(store, wantedID, wlShowJSON)
@@ -93,14 +93,14 @@ func runWLShow(cmd *cobra.Command, args []string) error {
 // defer os.RemoveAll(tmpDir) — a temporary clone was created.
 func resolveWLCommonsClone(townRoot, doltPath string) (cloneDir, tmpDir string, err error) {
 	// Try wasteland config (set by gt wl join).
-	if cfg, cfgErr := wasteland.LoadConfig(townRoot); cfgErr == nil && cfg.LocalDir != "" {
+	if cfg, cfgErr := archive.LoadConfig(townRoot); cfgErr == nil && cfg.LocalDir != "" {
 		if _, statErr := os.Stat(filepath.Join(cfg.LocalDir, ".dolt")); statErr == nil {
 			return cfg.LocalDir, "", nil
 		}
 	}
 
 	// Try standard location: .wasteland/hop/wl-commons.
-	stdPath := wasteland.LocalCloneDir(townRoot, "hop", "wl-commons")
+	stdPath := archive.LocalCloneDir(townRoot, "hop", "wl-commons")
 	if _, statErr := os.Stat(filepath.Join(stdPath, ".dolt")); statErr == nil {
 		return stdPath, "", nil
 	}
@@ -113,7 +113,7 @@ func resolveWLCommonsClone(townRoot, doltPath string) (cloneDir, tmpDir string, 
 	// No local clone — do a one-time clone-then-discard, like browse.
 	// Read upstream from config, or default to hop/wl-commons.
 	remote := "hop/wl-commons"
-	if cfg, cfgErr := wasteland.LoadConfig(townRoot); cfgErr == nil && cfg.Upstream != "" {
+	if cfg, cfgErr := archive.LoadConfig(townRoot); cfgErr == nil && cfg.Upstream != "" {
 		remote = cfg.Upstream
 	}
 	fmt.Fprintf(os.Stderr, "No local wl-commons clone found. Cloning temporarily.\nRun 'gt wl sync' to keep a persistent local copy.\n\n")
@@ -142,7 +142,7 @@ func resolveWLCommonsClone(townRoot, doltPath string) (cloneDir, tmpDir string, 
 func autoFetchWLCommons(doltPath, cloneDir, townRoot string) {
 	// Use "upstream" remote if this is a wasteland fork, otherwise "origin".
 	remote := "origin"
-	if cfg, err := wasteland.LoadConfig(townRoot); err == nil && cfg.LocalDir == cloneDir {
+	if cfg, err := archive.LoadConfig(townRoot); err == nil && cfg.LocalDir == cloneDir {
 		remote = "upstream"
 	}
 	fetchCmd := exec.Command(doltPath, "fetch", remote)

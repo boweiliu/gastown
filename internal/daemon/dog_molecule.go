@@ -59,7 +59,7 @@ func (d *Daemon) pourDogMolecule(formulaName string, vars map[string]string) *do
 		return dm
 	}
 
-	// Discover step IDs by listing children of the root wisp.
+	// Discover step IDs by listing children of the root ephemeral.
 	dm.discoverSteps()
 
 	d.logger.Printf("dog_molecule: poured %s → %s (%d steps)", formulaName, dm.rootID, len(dm.stepIDs))
@@ -103,7 +103,7 @@ func (dm *dogMol) failStep(stepSlug, reason string) {
 	}
 }
 
-// close closes all remaining open child step wisps, then closes the root molecule wisp.
+// close closes all remaining open child step wisps, then closes the root molecule ephemeral.
 // This prevents orphan step wisps from accumulating when callers forget to
 // explicitly close individual steps (the root cause of gt-3o59).
 func (dm *dogMol) close() {

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/steveyegge/gastown/internal/config"
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 // setupTestRigForConfig creates a minimal Gas Town workspace for rig config testing.
@@ -91,7 +91,7 @@ func TestRigConfigSet_WispLayerWarning(t *testing.T) {
 		}
 
 		// Verify value was actually stored in wisp layer
-		wispCfg := wisp.NewConfig(townRoot, rigName)
+		wispCfg := ephemeral.NewConfig(townRoot, rigName)
 		val := wispCfg.Get("max_polecats")
 		if val == nil {
 			t.Error("expected max_polecats to be set in wisp layer")

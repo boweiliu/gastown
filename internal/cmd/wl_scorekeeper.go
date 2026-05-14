@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -50,7 +50,7 @@ func runWlScorekeeper(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	dbName := wasteland.ResolveDBName(townRoot)
+	dbName := archive.ResolveDBName(townRoot)
 	if !doltserver.DatabaseExists(townRoot, dbName) {
 		return fmt.Errorf("database %q not found\nJoin a wasteland first with: gt wl join <org/db>", dbName)
 	}

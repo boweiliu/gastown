@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
@@ -17,7 +17,7 @@ import (
 // getCrewManagerForMember returns a crew manager, inferring the rig from the
 // crew member name if cwd-based inference fails. Use this when a crew member
 // name is known (e.g., gt crew at <name>).
-func getCrewManagerForMember(rigName, crewName string) (*crew.Manager, *rig.Rig, error) {
+func getCrewManagerForMember(rigName, crewName string) (*team.Manager, *rig.Rig, error) {
 	if rigName == "" {
 		townRoot, err := workspace.FindFromCwdOrError()
 		if err != nil {
@@ -35,7 +35,7 @@ func getCrewManagerForMember(rigName, crewName string) (*crew.Manager, *rig.Rig,
 }
 
 // getCrewManager returns a crew manager for the specified or inferred rig.
-func getCrewManager(rigName string) (*crew.Manager, *rig.Rig, error) {
+func getCrewManager(rigName string) (*team.Manager, *rig.Rig, error) {
 	// Handle optional rig inference from cwd
 	if rigName == "" {
 		townRoot, err := workspace.FindFromCwdOrError()
@@ -54,7 +54,7 @@ func getCrewManager(rigName string) (*crew.Manager, *rig.Rig, error) {
 	}
 
 	crewGit := git.NewGit(r.Path)
-	crewMgr := crew.NewManager(r, crewGit)
+	crewMgr := team.NewManager(r, crewGit)
 
 	return crewMgr, r, nil
 }

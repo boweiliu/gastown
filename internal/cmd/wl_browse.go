@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -61,7 +61,7 @@ func runWLBrowse(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fast path: query through the Dolt server if the database is registered.
-	dbName := wasteland.ResolveDBName(townRoot)
+	dbName := archive.ResolveDBName(townRoot)
 	if doltserver.DatabaseExists(townRoot, dbName) {
 		query := buildBrowseQuery(BrowseFilter{
 			Status:   wlBrowseStatus,
@@ -153,14 +153,14 @@ func runWLBrowse(cmd *cobra.Command, args []string) error {
 // defer os.RemoveAll(tmpDir) — a temporary clone was created.
 func resolveWLCommonsBrowse(townRoot, doltPath string) (cloneDir, tmpDir string, err error) {
 	// Try wasteland config (set by gt wl join).
-	if cfg, cfgErr := wasteland.LoadConfig(townRoot); cfgErr == nil && cfg.LocalDir != "" {
+	if cfg, cfgErr := archive.LoadConfig(townRoot); cfgErr == nil && cfg.LocalDir != "" {
 		if _, statErr := os.Stat(filepath.Join(cfg.LocalDir, ".dolt")); statErr == nil {
 			return cfg.LocalDir, "", nil
 		}
 	}
 
 	// Try standard location: .wasteland/hop/wl-commons.
-	stdPath := wasteland.LocalCloneDir(townRoot, "hop", "wl-commons")
+	stdPath := archive.LocalCloneDir(townRoot, "hop", "wl-commons")
 	if _, statErr := os.Stat(filepath.Join(stdPath, ".dolt")); statErr == nil {
 		return stdPath, "", nil
 	}
@@ -174,8 +174,8 @@ func resolveWLCommonsBrowse(townRoot, doltPath string) (cloneDir, tmpDir string,
 	// Read upstream from config, or default to hop/wl-commons.
 	commonsOrg := "hop"
 	commonsDB := "wl-commons"
-	if cfg, cfgErr := wasteland.LoadConfig(townRoot); cfgErr == nil && cfg.Upstream != "" {
-		if o, d, parseErr := wasteland.ParseUpstream(cfg.Upstream); parseErr == nil {
+	if cfg, cfgErr := archive.LoadConfig(townRoot); cfgErr == nil && cfg.Upstream != "" {
+		if o, d, parseErr := archive.ParseUpstream(cfg.Upstream); parseErr == nil {
 			commonsOrg = o
 			commonsDB = d
 		}

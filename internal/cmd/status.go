@@ -17,7 +17,7 @@ import (
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/daemon"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/git"
@@ -877,7 +877,7 @@ func gatherStatus() (TownStatus, error) {
 
 			// Count crew workers
 			crewGit := git.NewGit(r.Path)
-			crewMgr := crew.NewManager(r, crewGit)
+			crewMgr := team.NewManager(r, crewGit)
 			if workers, err := crewMgr.List(); err == nil {
 				for _, w := range workers {
 					rs.Crews = append(rs.Crews, w.Name)

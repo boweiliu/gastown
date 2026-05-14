@@ -10,7 +10,7 @@ import (
 )
 
 // BootHealthCheck verifies Boot watchdog health.
-// "The vet checks on the dog."
+// "The vet checks on the helper."
 type BootHealthCheck struct {
 	FixableCheck
 	missingDir bool // track if directory is missing for Fix()

@@ -484,7 +484,7 @@ func handleMoleculeComplete(cwd, townRoot, moleculeID string, dryRun bool) error
 
 	// For polecats, use gt done to signal completion
 	if roleCtx.Role == RolePolecat {
-		fmt.Printf("%s Signaling completion to witness...\n", style.Bold.Render("📤"))
+		fmt.Printf("%s Signaling completion to watcher...\n", style.Bold.Render("📤"))
 
 		doneCmd := exec.Command("gt", "done", "--status", "DEFERRED")
 		doneCmd.Stdout = os.Stdout

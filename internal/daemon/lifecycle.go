@@ -535,7 +535,7 @@ func (d *Daemon) getStartCommand(roleConfig *beads.RoleConfig, parsed *ParsedIde
 		Topic:     "lifecycle-restart",
 	}, "Run `gt prime --hook` and begin work.")
 
-	// Inline AgentEnv into the command for ALL roles, not just polecat/crew.
+	// Inline AgentEnv into the command for ALL roles, not just polecat/team.
 	// Without this, daemon-restarted witness/refinery/mayor/deacon sessions
 	// don't get BEADS_DOLT_PORT, GT_ROLE, GT_RIG, etc. in Claude's env. Their
 	// bd subprocess then falls back to embedded-Dolt auto-discovery instead of

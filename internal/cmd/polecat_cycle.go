@@ -34,7 +34,7 @@ func cyclePolecatSession(direction int, sessionOverride string) error {
 }
 
 // parsePolecatSessionName extracts rig and polecat name from a tmux session name.
-// Format: gt-<rig>-<name> where name is NOT crew-*, witness, refinery, mayor, or deacon.
+// Format: gt-<rig>-<name> where name is NOT crew-*, witness, refinery, mayor, or supervisor.
 // Returns empty strings and false if the format doesn't match.
 //
 // Delegates to session.ParseSessionName for consistent parsing of hyphenated

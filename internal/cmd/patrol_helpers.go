@@ -195,7 +195,7 @@ func burnPreviousPatrolWisps(cfg PatrolConfig) {
 	}
 }
 
-// autoSpawnPatrol creates and pins a new patrol wisp.
+// autoSpawnPatrol creates and pins a new patrol ephemeral.
 // Before creating, it burns any existing patrol wisps for this role to prevent
 // orphaned root wisp accumulation (gt-92jh). This makes the function
 // self-cleaning regardless of the caller.

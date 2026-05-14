@@ -58,7 +58,7 @@ func LoadAllOverrides() (map[string]*HooksConfig, error) {
 		if entry.IsDir() || !strings.HasSuffix(name, ".json") {
 			continue
 		}
-		// Convert filename back to target key (gastown__crew.json -> gastown/crew)
+		// Convert filename back to target key (gastown__team.json -> gastown/crew)
 		key := strings.TrimSuffix(name, ".json")
 		key = strings.ReplaceAll(key, "__", "/")
 

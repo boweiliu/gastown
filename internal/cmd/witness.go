@@ -9,7 +9,7 @@ import (
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -143,13 +143,13 @@ func init() {
 }
 
 // getWitnessManager creates a witness manager for a rig.
-func getWitnessManager(rigName string) (*witness.Manager, error) {
+func getWitnessManager(rigName string) (*watcher.Manager, error) {
 	_, r, err := getRig(rigName)
 	if err != nil {
 		return nil, err
 	}
 
-	mgr := witness.NewManager(r)
+	mgr := watcher.NewManager(r)
 	return mgr, nil
 }
 
@@ -168,7 +168,7 @@ func runWitnessStart(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Starting witness for %s...\n", rigName)
 
 	if err := mgr.Start(witnessForeground, witnessAgentOverride, witnessEnvOverrides); err != nil {
-		if err == witness.ErrAlreadyRunning {
+		if err == watcher.ErrAlreadyRunning {
 			fmt.Printf("%s Witness is already running\n", style.Dim.Render("⚠"))
 			fmt.Printf("  %s\n", style.Dim.Render("Use 'gt witness attach' to connect"))
 			return nil
@@ -209,7 +209,7 @@ func runWitnessStop(cmd *cobra.Command, args []string) error {
 
 	// Update state file
 	if err := mgr.Stop(); err != nil {
-		if err == witness.ErrNotRunning && !running {
+		if err == watcher.ErrNotRunning && !running {
 			fmt.Printf("%s Witness is not running\n", style.Dim.Render("⚠"))
 			return nil
 		}
@@ -240,7 +240,7 @@ func runWitnessStatus(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mgr := witness.NewManager(r)
+	mgr := watcher.NewManager(r)
 
 	// ZFC: tmux is source of truth for running state
 	running, _ := mgr.IsRunning()
@@ -289,7 +289,7 @@ func runWitnessStatus(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// witnessSessionName returns the tmux session name for a rig's witness.
+// witnessSessionName returns the tmux session name for a rig's watcher.
 func witnessSessionName(rigName string) string {
 	return session.WitnessSessionName(session.PrefixFor(rigName))
 }
@@ -321,7 +321,7 @@ func runWitnessAttach(cmd *cobra.Command, args []string) error {
 	sessionName := witnessSessionName(rigName)
 
 	// Ensure session exists (creates if needed)
-	if err := mgr.Start(false, "", nil); err != nil && err != witness.ErrAlreadyRunning {
+	if err := mgr.Start(false, "", nil); err != nil && err != watcher.ErrAlreadyRunning {
 		return err
 	} else if err == nil {
 		fmt.Printf("Started witness session for %s\n", rigName)

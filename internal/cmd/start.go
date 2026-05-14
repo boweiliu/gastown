@@ -14,19 +14,19 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/daemon"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/mayor"
 	"github.com/steveyegge/gastown/internal/worker"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
-	"github.com/steveyegge/gastown/internal/witness"
+	"github.com/steveyegge/gastown/internal/watcher"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -337,9 +337,9 @@ func startCoreAgents(townRoot string, agentOverride string, mu *sync.Mutex) erro
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		deaconMgr := deacon.NewManager(townRoot)
+		deaconMgr := supervisor.NewManager(townRoot)
 		if err := deaconMgr.Start(agentOverride); err != nil {
-			if errors.Is(err, deacon.ErrAlreadyRunning) {
+			if errors.Is(err, supervisor.ErrAlreadyRunning) {
 				mu.Lock()
 				fmt.Printf("  %s Deacon already running\n", style.Dim.Render("○"))
 				mu.Unlock()
@@ -396,9 +396,9 @@ func startRigAgents(rigs []*rig.Rig, mu *sync.Mutex) {
 
 // startWitnessForRig starts the witness for a single rig and returns a status message.
 func startWitnessForRig(r *rig.Rig) string {
-	witMgr := witness.NewManager(r)
+	witMgr := watcher.NewManager(r)
 	if err := witMgr.Start(false, "", nil); err != nil {
-		if errors.Is(err, witness.ErrAlreadyRunning) {
+		if errors.Is(err, watcher.ErrAlreadyRunning) {
 			return fmt.Sprintf("  %s %s witness already running\n", style.Dim.Render("○"), r.Name)
 		}
 		return fmt.Sprintf("  %s %s witness failed: %v\n", style.Dim.Render("○"), r.Name, err)
@@ -408,9 +408,9 @@ func startWitnessForRig(r *rig.Rig) string {
 
 // startRefineryForRig starts the refinery for a single rig and returns a status message.
 func startRefineryForRig(r *rig.Rig) string {
-	refineryMgr := refinery.NewManager(r)
+	refineryMgr := merger.NewManager(r)
 	if err := refineryMgr.Start(false, ""); err != nil {
-		if errors.Is(err, refinery.ErrAlreadyRunning) {
+		if errors.Is(err, merger.ErrAlreadyRunning) {
 			return fmt.Sprintf("  %s %s refinery already running\n", style.Dim.Render("○"), r.Name)
 		}
 		return fmt.Sprintf("  %s %s refinery failed: %v\n", style.Dim.Render("○"), r.Name, err)
@@ -1017,7 +1017,7 @@ func runStartCrew(cmd *cobra.Command, args []string) error {
 
 	// Create crew manager
 	crewGit := git.NewGit(r.Path)
-	crewMgr := crew.NewManager(r, crewGit)
+	crewMgr := team.NewManager(r, crewGit)
 
 	// Resolve account for Claude config
 	accountsPath := constants.MayorAccountsPath(townRoot)
@@ -1030,13 +1030,13 @@ func runStartCrew(cmd *cobra.Command, args []string) error {
 	}
 
 	// Use manager's Start() method - handles workspace creation, settings, and session
-	err = crewMgr.Start(name, crew.StartOptions{
+	err = crewMgr.Start(name, team.StartOptions{
 		Account:         startCrewAccount,
 		ClaudeConfigDir: claudeConfigDir,
 		AgentOverride:   startCrewAgentOverride,
 	})
 	if err != nil {
-		if errors.Is(err, crew.ErrSessionRunning) {
+		if errors.Is(err, team.ErrSessionRunning) {
 			fmt.Printf("%s Session already running: %s\n", style.Dim.Render("○"), crewMgr.SessionName(name))
 		} else {
 			return err
@@ -1050,7 +1050,7 @@ func runStartCrew(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// getCrewToStart reads rig settings and parses the crew.startup field.
+// getCrewToStart reads rig settings and parses the team.startup field.
 // Returns a list of crew names to start.
 func getCrewToStart(r *rig.Rig) []string {
 	// Load rig settings
@@ -1069,7 +1069,7 @@ func getCrewToStart(r *rig.Rig) []string {
 	// Handle "all" - list all existing crew
 	if startup == "all" {
 		crewGit := git.NewGit(r.Path)
-		crewMgr := crew.NewManager(r, crewGit)
+		crewMgr := team.NewManager(r, crewGit)
 		workers, err := crewMgr.List()
 		if err != nil {
 			return nil
@@ -1117,11 +1117,11 @@ func startCrewMember(rigName, crewName, townRoot string) error {
 
 	// Create crew manager and use Start() method
 	crewGit := git.NewGit(r.Path)
-	crewMgr := crew.NewManager(r, crewGit)
+	crewMgr := team.NewManager(r, crewGit)
 
 	// Start handles workspace creation, settings, and session all in one
-	err = crewMgr.Start(crewName, crew.StartOptions{})
-	if err != nil && !errors.Is(err, crew.ErrSessionRunning) {
+	err = crewMgr.Start(crewName, team.StartOptions{})
+	if err != nil && !errors.Is(err, team.ErrSessionRunning) {
 		return err
 	}
 

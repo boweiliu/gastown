@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
-	"github.com/steveyegge/gastown/internal/refinery"
+	"github.com/steveyegge/gastown/internal/merger"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
@@ -271,7 +271,7 @@ func init() {
 
 // getRefineryManager creates a refinery manager for a rig.
 // If rigName is empty, infers the rig from cwd.
-func getRefineryManager(rigName string) (*refinery.Manager, *rig.Rig, string, error) {
+func getRefineryManager(rigName string) (*merger.Manager, *rig.Rig, string, error) {
 	// Infer rig from cwd if not provided
 	if rigName == "" {
 		townRoot, err := workspace.FindFromCwdOrError()
@@ -289,7 +289,7 @@ func getRefineryManager(rigName string) (*refinery.Manager, *rig.Rig, string, er
 		return nil, nil, "", err
 	}
 
-	mgr := refinery.NewManager(r)
+	mgr := merger.NewManager(r)
 	return mgr, r, rigName, nil
 }
 
@@ -311,7 +311,7 @@ func runRefineryStart(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Starting refinery for %s...\n", rigName)
 
 	if err := mgr.Start(refineryForeground, refineryAgentOverride); err != nil {
-		if err == refinery.ErrAlreadyRunning {
+		if err == merger.ErrAlreadyRunning {
 			fmt.Printf("%s Refinery is already running\n", style.Dim.Render("⚠"))
 			return nil
 		}
@@ -340,7 +340,7 @@ func runRefineryStop(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := mgr.Stop(); err != nil {
-		if err == refinery.ErrNotRunning {
+		if err == merger.ErrNotRunning {
 			fmt.Printf("%s Refinery is not running\n", style.Dim.Render("⚠"))
 			return nil
 		}
@@ -450,23 +450,23 @@ func runRefineryQueue(cmd *cobra.Command, args []string) error {
 			status = style.Bold.Render("[processing]")
 		} else {
 			switch item.MR.Status {
-			case refinery.MROpen:
+			case merger.MROpen:
 				if item.MR.Error != "" {
 					status = style.Dim.Render("[needs-rework]")
 				} else {
 					status = style.Dim.Render("[pending]")
 				}
-			case refinery.MRInProgress:
+			case merger.MRInProgress:
 				status = style.Bold.Render("[processing]")
-			case refinery.MRClosed:
+			case merger.MRClosed:
 				switch item.MR.CloseReason {
-				case refinery.CloseReasonMerged:
+				case merger.CloseReasonMerged:
 					status = style.Bold.Render("[merged]")
-				case refinery.CloseReasonRejected:
+				case merger.CloseReasonRejected:
 					status = style.Dim.Render("[rejected]")
-				case refinery.CloseReasonConflict:
+				case merger.CloseReasonConflict:
 					status = style.Dim.Render("[conflict]")
-				case refinery.CloseReasonSuperseded:
+				case merger.CloseReasonSuperseded:
 					status = style.Dim.Render("[superseded]")
 				default:
 					status = style.Dim.Render("[closed]")
@@ -543,7 +543,7 @@ func runRefineryRestart(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Restarting refinery for %s...\n", rigName)
 
 	// Stop if running (ignore ErrNotRunning)
-	if err := mgr.Stop(); err != nil && err != refinery.ErrNotRunning {
+	if err := mgr.Stop(); err != nil && err != merger.ErrNotRunning {
 		return fmt.Errorf("stopping refinery: %w", err)
 	}
 
@@ -584,7 +584,7 @@ func runRefineryClaim(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	eng := refinery.NewEngineer(r)
+	eng := merger.NewEngineer(r)
 	if err := eng.ClaimMR(mrID, workerID); err != nil {
 		return fmt.Errorf("claiming MR: %w", err)
 	}
@@ -611,7 +611,7 @@ func runRefineryRelease(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	eng := refinery.NewEngineer(r)
+	eng := merger.NewEngineer(r)
 	if err := eng.ReleaseMR(mrID); err != nil {
 		return fmt.Errorf("releasing MR: %w", err)
 	}
@@ -643,7 +643,7 @@ func runRefineryUnclaimed(cmd *cobra.Command, args []string) error {
 	}
 
 	// Filter for unclaimed (no assignee)
-	var unclaimed []*refinery.MRInfo
+	var unclaimed []*merger.MRInfo
 	for _, issue := range issues {
 		if issue.Assignee != "" {
 			continue
@@ -652,7 +652,7 @@ func runRefineryUnclaimed(cmd *cobra.Command, args []string) error {
 		if fields == nil {
 			continue
 		}
-		mr := &refinery.MRInfo{
+		mr := &merger.MRInfo{
 			ID:       issue.ID,
 			Branch:   fields.Branch,
 			Target:   fields.Target,
@@ -698,7 +698,7 @@ func runRefineryReady(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create engineer for the rig (it has beads access for status checking)
-	eng := refinery.NewEngineer(r)
+	eng := merger.NewEngineer(r)
 
 	if refineryReadyAll {
 		return runRefineryReadyAll(eng, rigName)
@@ -717,8 +717,8 @@ func runRefineryReady(cmd *cobra.Command, args []string) error {
 	// JSON output
 	if refineryReadyJSON {
 		type readyOutput struct {
-			Ready     []*refinery.MRInfo    `json:"ready"`
-			Anomalies []*refinery.MRAnomaly `json:"anomalies,omitempty"`
+			Ready     []*merger.MRInfo    `json:"ready"`
+			Anomalies []*merger.MRAnomaly `json:"anomalies,omitempty"`
 		}
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -761,7 +761,7 @@ func runRefineryReady(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runRefineryReadyAll(eng *refinery.Engineer, rigName string) error {
+func runRefineryReadyAll(eng *merger.Engineer, rigName string) error {
 	mrs, err := eng.ListAllOpenMRs()
 	if err != nil {
 		return fmt.Errorf("listing all open MRs: %w", err)
@@ -823,7 +823,7 @@ func runRefineryBlocked(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create engineer for the rig (it has beads access for status checking)
-	eng := refinery.NewEngineer(r)
+	eng := merger.NewEngineer(r)
 
 	// Get blocked MRs
 	blocked, err := eng.ListBlockedMRs()

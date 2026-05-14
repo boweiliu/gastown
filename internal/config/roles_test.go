@@ -274,7 +274,7 @@ func TestLoadRoleDefinition_InvalidRigOverride(t *testing.T) {
 	}
 
 	// Write invalid TOML at rig level
-	if err := os.WriteFile(rolesDir+"/witness.toml", []byte("bad = [toml"), 0o644); err != nil {
+	if err := os.WriteFile(rolesDir+"/watcher.toml", []byte("bad = [toml"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

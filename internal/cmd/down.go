@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/constants"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/daemon"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/events"
@@ -582,7 +582,7 @@ func stopAllCrew(t *tmux.Tmux, townRoot string, rigNames []string, dryRun bool) 
 			continue
 		}
 
-		crewMgr := crew.NewManager(r, g)
+		crewMgr := team.NewManager(r, g)
 		workers, err := crewMgr.List()
 		if err != nil {
 			continue

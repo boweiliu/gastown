@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/steveyegge/gastown/internal/crew"
+	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/rig"
 	"github.com/steveyegge/gastown/internal/style"
@@ -57,7 +57,7 @@ func runCrewList(cmd *cobra.Command, args []string) error {
 
 	for _, r := range rigs {
 		crewGit := git.NewGit(r.Path)
-		crewMgr := crew.NewManager(r, crewGit)
+		crewMgr := team.NewManager(r, crewGit)
 
 		workers, err := crewMgr.List()
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -74,7 +74,7 @@ func runWlJoin(cmd *cobra.Command, args []string) error {
 	upstream := args[0]
 
 	// Parse upstream path (validate early)
-	_, _, err := wasteland.ParseUpstream(upstream)
+	_, _, err := archive.ParseUpstream(upstream)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func runWlJoin(cmd *cobra.Command, args []string) error {
 
 	// Fast path: check if already joined before loading town config.
 	// This avoids failing on unrelated town-config errors for the no-op case.
-	if existing, loadErr := wasteland.LoadConfig(townRoot); loadErr == nil {
+	if existing, loadErr := archive.LoadConfig(townRoot); loadErr == nil {
 		if existing.Upstream == upstream {
 			fmt.Printf("%s Already joined wasteland: %s\n", style.Bold.Render("⚠"), upstream)
 			fmt.Printf("  Handle: %s\n", existing.RigHandle)
@@ -134,7 +134,7 @@ func runWlJoin(cmd *cobra.Command, args []string) error {
 	ownerEmail := townCfg.Owner
 	gtVersion := "dev"
 
-	svc := wasteland.NewService()
+	svc := archive.NewService()
 	svc.OnProgress = func(step string) {
 		fmt.Printf("  %s\n", step)
 	}

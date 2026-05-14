@@ -20,7 +20,7 @@ Role is auto-detected from GT_ROLE (set by the daemon). Use --role to override.
 
 For refinery patrols, MQ config variables (run_tests, test_command,
 target_branch, etc.) are read from the rig's config.json and settings/config.json and
-passed as --var args to the wisp.
+passed as --var args to the ephemeral.
 
 Examples:
   gt patrol new                  # Auto-detect role, create patrol

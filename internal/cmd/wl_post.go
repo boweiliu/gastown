@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/doltserver"
 	"github.com/steveyegge/gastown/internal/style"
-	"github.com/steveyegge/gastown/internal/wasteland"
+	"github.com/steveyegge/gastown/internal/archive"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
 
@@ -75,7 +75,7 @@ func runWlPost(cmd *cobra.Command, args []string) error {
 
 	store := doltserver.NewWLCommons(townRoot)
 
-	wlCfg, err := wasteland.LoadConfig(townRoot)
+	wlCfg, err := archive.LoadConfig(townRoot)
 	if err != nil {
 		return fmt.Errorf("loading wasteland config: %w", err)
 	}

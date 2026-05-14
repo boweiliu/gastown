@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 // TestResolveTarget_ParkedRig_InResolveTarget verifies that the parked rig
@@ -30,12 +30,12 @@ func TestExecuteSling_ParkedRig(t *testing.T) {
 
 	// Set up wisp config with parked status
 	rigName := "testrig"
-	configDir := filepath.Join(townRoot, wisp.WispConfigDir, wisp.ConfigSubdir)
+	configDir := filepath.Join(townRoot, ephemeral.WispConfigDir, ephemeral.ConfigSubdir)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("failed to create wisp config dir: %v", err)
 	}
 	configFile := filepath.Join(configDir, rigName+".json")
-	data, _ := json.Marshal(wisp.ConfigFile{
+	data, _ := json.Marshal(ephemeral.ConfigFile{
 		Rig:    rigName,
 		Values: map[string]interface{}{"status": "parked"},
 	})

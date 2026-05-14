@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/boot"
 	"github.com/steveyegge/gastown/internal/daemon"
-	"github.com/steveyegge/gastown/internal/deacon"
+	"github.com/steveyegge/gastown/internal/supervisor"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
@@ -313,8 +313,8 @@ func runDegradedTriage(b *boot.Boot) (action, target string, err error) {
 		// for the next daemon heartbeat cycle (up to 3 minutes away).
 		fmt.Println("Deacon session missing - starting Deacon")
 		if townRoot != "" {
-			mgr := deacon.NewManager(townRoot)
-			if err := mgr.Start(""); err != nil && err != deacon.ErrAlreadyRunning {
+			mgr := supervisor.NewManager(townRoot)
+			if err := mgr.Start(""); err != nil && err != supervisor.ErrAlreadyRunning {
 				fmt.Printf("Failed to start Deacon: %v\n", err)
 				return "error", "deacon-start-failed", fmt.Errorf("starting deacon: %w", err)
 			}
