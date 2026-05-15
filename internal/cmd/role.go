@@ -373,9 +373,9 @@ func parseRoleString(s string) (Role, string, string) {
 			return RoleBoot, "", ""
 		}
 		return Role(s), "", ""
-	case constants.RoleWitness:
+	case constants.RoleWitness, constants.LegacyDirWitness:
 		return RoleWitness, rig, ""
-	case constants.RoleRefinery:
+	case constants.RoleRefinery, constants.LegacyDirRefinery:
 		return RoleRefinery, rig, ""
 	case "polecats":
 		if len(parts) >= 3 {
