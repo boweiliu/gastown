@@ -212,7 +212,7 @@ func autoSpawnPatrol(cfg PatrolConfig) (string, error) {
 	burnPreviousPatrolWisps(cfg)
 
 	// Find the proto ID for the patrol molecule
-	cmdCatalog := exec.Command("gt", "formula", "list")
+	cmdCatalog := exec.Command("gt", "template", "list")
 	cmdCatalog.Dir = cfg.BeadsDir
 	var stdoutCatalog, stderrCatalog bytes.Buffer
 	cmdCatalog.Stdout = &stdoutCatalog
@@ -335,7 +335,7 @@ func outputPatrolContext(cfg PatrolConfig) {
 				fmt.Printf("⚠ %s\n", err.Error())
 			} else {
 				fmt.Println(style.Dim.Render(err.Error()))
-				fmt.Println(style.Dim.Render("Run `" + cli.Name() + " formula list` to troubleshoot."))
+				fmt.Println(style.Dim.Render("Run `" + cli.Name() + " template list` to troubleshoot."))
 				return
 			}
 		} else {
