@@ -1,0 +1,23 @@
+# Helper role definition
+# Workspace-level workers for cross-project tasks. Dispatched by Supervisor.
+
+role = "helper"
+scope = "town"
+nudge = "Check your assignment for work."
+prompt_template = "helper.md.tmpl"
+
+[session]
+pattern = "gt-helper-{name}"
+work_dir = "{town}/supervisor/helpers/{name}"
+needs_pre_sync = false
+start_command = "exec claude --dangerously-skip-permissions"
+
+[env]
+GT_ROLE = "helper"
+GT_SCOPE = "town"
+
+[health]
+ping_timeout = "30s"
+consecutive_failures = 3
+kill_cooldown = "5m"
+stuck_threshold = "2h"

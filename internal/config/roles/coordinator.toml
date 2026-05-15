@@ -1,0 +1,23 @@
+# Coordinator role definition
+# Global coordinator for cross-project work. One per workspace.
+
+role = "coordinator"
+scope = "town"
+nudge = "Check mail and assignment status, then act accordingly."
+prompt_template = "coordinator.md.tmpl"
+
+[session]
+pattern = "hq-coordinator"
+work_dir = "{town}/coordinator"
+needs_pre_sync = false
+start_command = "exec claude --dangerously-skip-permissions"
+
+[env]
+GT_ROLE = "coordinator"
+GT_SCOPE = "town"
+
+[health]
+ping_timeout = "30s"
+consecutive_failures = 3
+kill_cooldown = "5m"
+stuck_threshold = "1h"

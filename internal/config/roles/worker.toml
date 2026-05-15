@@ -1,0 +1,23 @@
+# Worker role definition
+# Persistent identity, ephemeral sessions. Batch work dispatch. Multiple per project.
+
+role = "worker"
+scope = "rig"
+nudge = "Check your assignment for work."
+prompt_template = "worker.md.tmpl"
+
+[session]
+pattern = "{prefix}-{name}"
+work_dir = "{town}/{rig}/workers/{name}"
+needs_pre_sync = false
+start_command = "exec claude --dangerously-skip-permissions"
+
+[env]
+GT_ROLE = "{rig}/workers/{name}"
+GT_SCOPE = "rig"
+
+[health]
+ping_timeout = "30s"
+consecutive_failures = 3
+kill_cooldown = "5m"
+stuck_threshold = "2h"

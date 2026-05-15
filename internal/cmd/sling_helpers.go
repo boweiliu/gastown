@@ -1013,8 +1013,11 @@ func parseBondSpawnRootIDWithStatus(bondOut []byte, formulaName, beadID, fallbac
 		if mappedID := bondResult.IDMapping[formulaName]; mappedID != "" {
 			return mappedID, true
 		}
-		if !strings.HasPrefix(formulaName, "mol-") {
+		if !strings.HasPrefix(formulaName, "mol-") && !strings.HasPrefix(formulaName, "wf-") {
 			if mappedID := bondResult.IDMapping["mol-"+formulaName]; mappedID != "" {
+				return mappedID, true
+			}
+			if mappedID := bondResult.IDMapping["wf-"+formulaName]; mappedID != "" {
 				return mappedID, true
 			}
 		}
@@ -1031,8 +1034,9 @@ func parseBondSpawnRootIDWithStatus(bondOut []byte, formulaName, beadID, fallbac
 // ensureFormulaRequiredVars appends missing required vars for formulas that enforce
 // strict var presence on direct bond paths.
 func ensureFormulaRequiredVars(formulaName string, vars []string) []string {
-	// Currently only mol-polecat-work has strict required vars on bond.
-	if formulaName != "mol-polecat-work" && formulaName != "polecat-work" {
+	// Only wf-worker-work (formerly mol-polecat-work) has strict required vars on bond.
+	if formulaName != "wf-worker-work" && formulaName != "worker-work" &&
+		formulaName != "mol-polecat-work" && formulaName != "polecat-work" {
 		return vars
 	}
 

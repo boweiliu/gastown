@@ -45,7 +45,7 @@ var templateFS embed.FS
 //go:embed launchd/*.plist systemd/*.service
 var supervisorFS embed.FS
 
-//go:embed polecat-CLAUDE.md
+//go:embed worker-CLAUDE.md
 var polecatCLAUDEmd string
 
 // Templates manages role and message templates.
@@ -56,19 +56,19 @@ type Templates struct {
 
 // RoleData contains information for rendering role contexts.
 type RoleData struct {
-	Role           string   // mayor, witness, refinery, polecat, crew, deacon
+	Role           string   // coordinator, watcher, merger, worker, team, supervisor
 	RigName        string   // e.g., "greenplace"
 	TownRoot       string   // e.g., "/Users/steve/ai"
 	TownName       string   // e.g., "ai" - the town identifier for session names
 	WorkDir        string   // current working directory
 	DefaultBranch  string   // default branch for merges (e.g., "main", "develop")
-	Polecat        string   // polecat name (for polecat role)
-	Polecats       []string // list of polecats (for witness role)
-	DogName        string   // dog name (for dog role)
+	Polecat        string   // worker name (for worker role)
+	Polecats       []string // list of workers (for watcher role)
+	DogName        string   // helper name (for helper role)
 	BeadsDir       string   // BEADS_DIR path
 	IssuePrefix    string   // beads issue prefix
-	MayorSession   string   // e.g., "gt-ai-mayor" - dynamic mayor session name
-	DeaconSession  string   // e.g., "gt-ai-deacon" - dynamic deacon session name
+	MayorSession   string   // e.g., "hq-coordinator" - dynamic coordinator session name
+	DeaconSession  string   // e.g., "hq-supervisor" - dynamic supervisor session name
 }
 
 // SpawnData contains information for spawn assignment messages.
@@ -212,12 +212,12 @@ func CreateMayorCLAUDEmd(mayorDir, townRoot, townName, mayorSession, deaconSessi
 	return true, os.WriteFile(claudePath, []byte(content), 0644)
 }
 
-// PolecatLifecycleMarker is a unique string present in the polecat CLAUDE.md
+// PolecatLifecycleMarker is a unique string present in the worker CLAUDE.md
 // template. Used to detect whether a CLAUDE.md file contains the Gas Town
 // overlay (vs. project-specific content). If an existing CLAUDE.md lacks this
-// marker, polecat lifecycle instructions are appended — the agent won't know
+// marker, worker lifecycle instructions are appended — the agent won't know
 // to call `gt done` otherwise.
-const PolecatLifecycleMarker = "IDLE POLECAT HERESY"
+const PolecatLifecycleMarker = "IDLE WORKER HERESY"
 
 // CreatePolecatCLAUDEmd writes the polecat CLAUDE.md template to the worktree.
 // This is the primary mechanism for polecats to learn about `gt done` and other

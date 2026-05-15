@@ -3147,7 +3147,7 @@ func (t *Tmux) ApplyWindowStyle(session string, ws *WindowStyle) error {
 
 // roleIcons maps role names to display icons for the status bar.
 // Uses centralized emojis from constants package.
-// Includes legacy keys ("coordinator", "health-check") for backwards compatibility.
+// Includes legacy keys ("mayor", "health-check") for backwards compatibility.
 var roleIcons = map[string]string{
 	// Standard role names (from constants)
 	constants.RoleMayor:    constants.EmojiMayor,
@@ -3157,7 +3157,7 @@ var roleIcons = map[string]string{
 	constants.RoleCrew:     constants.EmojiCrew,
 	constants.RolePolecat:  constants.EmojiPolecat,
 	// Legacy names (for backwards compatibility)
-	"coordinator":  constants.EmojiMayor,
+	"mayor":        constants.EmojiMayor,
 	"health-check": constants.EmojiDeacon,
 }
 

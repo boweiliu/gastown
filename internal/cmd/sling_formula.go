@@ -64,8 +64,14 @@ func verifyFormulaExists(formulaName string) error {
 		return nil
 	}
 
-	// Try with mol- prefix
+	// Try with mol- prefix (legacy)
 	if out, err := BdCmd("formula", "show", "mol-"+formulaName, "--allow-stale").
+		Stderr(io.Discard).Output(); err == nil && len(out) > 0 {
+		return nil
+	}
+
+	// Try with wf- prefix (new naming)
+	if out, err := BdCmd("formula", "show", "wf-"+formulaName, "--allow-stale").
 		Stderr(io.Discard).Output(); err == nil && len(out) > 0 {
 		return nil
 	}

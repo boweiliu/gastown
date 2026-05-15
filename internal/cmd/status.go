@@ -1067,7 +1067,7 @@ func outputStatusText(w io.Writer, status TownStatus) error {
 		constants.RoleCrew:     constants.EmojiCrew,
 		constants.RolePolecat:  constants.EmojiPolecat,
 		// Legacy names for backwards compatibility
-		"coordinator":  constants.EmojiMayor,
+		"mayor":        constants.EmojiMayor,
 		"health-check": constants.EmojiDeacon,
 	}
 

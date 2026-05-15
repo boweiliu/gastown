@@ -1,0 +1,11 @@
+description = "Monorepo polecat workflow with TDD: extends wf-worker-work-monorepo, expands the implement step with a red-green-refactor cycle."
+extends = ["wf-worker-work-monorepo"]
+formula = "wf-worker-work-monorepo-tdd"
+type = "workflow"
+version = 1
+
+[compose]
+
+[[compose.expand]]
+target = "implement"
+with = "tdd-cycle"

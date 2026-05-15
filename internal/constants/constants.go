@@ -300,25 +300,25 @@ const (
 
 // Agent role names.
 const (
-	// RoleMayor is the mayor agent role.
-	RoleMayor = "mayor"
+	// RoleMayor is the coordinator agent role.
+	RoleMayor = "coordinator"
 
-	// RoleWitness is the witness agent role.
-	RoleWitness = "witness"
+	// RoleWitness is the watcher agent role.
+	RoleWitness = "watcher"
 
-	// RoleRefinery is the refinery agent role.
-	RoleRefinery = "refinery"
+	// RoleRefinery is the merger agent role.
+	RoleRefinery = "merger"
 
-	// RolePolecat is the polecat agent role.
-	RolePolecat = "polecat"
+	// RolePolecat is the worker agent role.
+	RolePolecat = "worker"
 
-	// RoleCrew is the crew agent role.
-	RoleCrew = "crew"
+	// RoleCrew is the team agent role.
+	RoleCrew = "team"
 
-	// RoleDeacon is the deacon agent role.
-	RoleDeacon = "deacon"
+	// RoleDeacon is the supervisor agent role.
+	RoleDeacon = "supervisor"
 
-	// RoleBoot is the boot watchdog role (modeled as a deacon dog).
+	// RoleBoot is the boot watchdog role (modeled as a supervisor helper).
 	RoleBoot = "boot"
 )
 
@@ -347,42 +347,42 @@ const (
 	EmojiBoot = "🐾"
 )
 
-// Molecule formula names for patrol and dog workflows.
+// Workflow formula names for patrol and helper workflows.
 // These are used as formula identifiers in `bd mol wisp <name>` commands
 // and to match active patrol wisps by title prefix.
 const (
-	// MolDeaconPatrol is the deacon patrol formula name.
-	MolDeaconPatrol = "mol-deacon-patrol"
+	// MolDeaconPatrol is the supervisor sweep formula name.
+	MolDeaconPatrol = "wf-supervisor-sweep"
 
-	// MolWitnessPatrol is the witness patrol formula name.
-	MolWitnessPatrol = "mol-witness-patrol"
+	// MolWitnessPatrol is the watcher sweep formula name.
+	MolWitnessPatrol = "wf-watcher-sweep"
 
-	// MolRefineryPatrol is the refinery patrol formula name.
-	MolRefineryPatrol = "mol-refinery-patrol"
+	// MolRefineryPatrol is the merger sweep formula name.
+	MolRefineryPatrol = "wf-merger-sweep"
 
-	// MolDogReaper is the wisp reaper dog formula name.
-	MolDogReaper = "mol-dog-reaper"
+	// MolDogReaper is the wisp reaper helper formula name.
+	MolDogReaper = "wf-helper-reaper"
 
-	// MolDogJSONL is the JSONL git backup dog formula name.
-	MolDogJSONL = "mol-dog-jsonl"
+	// MolDogJSONL is the JSONL git backup helper formula name.
+	MolDogJSONL = "wf-helper-jsonl"
 
-	// MolDogCompactor is the Dolt compactor dog formula name.
-	MolDogCompactor = "mol-dog-compactor"
+	// MolDogCompactor is the Dolt compactor helper formula name.
+	MolDogCompactor = "wf-helper-compactor"
 
-	// MolDogCheckpoint is the WIP checkpoint dog formula name.
-	MolDogCheckpoint = "mol-dog-checkpoint"
+	// MolDogCheckpoint is the WIP checkpoint helper formula name.
+	MolDogCheckpoint = "wf-helper-checkpoint"
 
-	// MolDogDoctor is the health anomaly tracking dog formula name.
-	MolDogDoctor = "mol-dog-doctor"
+	// MolDogDoctor is the health anomaly tracking helper formula name.
+	MolDogDoctor = "wf-helper-doctor"
 
-	// MolDogBackup is the Dolt backup dog formula name.
-	MolDogBackup = "mol-dog-backup"
+	// MolDogBackup is the Dolt backup helper formula name.
+	MolDogBackup = "wf-helper-backup"
 
-	// MolConvoyFeed is the convoy feeder formula name.
-	MolConvoyFeed = "mol-convoy-feed"
+	// MolConvoyFeed is the batch feeder formula name.
+	MolConvoyFeed = "wf-batch-feed"
 
-	// MolConvoyCleanup is the convoy cleanup formula name.
-	MolConvoyCleanup = "mol-convoy-cleanup"
+	// MolConvoyCleanup is the batch cleanup formula name.
+	MolConvoyCleanup = "wf-batch-cleanup"
 )
 
 // PatrolFormulas returns the list of patrol formula names.
