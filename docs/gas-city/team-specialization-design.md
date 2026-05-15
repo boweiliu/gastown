@@ -1,8 +1,8 @@
-# Crew Specialization and Capability-Based Dispatch
+# Team Specialization and Capability-Based Dispatch
 
 **Bead:** hq-q76
 **Date:** 2026-03-10
-**Participants:** Mayor, Overseer
+**Participants:** Coordinator, Overseer
 **Related:** beads `agent-cost-optimization` branch, w-gc-001, w-gc-002, w-com-005, PR #2518, PR #2527
 
 ## Context
@@ -18,12 +18,12 @@ work be labeled, matched, and routed to specialized workers?
 
 2. **Gas City role format (w-gc-001, w-gc-002)** — the planned declarative
    layer that formalizes Gas Town's hardcoded roles into portable, user-definable
-   schemas. PR #2518 prototypes a TOML parser. PR #2527 adds per-crew agent
+   schemas. PR #2518 prototypes a TOML parser. PR #2527 adds per-team agent
    assignment.
 
-3. **Wasteland reputation (stamps)** — multi-dimensional attestations grounding
+3. **Archive reputation (stamps)** — multi-dimensional attestations grounding
    capability claims in evidence. Completions get validated and stamped, building
-   a reputation signal tied to a rig handle.
+   a reputation signal tied to a project handle.
 
 This document captures design insights from a discussion about how these
 systems should work together.
@@ -41,15 +41,15 @@ knowledge of all workers and all tasks.
 
 ### The Alternative: Distributed Dispatch
 
-Instead of a central planner, each agent is a **mini-town** that:
+Instead of a central planner, each agent is a **mini-workspace** that:
 
 - **Advertises capability upward** — what it can handle
 - **Delegates downward** — to sub-agents and tools
 - **Makes internal allocation decisions** — with local knowledge
 
 A manager agent's capability is the **transitive closure** of everything beneath
-it. The Mayor doesn't need `native_skills: [security-review]` if it manages a
-crew member that has it. Each level hides internal delegation decisions behind
+it. The Coordinator doesn't need `native_skills: [security-review]` if it manages a
+team member that has it. Each level hides internal delegation decisions behind
 a capability abstraction.
 
 ### The Fractal Pattern
@@ -58,10 +58,10 @@ This recurses at every scale:
 
 | Scale | Unit | Advertises | Delegates to |
 |-------|------|-----------|--------------|
-| Federation | Wasteland rig | Stamps, reputation | Its Gas Town |
-| Town | Mayor | Rig capabilities | Crew, polecats |
-| Crew | Specialist | Domain expertise | Sub-agents, tools |
-| Worker | Polecat | Task completion | Tools |
+| Federation | Archive project | Stamps, reputation | Its Gas Town |
+| Workspace | Coordinator | Project capabilities | Team, workers |
+| Team | Specialist | Domain expertise | Sub-agents, tools |
+| Worker | Worker | Task completion | Tools |
 | Tool | CLI command | Deterministic output | Nothing |
 
 ### Delegation as Alternative to Cognition
@@ -69,7 +69,7 @@ This recurses at every scale:
 From beads §13.1: "Cognition is a meta-capability — the ability to derive other
 capabilities at runtime, at a cost premium."
 
-In the cellular model, **delegation replaces cognition**. A Sonnet-tier crew
+In the cellular model, **delegation replaces cognition**. A Sonnet-tier team
 member with the right sub-agents achieves what Opus achieves alone, cheaper:
 
 ```
@@ -101,7 +101,7 @@ Instead, each department publishes capability advertisements **in its own
 language**, including explicit negative space:
 
 ```yaml
-crew: api-gateway-security
+team: api-gateway-security
 handles:
   - CORS configuration and debugging
   - CSP header policy
@@ -259,14 +259,14 @@ capability, no clear routing preference, and no economic pressure to
 consolidate.
 
 Before creating a new specialist, check for 70%+ capability overlap with an
-existing crew member. **Extend the existing one.** The reason is in §2: an
+existing team member. **Extend the existing one.** The reason is in §2: an
 existing department with routing history routes better than a new one with only
 claims. Dormant departments cost nothing to maintain, but their accumulated
 evidence is expensive to rebuild.
 
 ### Periodic Consolidation
 
-The Mayor (or a dedicated org-design function) periodically reviews the
+The Coordinator (or a dedicated org-design function) periodically reviews the
 department landscape:
 
 - Merge dormant departments with significant overlap
@@ -286,7 +286,7 @@ should update its `handles` and `does_not_handle` when:
    the boundary is real and should be documented
 3. **Contested capabilities surface** — if reopened tasks cluster around a
    specific claim, either invest in the capability or explicitly drop it
-4. **Explicit reorganization** — Mayor restructures departments for strategic
+4. **Explicit reorganization** — Coordinator restructures departments for strategic
    reasons (entering a security hardening phase, shifting project priorities)
 
 ### Complexity Weighting
@@ -314,8 +314,8 @@ capability profile — it's a **recursive structure** that can contain sub-roles
 
 ```yaml
 role: security-lead
-goal: Handle security-related work for this rig
-layer: crew
+goal: Handle security-related work for this project
+layer: team
 
 # Capability advertisement (authored claims — see §2 for how these evolve)
 handles:
@@ -371,20 +371,20 @@ track_record:
 |-----------|--------|--------|
 | Tier system | Beads `agent-cost-optimization` | Implemented on branch |
 | Agent registry | Beads `agent-cost-optimization` | Implemented on branch |
-| TOML role parser | Gastown PR #2518 | Open PR |
-| Per-crew agent assignment | Gastown PR #2527 | Open PR |
-| Agent framework survey | Gastown PR #2581 (w-gc-004) | Merged |
-| Wasteland stamps | HOP federation | Live |
+| TOML role parser | gastown PR #2518 | Open PR |
+| Per-team agent assignment | gastown PR #2527 | Open PR |
+| Agent framework survey | gastown PR #2581 (w-gc-004) | Merged |
+| Archive stamps | HOP federation | Live |
 | Role format design | **w-gc-001** | **This document informs it** |
 
 ---
 
 ## 6. Open Questions
 
-1. **How deep should delegation recurse?** A crew member managing sub-agents
+1. **How deep should delegation recurse?** A team member managing sub-agents
    that manage sub-sub-agents is powerful but complex. Is 2-3 levels sufficient?
 
-2. **Who writes the initial role definition?** The Mayor? The Overseer? A
+2. **Who writes the initial role definition?** The Coordinator? The Overseer? A
    dedicated org-design agent? The role author needs cross-cutting visibility to
    avoid duplication.
 
@@ -392,7 +392,7 @@ track_record:
    dispatcher query track records at routing time, or are they pre-computed into
    a routing index?
 
-4. **How do Wasteland stamps connect to local track records?** A rig's Wasteland
+4. **How do Archive stamps connect to local track records?** A project's Archive
    reputation should reflect its departments' aggregated track records, but the
    mapping is non-trivial.
 

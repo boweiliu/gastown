@@ -10,29 +10,29 @@ Gas Town routes beads commands based on issue ID prefix. You don't need to think
 about which database to use - just use the issue ID.
 
 ```bash
-bd show gp-xyz    # Routes to greenplace rig's beads
-bd show hq-abc    # Routes to town-level beads
-bd show wyv-123   # Routes to wyvern rig's beads
+bd show gp-xyz    # Routes to greenplace project's beads
+bd show hq-abc    # Routes to workspace-level beads
+bd show wyv-123   # Routes to wyvern project's beads
 ```
 
-**How it works**: Routes are defined in `~/gt/.beads/routes.jsonl`. Each rig's
-prefix maps to its beads location (the mayor's clone in that rig).
+**How it works**: Routes are defined in `~/gt/.beads/routes.jsonl`. Each project's
+prefix maps to its beads location (the coordinator's clone in that project).
 
 | Prefix | Routes To | Purpose |
 |--------|-----------|---------|
-| `hq-*` | `~/gt/.beads/` | Mayor mail, cross-rig coordination |
-| `gp-*` | `~/gt/greenplace/mayor/rig/.beads/` | Greenplace project issues |
-| `wyv-*` | `~/gt/wyvern/mayor/rig/.beads/` | Wyvern project issues |
+| `hq-*` | `~/gt/.beads/` | Coordinator mail, cross-project coordination |
+| `gp-*` | `~/gt/greenplace/coordinator/project/.beads/` | Greenplace project issues |
+| `wyv-*` | `~/gt/wyvern/coordinator/project/.beads/` | Wyvern project issues |
 
 Debug routing: `BD_DEBUG_ROUTING=1 bd show <id>`
 
 ## Configuration
 
-### Rig Config (`config.json`)
+### Project Config (`config.json`)
 
 ```json
 {
-  "type": "rig",
+  "type": "project",
   "name": "myproject",
   "git_url": "https://github.com/...",
   "default_branch": "main",
@@ -40,11 +40,11 @@ Debug routing: `BD_DEBUG_ROUTING=1 bd show <id>`
 }
 ```
 
-**Rig config fields:**
+**Project config fields:**
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `default_branch` | `string` | `"main"` | Default branch for the rig. Auto-detected from remote during `gt rig add`. Used as the merge target by the Refinery and as the base for polecats when no integration branch is active. |
+| `default_branch` | `string` | `"main"` | Default branch for the project. Auto-detected from remote during `gt project add`. Used as the merge target by the Merger and as the base for workers when no integration branch is active. |
 
 ### Settings (`settings/config.json`)
 
@@ -58,9 +58,9 @@ Debug routing: `BD_DEBUG_ROUTING=1 bd show <id>`
       "fg": "#eeeeee"
     },
     "role_themes": {
-      "witness": "rust",
-      "refinery": "plum",
-      "crew": "none"
+      "watcher": "rust",
+      "merger": "plum",
+      "team": "none"
     }
   },
   "merge_queue": {
@@ -76,8 +76,8 @@ Debug routing: `BD_DEBUG_ROUTING=1 bd show <id>`
     "retry_flaky_tests": 1,
     "poll_interval": "30s",
     "max_concurrent": 1,
-    "integration_branch_polecat_enabled": true,
-    "integration_branch_refinery_enabled": true,
+    "integration_branch_worker_enabled": true,
+    "integration_branch_merger_enabled": true,
     "integration_branch_template": "integration/{title}",
     "integration_branch_auto_land": false
   }
@@ -88,20 +88,20 @@ Debug routing: `BD_DEBUG_ROUTING=1 bd show <id>`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `disabled` | `bool` | `false` | Disable tmux status/window theming for the rig |
-| `name` | `string` | auto-assigned by rig name | Use a named built-in palette theme |
+| `disabled` | `bool` | `false` | Disable tmux status/window theming for the project |
+| `name` | `string` | auto-assigned by project name | Use a named built-in palette theme |
 | `custom.bg` | `string` | unset | Custom tmux background color |
 | `custom.fg` | `string` | unset | Custom tmux foreground color |
-| `role_themes` | `map[string]string` | unset | Per-role overrides for `witness`, `refinery`, `crew`, `polecat`; use `"none"` to disable theming for a role |
+| `role_themes` | `map[string]string` | unset | Per-role overrides for `watcher`, `merger`, `team`, `worker`; use `"none"` to disable theming for a role |
 
 Theme resolution:
-- No `theme` config: auto-assign a built-in palette theme by rig name
+- No `theme` config: auto-assign a built-in palette theme by project name
 - `disabled: true`: skip both `status-style` and `window-style`
 - `name`: use that built-in theme
 - `custom`: use exact `{bg, fg}` colors
-- `role_themes`: override role-specific sessions within the rig
+- `role_themes`: override role-specific sessions within the project
 
-Town-level role defaults live in `mayor/config.json` under:
+Workspace-level role defaults live in `coordinator/config.json` under:
 
 ```json
 {
@@ -113,16 +113,16 @@ Town-level role defaults live in `mayor/config.json` under:
       "fg": "#eeeeee"
     },
     "role_defaults": {
-      "mayor": "forest",
-      "deacon": "plum",
-      "witness": "rust",
-      "crew": "none"
+      "coordinator": "forest",
+      "supervisor": "plum",
+      "watcher": "rust",
+      "team": "none"
     }
   }
 }
 ```
 
-`role_defaults` supports `mayor`, `deacon`, `witness`, `refinery`, `crew`, and `polecat`.
+`role_defaults` supports `coordinator`, `supervisor`, `watcher`, `merger`, `team`, and `worker`.
 
 **Merge queue fields:**
 
@@ -138,12 +138,12 @@ Town-level role defaults live in `mayor/config.json` under:
 | `on_conflict` | `string` | `"assign_back"` | Conflict strategy: `assign_back` or `auto_rebase` |
 | `delete_merged_branches` | `bool` | `true` | Delete source branches after merging |
 | `retry_flaky_tests` | `int` | `1` | Number of times to retry flaky tests |
-| `poll_interval` | `string` | `"30s"` | How often Refinery polls for new MRs |
+| `poll_interval` | `string` | `"30s"` | How often Merger polls for new MRs |
 | `max_concurrent` | `int` | `1` | Maximum concurrent merges |
-| `integration_branch_polecat_enabled` | `*bool` | `true` | Polecats auto-source worktrees from integration branches |
-| `integration_branch_refinery_enabled` | `*bool` | `true` | `gt done` / `gt mq submit` auto-target integration branches |
+| `integration_branch_worker_enabled` | `*bool` | `true` | Workers auto-source worktrees from integration branches |
+| `integration_branch_merger_enabled` | `*bool` | `true` | `gt done` / `gt mq submit` auto-target integration branches |
 | `integration_branch_template` | `string` | `"integration/{title}"` | Branch name template (`{title}`, `{epic}`, `{prefix}`, `{user}`) |
-| `integration_branch_auto_land` | `*bool` | `false` | Refinery patrol auto-lands when all children closed |
+| `integration_branch_auto_land` | `*bool` | `false` | Merger sweep auto-lands when all children closed |
 
 See [Integration Branches](concepts/integration-branches.md) for integration branch details.
 
@@ -151,25 +151,25 @@ See [Integration Branches](concepts/integration-branches.md) for integration bra
 
 Process state, PIDs, ephemeral data.
 
-### Rig-Level Configuration
+### Project-Level Configuration
 
-Rigs support layered configuration through:
-1. **Wisp layer** (`.beads-wisp/config/`) - transient, local overrides
-2. **Rig identity bead labels** - persistent rig settings
-3. **Town defaults** (`~/gt/settings/config.json`)
+Projects support layered configuration through:
+1. **Ephemeral layer** (`.beads-ephemeral/config/`) - transient, local overrides
+2. **Project identity bead labels** - persistent project settings
+3. **Workspace defaults** (`~/gt/settings/config.json`)
 4. **System defaults** - compiled-in fallbacks
 
-#### Polecat Branch Naming
+#### Worker Branch Naming
 
-Configure custom branch name templates for polecats:
+Configure custom branch name templates for workers:
 
 ```bash
-# Set via wisp (transient - for testing)
-echo '{"polecat_branch_template": "adam/{year}/{month}/{description}"}' > \
-  ~/gt/.beads-wisp/config/myrig.json
+# Set via ephemeral (transient - for testing)
+echo '{"Worker_branch_template": "adam/{year}/{month}/{description}"}' > \
+  ~/gt/.beads-ephemeral/config/myrig.json
 
-# Or set via rig identity bead labels (persistent)
-bd update gt-rig-myrig --labels="polecat_branch_template:adam/{year}/{month}/{description}"
+# Or set via project identity bead labels (persistent)
+bd update gt-project-myrig --labels="Worker_branch_template:adam/{year}/{month}/{description}"
 ```
 
 **Template Variables:**
@@ -179,16 +179,16 @@ bd update gt-rig-myrig --labels="polecat_branch_template:adam/{year}/{month}/{de
 | `{user}` | From `git config user.name` | `adam` |
 | `{year}` | Current year (YY format) | `26` |
 | `{month}` | Current month (MM format) | `01` |
-| `{name}` | Polecat name | `alpha` |
+| `{name}` | Worker name | `alpha` |
 | `{issue}` | Issue ID without prefix | `123` (from `gt-123`) |
 | `{description}` | Sanitized issue title | `fix-auth-bug` |
 | `{timestamp}` | Unique timestamp | `1ks7f9a` |
 
 **Default Behavior (backward compatible):**
 
-When `polecat_branch_template` is empty or not set:
-- With issue: `polecat/{name}/{issue}@{timestamp}`
-- Without issue: `polecat/{name}-{timestamp}`
+When `Worker_branch_template` is empty or not set:
+- With issue: `worker/{name}/{issue}@{timestamp}`
+- Without issue: `worker/{name}-{timestamp}`
 
 **Example Configurations:**
 
@@ -199,14 +199,14 @@ When `polecat_branch_template` is empty or not set:
 # Simple feature branches
 "feature/{issue}"
 
-# Include polecat name for clarity
+# Include worker name for clarity
 "work/{name}/{issue}"
 ```
 
-## Formula Format
+## Template Format
 
 ```toml
-formula = "name"
+template = "name"
 type = "workflow"           # workflow | expansion | aspect
 version = 1
 description = "..."
@@ -225,48 +225,48 @@ needs = ["other-step"]      # Dependencies
 **Composition:**
 
 ```toml
-extends = ["base-formula"]
+extends = ["base-template"]
 
 [compose]
 aspects = ["cross-cutting"]
 
 [[compose.expand]]
 target = "step-id"
-with = "macro-formula"
+with = "macro-template"
 ```
 
-## Molecule Lifecycle
+## Workflow Lifecycle
 
-> For the full lifecycle diagram and detailed command reference, see [concepts/molecules.md](concepts/molecules.md).
+> For the full lifecycle diagram and detailed command reference, see [concepts/workflows.md](concepts/workflows.md).
 
-**Summary**: Formula (TOML) --`bd cook`--> Protomolecule --`bd mol pour`--> Mol (persistent) or Wisp (ephemeral) --`bd squash`--> Digest.
+**Summary**: Template (TOML) --`bd cook`--> WorkflowTemplate --`bd workflow pour`--> Mol (persistent) or Ephemeral (ephemeral) --`bd squash`--> Digest.
 
 | Operation | bd (data) | gt (agent) |
 |-----------|-----------|------------|
-| Cook/pour/wisp | `bd cook`, `bd mol pour/wisp` | — |
-| Squash/burn | `bd mol squash/burn <id>` | `gt mol squash/burn` (attached) |
-| Navigate | `bd mol current`, `bd mol show` | `gt hook`, `gt mol current` |
-| Attach | — | `gt mol attach/detach` |
+| Cook/pour/ephemeral | `bd cook`, `bd workflow pour/ephemeral` | — |
+| Squash/burn | `bd workflow squash/burn <id>` | `gt workflow squash/burn` (attached) |
+| Navigate | `bd workflow current`, `bd workflow show` | `gt assignment`, `gt workflow current` |
+| Attach | — | `gt workflow attach/detach` |
 
 ## Agent Lifecycle
 
-### Polecat Shutdown
+### Worker Shutdown
 
 ```
-1. Work through formula checklist (shown inline by gt prime)
+1. Work through template checklist (shown inline by gt prime)
 2. Submit to merge queue via gt done
 3. gt done nukes sandbox and exits
-4. Witness removes worktree + branch
+4. Watcher removes worktree + branch
 ```
 
 ### Session Cycling
 
 ```
 1. Agent notices context filling
-2. gt handoff (sends mail to self)
+2. gt transfer (sends mail to self)
 3. Manager kills session
 4. Manager starts new session
-5. New session reads handoff mail
+5. New session reads transfer mail
 ```
 
 ## Environment Variables
@@ -278,40 +278,40 @@ These are set in tmux session environment when agents are spawned.
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
-| `GT_ROLE` | Agent role type | `mayor`, `witness`, `polecat`, `crew` |
-| `GT_ROOT` | Town root directory | `/home/user/gt` |
-| `BD_ACTOR` | Agent identity for attribution | `gastown/polecats/toast` |
-| `GIT_AUTHOR_NAME` | Commit attribution (same as BD_ACTOR) | `gastown/polecats/toast` |
+| `GT_ROLE` | Agent role type | `coordinator`, `watcher`, `worker`, `team` |
+| `GT_ROOT` | Workspace root directory | `/home/user/gt` |
+| `BD_ACTOR` | Agent identity for attribution | `gastown/workers/toast` |
+| `GIT_AUTHOR_NAME` | Commit attribution (same as BD_ACTOR) | `gastown/workers/toast` |
 | `BEADS_DIR` | Beads database location | `/home/user/gt/gastown/.beads` |
 
-### Rig-Level Variables
+### Project-Level Variables
 
 | Variable | Purpose | Roles |
 |----------|---------|-------|
-| `GT_RIG` | Rig name | witness, refinery, polecat, crew |
-| `GT_POLECAT` | Polecat worker name | polecat only |
-| `GT_CREW` | Crew worker name | crew only |
-| `BEADS_AGENT_NAME` | Agent name for beads operations | polecat, crew |
+| `GT_RIG` | Project name | watcher, merger, worker, team |
+| `GT_worker` | Worker worker name | worker only |
+| `GT_team` | Team worker name | team only |
+| `BEADS_AGENT_NAME` | Agent name for beads operations | worker, team |
 
 ### Other Variables
 
 | Variable | Purpose |
 |----------|---------|
 | `GIT_AUTHOR_EMAIL` | Workspace owner email (from git config) |
-| `GT_TOWN_ROOT` | Override town root detection (manual use) |
+| `GT_TOWN_ROOT` | Override workspace root detection (manual use) |
 | `CLAUDE_RUNTIME_CONFIG_DIR` | Custom Claude settings directory |
 
 ### Environment by Role
 
 | Role | Key Variables |
 |------|---------------|
-| **Mayor** | `GT_ROLE=mayor`, `BD_ACTOR=mayor` |
-| **Deacon** | `GT_ROLE=deacon`, `BD_ACTOR=deacon` |
-| **Boot** | `GT_ROLE=deacon/boot`, `BD_ACTOR=deacon-boot` |
-| **Witness** | `GT_ROLE=witness`, `GT_RIG=<rig>`, `BD_ACTOR=<rig>/witness` |
-| **Refinery** | `GT_ROLE=refinery`, `GT_RIG=<rig>`, `BD_ACTOR=<rig>/refinery` |
-| **Polecat** | `GT_ROLE=polecat`, `GT_RIG=<rig>`, `GT_POLECAT=<name>`, `BD_ACTOR=<rig>/polecats/<name>` |
-| **Crew** | `GT_ROLE=crew`, `GT_RIG=<rig>`, `GT_CREW=<name>`, `BD_ACTOR=<rig>/crew/<name>` |
+| **Coordinator** | `GT_ROLE=coordinator`, `BD_ACTOR=coordinator` |
+| **Supervisor** | `GT_ROLE=supervisor`, `BD_ACTOR=supervisor` |
+| **Boot** | `GT_ROLE=supervisor/boot`, `BD_ACTOR=supervisor-boot` |
+| **Watcher** | `GT_ROLE=watcher`, `GT_RIG=<project>`, `BD_ACTOR=<project>/watcher` |
+| **Merger** | `GT_ROLE=merger`, `GT_RIG=<project>`, `BD_ACTOR=<project>/merger` |
+| **Worker** | `GT_ROLE=worker`, `GT_RIG=<project>`, `GT_worker=<name>`, `BD_ACTOR=<project>/workers/<name>` |
+| **Team** | `GT_ROLE=team`, `GT_RIG=<project>`, `GT_team=<name>`, `BD_ACTOR=<project>/team/<name>` |
 
 ### Doctor Check
 
@@ -320,7 +320,7 @@ environment variables. Mismatches are reported as warnings:
 
 ```
 ⚠ env-vars: Found 3 env var mismatch(es) across 1 session(s)
-    hq-mayor: missing GT_ROOT (expected "/home/user/gt")
+    hq-coordinator: missing GT_ROOT (expected "/home/user/gt")
 ```
 
 Fix by restarting sessions: `gt shutdown && gt up`
@@ -334,15 +334,15 @@ Understanding this hierarchy is essential for proper configuration.
 
 | Role | Working Directory | Notes |
 |------|-------------------|-------|
-| **Mayor** | `~/gt/mayor/` | Town-level coordinator, isolated from rigs |
-| **Deacon** | `~/gt/deacon/` | Background supervisor daemon |
-| **Witness** | `~/gt/<rig>/witness/` | No git clone, monitors polecats only |
-| **Refinery** | `~/gt/<rig>/refinery/rig/` | Worktree on main branch |
-| **Crew** | `~/gt/<rig>/crew/<name>/rig/` | Persistent human workspace clone |
-| **Polecat** | `~/gt/<rig>/polecats/<name>/rig/` | Polecat worktree (ephemeral sandbox) |
+| **Coordinator** | `~/gt/coordinator/` | Workspace-level coordinator, isolated from projects |
+| **Supervisor** | `~/gt/supervisor/` | Background supervisor daemon |
+| **Watcher** | `~/gt/<project>/watcher/` | No git clone, monitors workers only |
+| **Merger** | `~/gt/<project>/merger/project/` | Worktree on main branch |
+| **Team** | `~/gt/<project>/team/<name>/project/` | Persistent human workspace clone |
+| **Worker** | `~/gt/<project>/workers/<name>/project/` | Worker worktree (ephemeral sandbox) |
 
-Note: The per-rig `<rig>/mayor/rig/` directory is NOT a working directory—it's
-a git clone that holds the canonical `.beads/` database for that rig.
+Note: The per-project `<project>/coordinator/project/` directory is NOT a working directory—it's
+a git clone that holds the canonical `.beads/` database for that project.
 
 ### Settings File Locations
 
@@ -351,13 +351,13 @@ Claude Code via the `--settings` flag. This keeps customer repos clean:
 
 ```
 ~/gt/
-├── mayor/.claude/settings.json              # Mayor settings (cwd = settings dir)
-├── deacon/.claude/settings.json             # Deacon settings (cwd = settings dir)
-└── <rig>/
-    ├── crew/.claude/settings.json           # Shared by all crew members
-    ├── polecats/.claude/settings.json       # Shared by all polecats
-    ├── witness/.claude/settings.json        # Witness settings
-    └── refinery/.claude/settings.json       # Refinery settings
+├── coordinator/.claude/settings.json              # Coordinator settings (cwd = settings dir)
+├── supervisor/.claude/settings.json             # Supervisor settings (cwd = settings dir)
+└── <project>/
+    ├── team/.claude/settings.json           # Shared by all team members
+    ├── workers/.claude/settings.json       # Shared by all workers
+    ├── watcher/.claude/settings.json        # Watcher settings
+    └── merger/.claude/settings.json       # Merger settings
 ```
 
 The `--settings` flag loads these as a separate priority tier that merges
@@ -372,7 +372,7 @@ Full role context (~300-500 lines per role) is injected ephemerally by `gt prime
 via the SessionStart hook. No per-directory CLAUDE.md or AGENTS.md files are created.
 
 **Why no per-directory files?**
-- Claude Code traverses upward from CWD for CLAUDE.md — all agents under `~/gt/` find the town-root file
+- Claude Code traverses upward from CWD for CLAUDE.md — all agents under `~/gt/` find the workspace-root file
 - AGENTS.md (for Codex) uses downward traversal from git root — parent directories are invisible, so per-directory AGENTS.md never worked
 - The real context comes from `gt prime`, making on-disk bootstrap pointers redundant
 
@@ -380,9 +380,9 @@ via the SessionStart hook. No per-directory CLAUDE.md or AGENTS.md files are cre
 
 Gas Town no longer uses git sparse checkout to hide customer repo files. Customer
 repositories can have their own `.claude/` directory and `CLAUDE.md` — these are
-preserved in all worktrees (crew, polecats, refinery, mayor/rig).
+preserved in all worktrees (team, workers, merger, coordinator/project).
 
-Gas Town's context comes from the town-root `CLAUDE.md` identity anchor
+Gas Town's context comes from the workspace-root `CLAUDE.md` identity anchor
 (picked up by all agents via Claude Code's upward directory traversal),
 `gt prime` via the SessionStart hook, and the customer repo's own `CLAUDE.md`.
 These coexist safely because:
@@ -417,8 +417,8 @@ Gas Town uses two settings templates based on role type:
 
 | Type | Roles | Key Difference |
 |------|-------|----------------|
-| **Interactive** | Mayor, Crew | Mail injected on `UserPromptSubmit` hook |
-| **Autonomous** | Polecat, Witness, Refinery, Deacon | Mail injected on `SessionStart` hook |
+| **Interactive** | Coordinator, Team | Mail injected on `UserPromptSubmit` hook |
+| **Autonomous** | Worker, Watcher, Merger, Supervisor | Mail injected on `SessionStart` hook |
 
 Autonomous agents may start without user input, so they need mail checked
 at session start. Interactive agents wait for user prompts.
@@ -430,14 +430,14 @@ at session start. Interactive agents wait for user prompts.
 | Agent using wrong settings | Check `gt doctor`, verify `.claude/settings.json` in role parent dir |
 | Settings not found | Run `gt install` to recreate settings, or `gt doctor --fix` |
 | Source repo settings leaking | Run `gt doctor --fix` to remove legacy sparse checkout |
-| Mayor settings affecting polecats | Mayor should run in `mayor/`, not town root |
+| Coordinator settings affecting workers | Coordinator should run in `coordinator/`, not workspace root |
 
 ## CLI Reference
 
-### Town Management
+### Workspace Management
 
 ```bash
-gt install [path]            # Create town
+gt install [path]            # Create workspace
 gt install --git             # With git init
 gt doctor                    # Health check
 gt doctor --fix              # Auto-repair
@@ -453,7 +453,7 @@ gt config agent set <name> <cmd>  # Create or update custom agent
 gt config agent remove <name>     # Remove custom agent (built-ins protected)
 
 # Default agent
-gt config default-agent [name]    # Get or set town default agent
+gt config default-agent [name]    # Get or set workspace default agent
 ```
 
 **Built-in agents**: `claude`, `gemini`, `codex`, `cursor`, `auggie`, `amp`, `opencode`, `copilot`
@@ -464,7 +464,7 @@ gt config default-agent [name]    # Get or set town default agent
 > Copilot uses a 5-second ready delay instead of prompt-based detection. Requires a
 > Copilot seat and org-level CLI policy enabled.
 
-**Custom agents**: Define per-town via CLI or JSON:
+**Custom agents**: Define per-workspace via CLI or JSON:
 ```bash
 gt config agent set claude-glm "claude-glm --model glm-4"
 gt config agent set claude "claude-opus"  # Override built-in
@@ -490,10 +490,10 @@ gt config default-agent claude-glm       # Set default
 }
 ```
 
-**Rig-level agents** (`<rig>/settings/config.json`):
+**Project-level agents** (`<project>/settings/config.json`):
 ```json
 {
-  "type": "rig-settings",
+  "type": "project-settings",
   "version": 1,
   "agent": "opencode",
   "agents": {
@@ -508,7 +508,7 @@ gt config default-agent claude-glm       # Set default
 **ACP-enabled custom agents** (`settings/config.json`):
 ```json
 {
-  "type": "town-settings",
+  "type": "workspace-settings",
   "version": 1,
   "default_agent": "opencode-acp-debug",
   "agents": {
@@ -532,52 +532,52 @@ a custom agent with `"command": "opencode"` automatically inherits ACP support
 from the opencode preset. You can override or extend the ACP args by specifying
 the `acp` field explicitly.
 
-**Agent resolution order**: rig-level → town-level → built-in presets.
+**Agent resolution order**: project-level → workspace-level → built-in presets.
 
 For OpenCode autonomous mode, set env var in your shell profile:
 ```bash
 export OPENCODE_PERMISSION='{"*":"allow"}'
 ```
 
-### Rig Management
+### Project Management
 
 ```bash
-gt rig add <name> <url>
-gt rig list
-gt rig remove <name>
+gt project add <name> <url>
+gt project list
+gt project remove <name>
 ```
 
-### Convoy Management (Primary Dashboard)
+### Batch Management (Primary Dashboard)
 
 ```bash
-gt convoy list                          # Dashboard of active convoys
-gt convoy status [convoy-id]            # Show progress (🚚 hq-cv-*)
-gt convoy create "name" [issues...]     # Create convoy tracking issues
-gt convoy create "name" gt-a bd-b --notify mayor/  # With notification
-gt convoy list --all                    # Include landed convoys
-gt convoy list --status=closed          # Only landed convoys
+gt batch list                          # Dashboard of active batches
+gt batch status [batch-id]            # Show progress (🚚 hq-cv-*)
+gt batch create "name" [issues...]     # Create batch tracking issues
+gt batch create "name" gt-a bd-b --notify coordinator/  # With notification
+gt batch list --all                    # Include landed batches
+gt batch list --status=closed          # Only landed batches
 ```
 
-Note: "Swarm" is ephemeral (workers on a convoy's issues). See [Convoys](concepts/convoy.md).
+Note: "Swarm" is ephemeral (workers on a batch's issues). See [Batches](concepts/batch.md).
 
 ### Work Assignment
 
 ```bash
-# Standard workflow: convoy first, then sling
-gt convoy create "Feature X" gt-abc gt-def
-gt sling gt-abc <rig>                    # Assign to polecat
-gt sling gt-abc <rig> --agent codex      # Override runtime for this sling/spawn
-gt sling <proto> --on gt-def <rig>       # With workflow template
+# Standard workflow: batch first, then dispatch
+gt batch create "Feature X" gt-abc gt-def
+gt dispatch gt-abc <project>                    # Assign to worker
+gt dispatch gt-abc <project> --agent codex      # Override runtime for this dispatch/spawn
+gt dispatch <proto> --on gt-def <project>       # With workflow template
 
-# Quick sling (auto-creates convoy)
-gt sling <bead> <rig>                    # Auto-convoy for dashboard visibility
+# Quick dispatch (auto-creates batch)
+gt dispatch <bead> <project>                    # Auto-batch for dashboard visibility
 ```
 
 Agent overrides:
 
-- `gt start --agent <alias>` overrides the Mayor/Deacon runtime for this launch.
-- `gt mayor start|attach|restart --agent <alias>` and `gt deacon start|attach|restart --agent <alias>` do the same.
-- `gt start crew <name> --agent <alias>` and `gt crew at <name> --agent <alias>` override the crew worker runtime.
+- `gt start --agent <alias>` overrides the Coordinator/Supervisor runtime for this launch.
+- `gt coordinator start|attach|restart --agent <alias>` and `gt supervisor start|attach|restart --agent <alias>` do the same.
+- `gt start team <name> --agent <alias>` and `gt team at <name> --agent <alias>` override the team worker runtime.
 
 ### Communication
 
@@ -602,48 +602,48 @@ See [escalation.md](design/escalation.md) for full protocol.
 ### Sessions
 
 ```bash
-gt handoff                   # Request cycle (context-aware)
-gt handoff --shutdown        # Terminate (polecats)
-gt session stop <rig>/<agent>
-gt peek <agent>              # Check health
-gt nudge <agent> "message"   # Send message to agent
-gt seance                    # List discoverable predecessor sessions
-gt seance --talk <id>        # Talk to predecessor (full context)
-gt seance --talk <id> -p "Where is X?"  # One-shot question
+gt transfer                   # Request cycle (context-aware)
+gt transfer --shutdown        # Terminate (workers)
+gt session stop <project>/<agent>
+gt inspect <agent>              # Check health
+gt message <agent> "message"   # Send message to agent
+gt recall                    # List discoverable predecessor sessions
+gt recall --talk <id>        # Talk to predecessor (full context)
+gt recall --talk <id> -p "Where is X?"  # One-shot question
 ```
 
-**Session Discovery**: Each session has a startup nudge that becomes searchable
+**Session Discovery**: Each session has a startup message that becomes searchable
 in Claude's `/resume` picker:
 
 ```
-[GAS TOWN] recipient <- sender • timestamp • topic[:mol-id]
+[GAS TOWN] recipient <- sender • timestamp • topic[:wf-id]
 ```
 
-Example: `[GAS TOWN] gastown/crew/gus <- human • 2025-12-30T15:42 • restart`
+Example: `[GAS TOWN] gastown/team/gus <- human • 2025-12-30T15:42 • restart`
 
-**IMPORTANT**: Always use `gt nudge` to send messages to Claude sessions.
+**IMPORTANT**: Always use `gt message` to send messages to Claude sessions.
 Never use raw `tmux send-keys` - it doesn't handle Claude's input correctly.
-`gt nudge` uses literal mode + debounce + separate Enter for reliable delivery.
+`gt message` uses literal mode + debounce + separate Enter for reliable delivery.
 
 ### Emergency
 
 ```bash
 gt stop --all                # Kill all sessions
-gt stop --rig <name>         # Kill rig sessions
+gt stop --project <name>         # Kill project sessions
 ```
 
 ### Health Check
 
 ```bash
-gt deacon health-check <agent>   # Send health check ping, track response
-gt deacon health-state           # Show health check state for all agents
+gt supervisor health-check <agent>   # Send health check ping, track response
+gt supervisor health-state           # Show health check state for all agents
 ```
 
 ### Merge Queue (MQ)
 
 ```bash
-gt mq list [rig]             # Show the merge queue
-gt mq next [rig]             # Show highest-priority merge request
+gt mq list [project]             # Show the merge queue
+gt mq next [project]             # Show highest-priority merge request
 gt mq submit                 # Submit current branch to merge queue
 gt mq status <id>            # Show detailed merge request status
 gt mq retry <id>             # Retry a failed merge request
@@ -679,89 +679,89 @@ bd close <id>
 bd dep add <child> <parent>  # child depends on parent
 ```
 
-## Patrol Agents
+## Sweep Agents
 
-Deacon, Witness, and Refinery run continuous patrol loops using wisps:
+Supervisor, Watcher, and Merger run continuous sweep loops using ephemerals:
 
-| Agent | Patrol Molecule | Responsibility |
+| Agent | Sweep Workflow | Responsibility |
 |-------|-----------------|----------------|
-| **Deacon** | `mol-deacon-patrol` | Agent lifecycle, plugin execution, health checks |
-| **Witness** | `mol-witness-patrol` | Monitor polecats, nudge stuck workers |
-| **Refinery** | `mol-refinery-patrol` | Process merge queue, review MRs, check integration branches |
+| **Supervisor** | `wf-supervisor-sweep` | Agent lifecycle, plugin execution, health checks |
+| **Watcher** | `wf-watcher-sweep` | Monitor workers, message stuck workers |
+| **Merger** | `wf-merger-sweep` | Process merge queue, review MRs, check integration branches |
 
 ```
-1. gt patrol new               # Create root-only wisp
-2. gt prime                    # Shows patrol checklist inline
+1. gt sweep new               # Create root-only ephemeral
+2. gt prime                    # Shows sweep checklist inline
 3. Work through each step
-4. gt patrol report --summary "..."  # Close + start next cycle
+4. gt sweep report --summary "..."  # Close + start next cycle
 ```
 
-## Plugin Molecules
+## Plugin Workflows
 
-Plugins are molecules with specific labels:
+Plugins are workflows with specific labels:
 
 ```json
 {
-  "id": "mol-security-scan",
-  "labels": ["template", "plugin", "witness", "tier:haiku"]
+  "id": "wf-security-scan",
+  "labels": ["template", "plugin", "watcher", "tier:haiku"]
 }
 ```
 
-Patrol molecules bond plugins dynamically:
+Sweep workflows bond plugins dynamically:
 
 ```bash
-bd mol bond mol-security-scan $PATROL_ID --var scope="$SCOPE"
+bd workflow bond wf-security-scan $PATROL_ID --var scope="$SCOPE"
 ```
 
-## Formula Invocation Patterns
+## Template Invocation Patterns
 
-**CRITICAL**: Different formula types require different invocation methods.
+**CRITICAL**: Different template types require different invocation methods.
 
-### Workflow Formulas (sequential steps, single polecat)
+### Workflow Templates (sequential steps, single worker)
 
-Examples: `shiny`, `shiny-enterprise`, `mol-polecat-work`
+Examples: `shiny`, `shiny-enterprise`, `wf-worker-work`
 
 ```bash
-gt sling <formula> --on <bead-id> <target>
-gt sling shiny-enterprise --on gt-abc123 gastown
+gt dispatch <template> --on <bead-id> <target>
+gt dispatch shiny-enterprise --on gt-abc123 gastown
 ```
 
-### Convoy Formulas (parallel legs, multiple polecats)
+### Batch Templates (parallel legs, multiple workers)
 
 Examples: `code-review`
 
-**DO NOT use `gt sling` for convoy formulas!** It fails with "convoy type not supported".
+**DO NOT use `gt dispatch` for batch templates!** It fails with "batch type not supported".
 
 ```bash
-# Correct invocation - use gt formula run:
-gt formula run code-review --pr=123
-gt formula run code-review --files="src/*.go"
+# Correct invocation - use gt template run:
+gt template run code-review --pr=123
+gt template run code-review --files="src/*.go"
 
 # Dry run to preview:
-gt formula run code-review --pr=123 --dry-run
+gt template run code-review --pr=123 --dry-run
 ```
 
-### Identifying Formula Type
+### Identifying Template Type
 
 ```bash
-gt formula show <name>   # Shows "Type: convoy" or "Type: workflow"
-bd formula list          # Lists formulas by type
+gt template show <name>   # Shows "Type: batch" or "Type: workflow"
+bd template list          # Lists templates by type
 ```
 
 ### Why This Matters
 
-- `gt sling` attempts to cook+pour the formula, which fails for convoy type
-- `gt formula run` handles convoy dispatch directly, spawning parallel polecats
-- Convoy formulas create multiple polecats (one per leg) + synthesis step
+- `gt dispatch` attempts to cook+pour the template, which fails for batch type
+- `gt template run` handles batch dispatch directly, spawning parallel workers
+- Batch templates create multiple workers (one per leg) + synthesis step
 
 ## Common Issues
 
 | Problem | Solution |
 |---------|----------|
 | Agent in wrong directory | Check cwd, `gt doctor` |
-| Beads prefix mismatch | Check `bd show` vs rig config |
+| Beads prefix mismatch | Check `bd show` vs project config |
 | Worktree conflicts | Check worktree state, `gt doctor` |
-| Stuck worker | `gt nudge`, then `gt peek` |
-| Dirty git state | Commit or discard, then `gt handoff` |
+| Stuck worker | `gt message`, then `gt inspect` |
+| Dirty git state | Commit or discard, then `gt transfer` |
 
 > For architecture details (bare repo pattern, beads as control plane, nondeterministic idempotence), see [architecture.md](design/architecture.md).

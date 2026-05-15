@@ -13,12 +13,12 @@ Gas Town is a multi-agent workspace manager that orchestrates coding agents
 (Claude, Gemini, Codex, Cursor, AMP, OpenCode, Copilot, and others) through
 tmux sessions. It provides:
 
-- **Identity and role management** — each agent gets a role (polecat, crew,
-  witness, refinery) with appropriate context and permissions
+- **Identity and role management** — each agent gets a role (worker, team,
+  watcher, merger) with appropriate context and permissions
 - **Work assignment** — beads (issue tracking), mail, and hook-based dispatching
-- **Session lifecycle** — start, resume, handoff, and context cycling
+- **Session lifecycle** — start, resume, transfer, and context cycling
 - **Merge queue** — automated testing and merging of agent work
-- **Inter-agent communication** — nudges, mail, and shared state
+- **Inter-agent communication** — messages, mail, and shared state
 
 The key design principle is **loose coupling**: Gas Town orchestrates agents
 through tmux and environment variables. It does not import agent libraries,
@@ -76,12 +76,12 @@ There are three levels, checked in order:
 
 | Level | Path | Scope |
 |-------|------|-------|
-| Town | `~/gt/settings/agents.json` | All rigs in the town |
-| Rig | `~/gt/<rig>/settings/agents.json` | Single rig only |
+| Workspace | `~/gt/settings/agents.json` | All projects in the workspace |
+| Project | `~/gt/<project>/settings/agents.json` | Single project only |
 | Built-in | Compiled into `gt` binary | Ships with Gas Town |
 
-For external agent teams, **town-level** is the right choice. Users drop your
-config into `~/gt/settings/agents.json` and every rig can use it.
+For external agent teams, **workspace-level** is the right choice. Users drop your
+config into `~/gt/settings/agents.json` and every project can use it.
 
 ### Registry schema
 
@@ -100,7 +100,7 @@ The file is an `AgentRegistry` JSON object:
 
 The `version` field must be `1` (current schema version). The `agents` map
 keys are the agent name used in Gas Town config (e.g., `"agent": "kiro"` in
-rig settings).
+project settings).
 
 ### AgentPresetInfo field reference
 
@@ -204,29 +204,29 @@ This is the same hook events as Claude Code, just in Copilot's JSON format.
 
 To activate:
 ```bash
-gt config default-agent copilot        # Set as town default
+gt config default-agent copilot        # Set as workspace default
 gt start --agent copilot               # Or pass per-command
 ```
 
 ### Activating a custom preset
 
-Once a JSON file exists, configure a rig (or the whole town) to use it:
+Once a JSON file exists, configure a project (or the whole workspace) to use it:
 
 ```json
-// In ~/gt/<rig>/settings/config.json
+// In ~/gt/<project>/settings/config.json
 {
-  "type": "rig-settings",
+  "type": "project-settings",
   "version": 1,
   "agent": "kiro"
 }
 ```
 
-Or set it as the town-wide default:
+Or set it as the workspace-wide default:
 
 ```json
 // In ~/gt/settings/config.json
 {
-  "type": "town-settings",
+  "type": "workspace-settings",
   "version": 1,
   "default_agent": "kiro"
 }
@@ -236,12 +236,12 @@ You can also assign agents per-role for cost optimization:
 
 ```json
 {
-  "type": "town-settings",
+  "type": "workspace-settings",
   "version": 1,
   "default_agent": "claude",
   "role_agents": {
-    "witness": "kiro",
-    "polecat": "kiro"
+    "watcher": "kiro",
+    "worker": "kiro"
   }
 }
 ```
@@ -250,15 +250,15 @@ You can also assign agents per-role for cost optimization:
 
 When Gas Town starts an agent session, it resolves the config through this chain:
 
-1. Role-specific override (`role_agents[role]` in rig settings)
-2. Role-specific override (`role_agents[role]` in town settings)
-3. Rig's `agent` field
-4. Town's `default_agent` field
+1. Role-specific override (`role_agents[role]` in project settings)
+2. Role-specific override (`role_agents[role]` in workspace settings)
+3. Project's `agent` field
+4. Workspace's `default_agent` field
 5. Built-in fallback: `"claude"`
 
 At each step, the agent name is looked up in:
-1. Rig's custom agents (`rig settings/agents.json`)
-2. Town's custom agents (`town settings/agents.json`)
+1. Project's custom agents (`project settings/agents.json`)
+2. Workspace's custom agents (`workspace settings/agents.json`)
 3. Built-in presets (compiled into `gt`)
 
 This means your JSON preset is found automatically — no code change needed.
@@ -328,7 +328,7 @@ type HookInstallerFunc func(settingsDir, workDir, role, hooksDir, hooksFile stri
 Parameters:
 - `settingsDir` — Gas Town-managed parent dir (used by agents with `--settings` flag)
 - `workDir` — the agent's working directory (customer repo clone)
-- `role` — Gas Town role (`"polecat"`, `"crew"`, `"witness"`, `"refinery"`)
+- `role` — Gas Town role (`"worker"`, `"team"`, `"watcher"`, `"merger"`)
 - `hooksDir` — from preset's `hooks_dir` field
 - `hooksFile` — from preset's `hooks_settings_file` field
 
@@ -349,9 +349,9 @@ install a plugin file instead of a settings.json.
 Reference: `internal/hooks/templates/opencode/gastown.js`
 
 ```javascript
-export const GasTown = async ({ $, directory }) => {
+export const gastown = async ({ $, directory }) => {
   const role = (process.env.GT_ROLE || "").toLowerCase();
-  const autonomousRoles = new Set(["polecat", "witness", "refinery", "deacon"]);
+  const autonomousRoles = new Set(["worker", "watcher", "merger", "supervisor"]);
 
   const run = async (cmd) => {
     try {
@@ -406,7 +406,7 @@ This loads your full role context, mail, and pending work.
 ```
 
 Set `hooks_informational: true` in the preset. Gas Town will then send
-`gt prime` via tmux nudge as a fallback (since hooks won't run automatically).
+`gt prime` via tmux message as a fallback (since hooks won't run automatically).
 
 > **Note**: GitHub Copilot CLI previously used Pattern C, but now supports full
 > executable lifecycle hooks (Pattern B equivalent, using its own JSON format).
@@ -419,9 +419,9 @@ The startup fallback matrix (from `internal/runtime/runtime.go`):
 | Has Hooks | Has Prompt | Context Source | Work Instructions |
 |-----------|-----------|----------------|-------------------|
 | Yes | Yes | Hook runs `gt prime` | In CLI prompt arg |
-| Yes | No | Hook runs `gt prime` | Sent via nudge |
-| No | Yes | "Run `gt prime`" in prompt | Delayed nudge |
-| No | No | "Run `gt prime`" via nudge | Delayed nudge |
+| Yes | No | Hook runs `gt prime` | Sent via message |
+| No | Yes | "Run `gt prime`" in prompt | Delayed message |
+| No | No | "Run `gt prime`" via message | Delayed message |
 
 Agents with hooks get the most reliable experience. Without hooks, Gas Town
 falls back to tmux-based delivery with timing heuristics.
@@ -434,7 +434,7 @@ These are optional capabilities that enable advanced orchestration features.
 
 ### Non-interactive mode
 
-Used by Gas Town's formula system (automated workflows) and dogs (infrastructure
+Used by Gas Town's template system (automated workflows) and helpers (infrastructure
 helpers) for headless execution. Configure via the `non_interactive` preset field:
 
 ```json
@@ -452,7 +452,7 @@ Gas Town builds the command as: `kiro exec -p "prompt" --json`
 ### Session forking
 
 If your agent supports forking a past session (creating a read-only copy
-for inspection), set `supports_fork_session: true`. Used by the `gt seance`
+for inspection), set `supports_fork_session: true`. Used by the `gt recall`
 command for talking to past agent sessions.
 
 ### Wrapper scripts
@@ -514,7 +514,7 @@ The default built-in `codex` preset does not change. It remains on the no-hooks 
 
 ### Slash commands
 
-Gas Town provisions slash commands (like `/commit`, `/handoff`) into agent
+Gas Town provisions slash commands (like `/commit`, `/transfer`) into agent
 config directories. If your agent reads commands from a config directory,
 set `config_dir` in the preset and Gas Town will provision commands there.
 
@@ -619,15 +619,15 @@ Process names and ready prompts are observed, not self-reported.
 ### ZFC: Zero Framework Cognition
 
 The agent decides what to do with instructions. Gas Town provides transport
-(tmux, hooks, nudges) but doesn't make decisions for agents. The interface
+(tmux, hooks, messages) but doesn't make decisions for agents. The interface
 is about communication channels, not control flow.
 
 ### Graceful Degradation
 
 Every capability has a fallback:
 - No hooks? -> Startup fallback commands via tmux
-- No prompt mode? -> Nudge delivery
-- No resume? -> Fresh session with handoff mail
+- No prompt mode? -> Message delivery
+- No resume? -> Fresh session with transfer mail
 - No process API? -> Tmux pane_current_command
 
 The system works (less reliably) with zero native API support.
@@ -664,13 +664,13 @@ the underlying commands.
 Importing Gas Town Go packages, referencing internal file paths, or depending
 on internal data structures means your integration breaks when Gas Town
 refactors. The public interface is:
-- `gt` CLI commands (`gt prime`, `gt mail`, `gt hook`, etc.)
+- `gt` CLI commands (`gt prime`, `gt mail`, `gt assignment`, etc.)
 - Environment variables (`GT_ROLE`, `GT_RIG`, `GT_ROOT`, `BD_ACTOR`)
 - JSON config files (`settings/agents.json`)
 
 ### Skipping the preset for direct RuntimeConfig hacks
 
-The `RuntimeConfig` in rig `settings/config.json` is a backwards-compatibility
+The `RuntimeConfig` in project `settings/config.json` is a backwards-compatibility
 path. The modern approach is preset registration. RuntimeConfig works but
 misses features like session resume, process detection, and non-interactive
 mode that are only available through `AgentPresetInfo`.
@@ -703,17 +703,17 @@ Create `~/gt/settings/agents.json` (or add to existing):
 ### Step 2: Test basic launch (5 minutes)
 
 ```bash
-# Set your agent as default for a rig
-gt config set agent your-agent --rig <rigname>
+# Set your agent as default for a project
+gt config set agent your-agent --project <rigname>
 
 # Or test with a one-off override
-gt crew start jack --agent your-agent
+gt team start jack --agent your-agent
 ```
 
 Verify:
 - Agent starts in a tmux pane
-- `gt prime` content is delivered (either via hooks, prompt, or nudge)
-- Agent can receive nudges (`gt nudge <rig>/crew/jack "hello"`)
+- `gt prime` content is delivered (either via hooks, prompt, or message)
+- Agent can receive messages (`gt message <project>/team/jack "hello"`)
 
 ### Step 3: Add session resume (if supported)
 
@@ -758,7 +758,7 @@ Add to your preset:
 }
 ```
 
-This enables your agent for formula execution and dog tasks.
+This enables your agent for template execution and helper tasks.
 
 ---
 
@@ -767,7 +767,7 @@ This enables your agent for formula execution and dog tasks.
 ### Do I need to submit a PR to Gas Town?
 
 **No** for Tiers 0-1. The JSON preset is user-managed config. Users drop
-the file into their town settings and it works.
+the file into their workspace settings and it works.
 
 **Yes** for Tier 2 (hook installer registration) if you want it built-in.
 But users can also install hooks manually or via a wrapper script without
@@ -777,25 +777,25 @@ any PR.
 
 Gas Town requires autonomous mode (no confirmation prompts) for unattended
 operation. If your agent doesn't have a `--yolo` or `--dangerously-skip-permissions`
-equivalent, Gas Town can't use it for polecats or automated roles. It can
-still work for crew (human-supervised) sessions.
+equivalent, Gas Town can't use it for workers or automated roles. It can
+still work for team (human-supervised) sessions.
 
 ### What environment variables does Gas Town set?
 
 | Variable | Example | Purpose |
 |----------|---------|---------|
-| `GT_ROLE` | `gastown/crew/jack` | Agent's role in the system |
-| `GT_RIG` | `gastown` | Which rig the agent belongs to |
-| `GT_ROOT` | `/Users/me/gt` | Town root directory |
-| `BD_ACTOR` | `gastown/crew/jack` | Beads identity for issue tracking |
-| `GIT_AUTHOR_NAME` | `gastown/crew/jack` | Git commit identity |
+| `GT_ROLE` | `gastown/team/jack` | Agent's role in the system |
+| `GT_RIG` | `gastown` | Which project the agent belongs to |
+| `GT_ROOT` | `/Users/me/gt` | Workspace root directory |
+| `BD_ACTOR` | `gastown/team/jack` | Beads identity for issue tracking |
+| `GIT_AUTHOR_NAME` | `gastown/team/jack` | Git commit identity |
 | `GT_AGENT` | `kiro` | Which agent preset is active |
 | `GT_SESSION_ID_ENV` | `KIRO_SESSION_ID` | Which env var holds the session ID |
 
 ### What is `gt prime`?
 
 `gt prime` is the context injection command. It outputs the agent's role
-documentation, mail, hooked work, and system instructions as markdown to
+documentation, mail, assigned work, and system instructions as markdown to
 stdout. Agents read this output to understand their identity and current
 assignment. It's the single most important Gas Town command for agents.
 

@@ -34,7 +34,7 @@ Each touch point lists:
   DEL; replaces TAB with space
 - `internal/tmux/tmux.go` — `SendKeys()`, `SendKeysDebounced()`, `SendKeysRaw()`,
   `SendKeysReplace()`, `SendKeysDelayed()` — variant entry points
-- `internal/cmd/nudge.go` — `runNudge()` (line ~196), `deliverNudge()` (line ~129):
+- `internal/cmd/message.go` — `runNudge()` (line ~196), `deliverNudge()` (line ~129):
   CLI entry point, routes by mode (immediate/queue/wait-idle)
 
 **Flow**: GT→Agent. Text string in, no structured response.
@@ -45,7 +45,7 @@ Each touch point lists:
 - 512-byte chunk size is empirical; tmux send-keys has undocumented limits
 - Sanitization strips control chars but cannot handle all edge cases
 - No delivery confirmation — GT has no way to know the agent received the message
-- Per-session channel semaphore (30s timeout) serializes concurrent nudges
+- Per-session channel semaphore (30s timeout) serializes concurrent messages
 
 **API mapping**: `POST /prompt` — structured JSON delivery with accepted/queued response
 
@@ -56,14 +56,14 @@ Each touch point lists:
 **What**: GT routes prompt delivery through three modes depending on urgency.
 
 **Code**:
-- `internal/cmd/nudge.go` — mode constants: `NudgeModeImmediate`, `NudgeModeQueue`,
+- `internal/cmd/message.go` — mode constants: `NudgeModeImmediate`, `NudgeModeQueue`,
   `NudgeModeWaitIdle` (lines ~38-44)
-- `internal/nudge/queue.go` — `Enqueue()` (line ~86): writes JSON file to
+- `internal/message/queue.go` — `Enqueue()` (line ~86): writes JSON file to
   `.runtime/nudge_queue/<session>/`, atomic naming with nanosecond timestamp
-- `internal/nudge/queue.go` — `Drain()` (line ~143): atomic claim via rename to
+- `internal/message/queue.go` — `Drain()` (line ~143): atomic claim via rename to
   `.claimed`, orphan recovery for abandoned claims >5min, expiry filtering
-- `internal/nudge/queue.go` — `FormatForInjection()` (line ~277): formats queued
-  nudges as `<system-reminder>` blocks for Claude Code hook injection
+- `internal/message/queue.go` — `FormatForInjection()` (line ~277): formats queued
+  messages as `<system-reminder>` blocks for Claude Code hook injection
 - `internal/cmd/mail_check.go` — `runMailCheck()` (line ~16): UserPromptSubmit hook
   drains queue + checks mail, outputs injection block
 - `internal/mail/router.go` — `NotifyRecipient()` (line ~1568): wait-idle-first
@@ -74,8 +74,8 @@ Each touch point lists:
 **Fragility**:
 - Queue drain depends on UserPromptSubmit hook — non-Claude agents never drain
 - TTLs hardcoded (normal: 30min, urgent: 2hr, max depth: 50)
-- Idle agents never call Drain(), so queued nudges can expire unseen
-- Witness nudges to Refinery use immediate-only (line ~639 in handlers.go)
+- Idle agents never call Drain(), so queued messages can expire unseen
+- Watcher messages to Merger use immediate-only (line ~639 in handlers.go)
 
 **API mapping**: `POST /prompt` with `priority` field (system/urgent/normal)
 
@@ -171,11 +171,11 @@ or `POST /telemetry` with rate limit event
 - `internal/session/lifecycle.go` — `StartSession()` (line ~121): 13-step unified
   lifecycle (resolve config → settings → command → session → env → theme → wait →
   dialogs → delay → verify → respawn → PID track)
-- `internal/polecat/session_manager.go` — `Start()` (line ~186): polecat-specific
+- `internal/worker/session_manager.go` — `Start()` (line ~186): worker-specific
   session with zombie kill, worktree, beacon, env injection, pane-died hook
-- `internal/witness/manager.go` — `Start()` (line ~107): witness session with
+- `internal/watcher/manager.go` — `Start()` (line ~107): watcher session with
   zombie grace period, role config, theme, pane-died hook
-- `internal/dog/session_manager.go` — `Start()` (line ~85): dog session via
+- `internal/helper/session_manager.go` — `Start()` (line ~85): helper session via
   unified `session.StartSession()`
 - `internal/tmux/tmux.go` — `NewSessionWithCommand()`: single-command session creation,
   `SetAutoRespawnHook()` (line ~3126): pane-died auto-respawn with 3s debounce
@@ -198,23 +198,23 @@ or `POST /telemetry` with rate limit event
 
 ## 7. Spawn Admission Control
 
-**What**: GT gates polecat creation with health checks and capacity limits.
+**What**: GT gates worker creation with health checks and capacity limits.
 
 **Code**:
-- `internal/cmd/polecat_spawn.go` — `SpawnPolecatForSling()` (line ~62):
-  Dolt health check, connection capacity, polecat count cap (25), per-bead
-  respawn circuit breaker, per-rig directory cap (30), idle polecat reuse
-- `internal/polecat/manager.go` — `CheckDoltHealth()` (line ~223): retry with
+- `internal/cmd/worker_spawn.go` — `SpawnWorkerForDispatch()` (line ~62):
+  Dolt health check, connection capacity, worker count cap (25), per-bead
+  respawn circuit breaker, per-project directory cap (30), idle worker reuse
+- `internal/worker/manager.go` — `CheckDoltHealth()` (line ~223): retry with
   exponential backoff + jitter; `CheckDoltServerCapacity()` (line ~276):
   connection count admission gate
-- `internal/witness/spawn_count.go` — `ShouldBlockRespawn()` (line ~74): circuit
+- `internal/watcher/spawn_count.go` — `ShouldBlockRespawn()` (line ~74): circuit
   breaker after 3 respawns per bead, `RecordBeadRespawn()` (line ~104): flock'd
   cross-process counter
 
 **Flow**: GT internal. Admission decisions don't involve the agent.
 
 **Fragility**:
-- Polecat cap (25) and dir cap (30) are hardcoded
+- Worker cap (25) and dir cap (30) are hardcoded
 - Circuit breaker state in JSON file (`bead-respawn-counts.json`)
 - Dolt health check adds latency to every spawn
 
@@ -228,7 +228,7 @@ or `POST /telemetry` with rate limit event
 
 **Code**:
 - `internal/config/env.go` — `AgentEnv()` (line ~65): generates 30+ env vars
-  including GT_ROLE, GT_RIG, GT_POLECAT, GT_CREW, BD_ACTOR, GIT_AUTHOR_NAME,
+  including GT_ROLE, GT_RIG, GT_worker, GT_team, BD_ACTOR, GIT_AUTHOR_NAME,
   GT_ROOT, GT_AGENT, GT_SESSION, plus OTEL and credential passthrough
 - `internal/config/agents.go` — `builtinPresets` (line ~164): 10 agent presets
   (Claude, Gemini, Codex, Cursor, Auggie, AMP, OpenCode, Copilot, Pi, OMP)
@@ -237,7 +237,7 @@ or `POST /telemetry` with rate limit event
   `ParseAddress()` (line ~30), `SessionName()` (line ~163): identity parsing
   and formatting
 - `internal/constants/constants.go` — role constants (lines ~196-215):
-  `RoleMayor`, `RoleDeacon`, `RoleWitness`, `RoleRefinery`, `RolePolecat`, `RoleCrew`
+  `RoleCoordinator`, `RoleSupervisor`, `RoleWatcher`, `RoleMerger`, `RoleWorker`, `RoleTeam`
 
 **Flow**: GT→Agent. GT sets env vars; agent reads them.
 
@@ -259,25 +259,25 @@ or `POST /telemetry` with rate limit event
 **Code**:
 - `internal/cmd/prime.go` — `runPrime()` (line ~101): full prime or compact/resume path
 - `internal/cmd/prime_output.go` — `outputPrimeContext()` (line ~22): role-specific
-  context rendering; role functions: `outputMayorContext()`, `outputWitnessContext()`,
-  `outputRefineryContext()`, `outputPolecatContext()`, `outputCrewContext()`, etc.
+  context rendering; role functions: `outputCoordinatorContext()`, `outputWatcherContext()`,
+  `outputMergerContext()`, `outputWorkerContext()`, `outputTeamContext()`, etc.
 - `internal/cmd/prime_session.go` — `handlePrimeHookMode()` (line ~266): SessionStart
   hook integration, reads session ID from stdin JSON, persists to disk
 - `internal/cmd/prime_session.go` — `detectSessionState()` (line ~202): returns
-  "normal" | "post-handoff" | "crash-recovery" | "autonomous"
-- `internal/cmd/prime.go` — `checkSlungWork()` (line ~421): detects hooked work,
+  "normal" | "post-transfer" | "crash-recovery" | "autonomous"
+- `internal/cmd/prime.go` — `checkSlungWork()` (line ~421): detects assigned work,
   `outputAutonomousDirective()` (line ~542): "AUTONOMOUS WORK MODE" output
-- `internal/cmd/prime_molecule.go` — `outputMoleculeContext()` (line ~182): molecule
+- `internal/cmd/prime_workflow.go` — `outputWorkflowContext()` (line ~182): workflow
   progress and step display
 
-**Flow**: GT→Agent. 10-section output: beacon, handoff warning, role context,
-CONTEXT.md, handoff content, attachment status, autonomous directive, molecule
+**Flow**: GT→Agent. 10-section output: beacon, transfer warning, role context,
+CONTEXT.md, transfer content, attachment status, autonomous directive, workflow
 context, checkpoint, startup directive.
 
 **Fragility**:
 - Non-Claude agents without hooks lose automatic priming entirely
 - Compact/resume path must be lighter to prevent re-initialization loops
-- Session state detection depends on handoff marker files
+- Session state detection depends on transfer marker files
 - Role template rendering uses Go text/template — errors silent
 
 **API mapping**: `POST /context` with sections array and mode (full/compact/resume)
@@ -296,14 +296,14 @@ context, checkpoint, startup directive.
   PR-workflow guard, dangerous-command guard, SessionStart → `gt prime --hook`,
   UserPromptSubmit → `gt mail check --inject`, Stop → `gt costs record`
 - `internal/hooks/config.go` — `DefaultOverrides()` (line ~199): role-specific
-  overrides (crew PreCompact → handoff cycle, witness/deacon/refinery patrol guards)
+  overrides (team PreCompact → transfer cycle, watcher/supervisor/merger sweep guards)
 - `internal/hooks/merge.go` — `MergeHooks()` (line ~24): applies overrides in
   specificity order
 - `internal/cmd/hooks_install.go` — `runHooksInstall()` (line ~48): installs hooks
   from registry to worktrees, `installHookTo()` (line ~245): loads, merges, writes
   settings.json
 - `internal/hooks/config.go` — `DiscoverTargets()` (line ~382): finds all settings
-  files (mayor, deacon, crew, polecats, witness, refinery per rig)
+  files (coordinator, supervisor, team, workers, watcher, merger per project)
 - `internal/runtime/runtime.go` — hook installer registration for 6 providers:
   claude, gemini, opencode, copilot, omp, pi
 
@@ -313,7 +313,7 @@ context, checkpoint, startup directive.
 - Each agent vendor has different hook formats (settings.json, plugins, extensions)
 - 6 different hook providers, each with different file locations
 - Non-hook agents (no framework) get no hooks at all
-- Hook merging logic (base → role → rig+role) is complex
+- Hook merging logic (base → role → project+role) is complex
 
 **API mapping**: `POST /authorize` (replaces PreToolUse guards),
 `POST /context` (replaces SessionStart/PreCompact priming),
@@ -328,7 +328,7 @@ context, checkpoint, startup directive.
 **Code**:
 - `internal/cmd/tap_guard.go` — `runTapGuardPRWorkflow()` (line ~34): blocks
   `gh pr create`, `git checkout -b`, `git switch -c` in Gas Town agent contexts;
-  `isGasTownAgentContext()` (line ~103) checks GT_* env vars and CWD paths
+  `isgastownAgentContext()` (line ~103) checks GT_* env vars and CWD paths
 - `internal/cmd/tap_guard_dangerous.go` — `runTapGuardDangerous()` (line ~66):
   blocks 5 patterns: `rm -rf /`, `git push --force`, `git push -f`,
   `git reset --hard`, `git clean -f`; `extractCommand()` (line ~104) parses
@@ -357,7 +357,7 @@ returns allow/deny with reason
   `~/.claude/projects/{slug}/`; `findLatestTranscript()` (line ~717): finds most
   recent `.jsonl`; `parseTranscriptUsage()` (line ~751): line-by-line JSONL scan
   summing token usage
-- `internal/cmd/seance.go` — session discovery from `.events.jsonl` (line ~61),
+- `internal/cmd/recall.go` — session discovery from `.events.jsonl` (line ~61),
   fallback scan of `~/.claude/projects/` (line ~513), `sessions-index.json` (line ~674)
 - Data structure: `TranscriptMessage` with `Type`, `SessionId`, `Message.Model`,
   `Message.Usage.{InputTokens, CacheCreationInputTokens, CacheReadInputTokens,
@@ -368,7 +368,7 @@ returns allow/deny with reason
 **Fragility**:
 - Path encoding convention (slashes→dashes) is undocumented Claude Code internal
 - JSONL message format, usage field nesting can change without notice
-- Three independent JSONL parsers (agentlog, costs.go, seance) — no shared code
+- Three independent JSONL parsers (agentlog, costs.go, recall) — no shared code
 - `sessions-index.json` format is Claude Code internal
 - Non-Claude agents don't produce JSONL transcripts
 
@@ -468,11 +468,11 @@ returns allow/deny with reason
 **What**: GT uses heartbeat files for liveness detection outside tmux.
 
 **Code**:
-- `internal/polecat/heartbeat.go` — `TouchSessionHeartbeat()` (line ~34): writes JSON
+- `internal/worker/heartbeat.go` — `TouchSessionHeartbeat()` (line ~34): writes JSON
   to `.runtime/heartbeats/<session>.json`, `IsSessionHeartbeatStale()` (line ~74):
   3-minute threshold, `ReadSessionHeartbeat()` (line ~54), `RemoveSessionHeartbeat()`
-- `internal/deacon/heartbeat.go` — `WriteHeartbeat()` (line ~52): deacon heartbeat
-  at `deacon/heartbeat.json` with cycle count, health stats;
+- `internal/supervisor/heartbeat.go` — `WriteHeartbeat()` (line ~52): supervisor heartbeat
+  at `supervisor/heartbeat.json` with cycle count, health stats;
   `IsFresh()` (<5min), `IsStale()` (5-15min), `IsVeryStale()` (>15min)
 
 **Flow**: Agent→GT (implicit). Agent command writes file; GT reads it.
@@ -494,7 +494,7 @@ returns allow/deny with reason
 - `internal/tmux/tmux.go` — `GetPaneWorkDir()` (line ~1676):
   `#{pane_current_path}` via tmux
 - `internal/workspace/find.go` — `Find()` (line ~29): walks up from CWD looking
-  for `mayor/town.json` marker; handles worktree paths (polecats/, crew/);
+  for `coordinator/workspace.json` marker; handles worktree paths (workers/, team/);
   `FindFromCwdWithFallback()` (line ~113): GT_TOWN_ROOT env fallback for deleted
   worktrees
 - `internal/config/env.go` — GT_ROOT env var set in `AgentEnv()`
@@ -568,7 +568,7 @@ returns allow/deny with reason
 **Code**:
 - `internal/config/agents.go` — `ResumeFlag`, `ContinueFlag`, `ResumeStyle`
   ("flag" vs "subcommand") per preset; `BuildResumeCommand()` (line ~534)
-- `internal/cmd/seance.go` — `runSeance()` (line ~85): spawns
+- `internal/cmd/recall.go` — `runSeance()` (line ~85): spawns
   `claude --fork-session --resume <id>` for predecessor recall
 - `internal/session/startup.go` — `FormatStartupBeacon()` (line ~69):
   `[GAS TOWN] recipient <- sender • timestamp • topic` format
@@ -613,7 +613,7 @@ returns allow/deny with reason
 **What**: GT applies role-specific tmux status bar themes.
 
 **Code**:
-- `internal/cmd/theme.go` — `runTheme()`: applies role/rig-specific tmux status
+- `internal/cmd/theme.go` — `runTheme()`: applies role/project-specific tmux status
   line formatting
 - Applied during `StartSession()` step in `internal/session/lifecycle.go`
 
@@ -635,7 +635,7 @@ returns allow/deny with reason
 - `internal/tmux/tmux.go` — `CapturePaneTrimmed()`, `CapturePaneLines()`:
   captures N lines from agent's terminal
 - Used by: idle detection (5 lines), rate limit scanning (30 lines),
-  dialog detection, readiness polling, nudge verification
+  dialog detection, readiness polling, message verification
 - `internal/telemetry/recorder.go` — `RecordPaneRead()` (line ~266): OTel event
   for every capture-pane call
 
@@ -656,14 +656,14 @@ structured data; no need to scrape terminal
 **What**: Agent signals work completion through GT commands and intent files.
 
 **Code**:
-- `internal/cmd/done.go` — `runDone()` (line ~81): persistent polecat model,
+- `internal/cmd/done.go` — `runDone()` (line ~81): persistent worker model,
   transitions to IDLE with sandbox preserved; exit constants: `ExitCompleted`,
   `ExitEscalated`, `ExitDeferred` (line ~65)
 - `internal/cmd/signal_stop.go` — `runSignalStop()` (line ~47): Stop hook handler,
-  checks unread mail and hooked work, returns JSON
+  checks unread mail and assigned work, returns JSON
   `{"decision":"block"|"approve","reason":"..."}`
-- `internal/witness/handlers.go` — `HandlePolecatDone()` (line ~110): processes
-  POLECAT_DONE messages
+- `internal/watcher/handlers.go` — `HandleWorkerDone()` (line ~110): processes
+  worker_done messages
 
 **Flow**: Agent→GT. Agent calls `gt done`; GT processes exit type.
 
@@ -714,9 +714,9 @@ structured data; no need to scrape terminal
 - `internal/telemetry/recorder.go` — 18 event types:
   `RecordSessionStart()`, `RecordSessionStop()`, `RecordPromptSend()`,
   `RecordPaneRead()`, `RecordPrime()`, `RecordAgentStateChange()`,
-  `RecordPolecatSpawn()`, `RecordPolecatRemove()`, `RecordSling()`,
+  `RecordWorkerSpawn()`, `RecordWorkerRemove()`, `RecordDispatch()`,
   `RecordMail()`, `RecordNudge()`, `RecordDone()`, `RecordDaemonRestart()`,
-  `RecordFormulaInstantiate()`, `RecordConvoyCreate()`, `RecordPaneOutput()`,
+  `RecordTemplateInstantiate()`, `RecordBatchCreate()`, `RecordPaneOutput()`,
   `RecordBDCall()`, `RecordPrimeContext()`
 - 17 OTel Int64Counter metrics (gastown.session.starts.total, etc.)
 - `internal/telemetry/subprocess.go` — `SetProcessOTELAttrs()`: propagates
@@ -740,7 +740,7 @@ structured data; no need to scrape terminal
 **Code**:
 - `internal/events/events.go` — `Log()` (line ~85), `LogFeed()` (line ~98),
   `LogAudit()` (line ~103): append to `.events.jsonl` with flock
-- Event types (lines ~36-77): sling, handoff, done, hook, unhook, spawn, kill,
+- Event types (lines ~36-77): dispatch, transfer, done, hook, unhook, spawn, kill,
   boot, halt, session_start, session_end, session_death, mass_death,
   patrol_*, merge_*, scheduler_*
 - `internal/tui/feed/events.go` — `GtEventsSource` (line ~216): tails .events.jsonl
@@ -763,16 +763,16 @@ structured data; no need to scrape terminal
 
 **Code**:
 - `internal/doctor/zombie_check.go` — `ZombieSessionCheck.Run()` (line ~33):
-  filters known GT sessions, excludes crew, calls `IsAgentAlive()`;
+  filters known GT sessions, excludes team, calls `IsAgentAlive()`;
   `ZombieSessionCheck.Fix()` (line ~113): re-verifies before kill (TOCTOU guard),
-  never kills crew sessions
-- `internal/daemon/wisp_reaper.go` — wisp reaper for stale wisp cleanup
-- `internal/witness/handlers.go` — witness patrol with restart-first policy
+  never kills team sessions
+- `internal/daemon/ephemeral_reaper.go` — ephemeral reaper for stale ephemeral cleanup
+- `internal/watcher/handlers.go` — watcher sweep with restart-first policy
   (not nuke-first)
-- `internal/dog/health.go` — `HealthChecker.Check()` (line ~46): dog-specific
+- `internal/helper/health.go` — `HealthChecker.Check()` (line ~46): helper-specific
   health check using CheckSessionHealth()
-- `internal/witness/spawn_count.go` — spawn storm circuit breaker:
-  `ShouldBlockRespawn()` (line ~74), escalates to mayor after threshold
+- `internal/watcher/spawn_count.go` — spawn storm circuit breaker:
+  `ShouldBlockRespawn()` (line ~74), escalates to coordinator after threshold
 
 **Flow**: GT→GT. Internal monitoring, agent is passive subject.
 

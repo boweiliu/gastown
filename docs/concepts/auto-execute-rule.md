@@ -12,42 +12,42 @@ depends on one thing: when an agent finds work on their hook, they EXECUTE.
 - Every moment you wait is a moment the engine stalls
 - Other agents may be blocked waiting on YOUR output
 
-## The Handoff Contract
+## The Transfer Contract
 
-When you were spawned, work was hooked for you. The system trusts that:
+When you were spawned, work was assigned for you. The system trusts that:
 
 1. You will find it on your hook
-2. You will understand what it is (`bd show` / `gt hook`)
+2. You will understand what it is (`bd show` / `gt assignment`)
 3. You will BEGIN IMMEDIATELY
 
 This isn't about being a good worker. This is physics. Steam engines don't
 run on politeness - they run on pistons firing. You are the piston.
 
-## Molecule Navigation: Key Enabler
+## Workflow Navigation: Key Enabler
 
-Molecules enable propulsion by providing clear waypoints. You don't need to
+Workflows enable propulsion by providing clear waypoints. You don't need to
 memorize steps or wait for instructions - discover them:
 
 ### Orientation Commands
 
 ```bash
-gt hook              # What's on my hook?
-gt prime             # Shows inline formula checklist
+gt assignment              # What's on my hook?
+gt prime             # Shows inline template checklist
 bd show <issue-id>   # What's my assigned issue?
 ```
 
-### The New Workflow: Inline Formula Steps
+### The New Workflow: Inline Template Steps
 
-Formula steps are shown inline at prime time — no step beads to manage:
+Template steps are shown inline at prime time — no step beads to manage:
 
 ```bash
 gt prime             # See your checklist
 # Work through each step in order
-gt done              # Submit and self-clean (polecats)
-gt patrol report     # Close + next cycle (patrol agents)
+gt done              # Submit and self-clean (workers)
+gt sweep report     # Close + next cycle (sweep agents)
 ```
 
-No step closures, no `bd mol current`, no momentum-killing transitions.
+No step closures, no `bd workflow current`, no momentum-killing transitions.
 
 **The new workflow (propulsion):**
 ```bash
@@ -59,8 +59,8 @@ One command. Auto-advance. Momentum preserved.
 ### The Propulsion Loop
 
 ```
-1. gt hook                   # What's hooked?
-2. bd mol current             # Where am I?
+1. gt assignment                   # What's assigned?
+2. bd workflow current             # Where am I?
 3. Execute step
 4. bd close <step> --continue # Close and advance
 5. GOTO 2
@@ -69,28 +69,28 @@ One command. Auto-advance. Momentum preserved.
 ## The Failure Mode We're Preventing
 
 ```
-Polecat restarts with work on hook
-  → Polecat announces itself
-  → Polecat waits for confirmation
-  → Witness assumes work is progressing
+Worker restarts with work on hook
+  → Worker announces itself
+  → Worker waits for confirmation
+  → Watcher assumes work is progressing
   → Nothing happens
   → Gas Town stops
 ```
 
 ## Startup Behavior
 
-1. Check hook (`gt hook`)
-2. Work hooked → EXECUTE immediately
+1. Check hook (`gt assignment`)
+2. Work assigned → EXECUTE immediately
 3. Hook empty → Check mail for attached work
-4. Nothing anywhere → ERROR: escalate to Witness
+4. Nothing anywhere → ERROR: escalate to Watcher
 
-**Note:** "Hooked" means work assigned to you. This triggers autonomous mode
-even if no molecule is attached. Don't confuse with "pinned" which is for
+**Note:** "Assigned" means work assigned to you. This triggers autonomous mode
+even if no workflow is attached. Don't confuse with "pinned" which is for
 permanent reference beads.
 
 ## The Capability Ledger
 
-Every completion is recorded. Every handoff is logged. Every bead you close
+Every completion is recorded. Every transfer is logged. Every bead you close
 becomes part of a permanent ledger of demonstrated capability.
 
 - Your work is visible

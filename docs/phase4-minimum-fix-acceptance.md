@@ -24,9 +24,9 @@ go test ./internal/cmd -tags=integration -run TestRoleHomeCwdDetection\|TestRole
 ### Summary
 
 - Fix scheduler integration JSON pollution by keeping test helper success path stdout-only and surfacing stderr only on failures.
-- Make Dolt metadata writes idempotent to keep mayor worktrees clean (`.beads/metadata.json` no-op when content is unchanged).
+- Make Dolt metadata writes idempotent to keep coordinator worktrees clean (`.beads/metadata.json` no-op when content is unchanged).
 - Harden e2e container reliability with pinned toolchain versions (`bd` and `dolt`), retry loops, and docker context optimization.
-- Stabilize install/role integration behavior in noisy environments (formula provisioning resilience, role command pre-run noise suppression, and tolerant online smoke checks where transient Dolt startup races occur).
+- Stabilize install/role integration behavior in noisy environments (template provisioning resilience, role command pre-run noise suppression, and tolerant online smoke checks where transient Dolt startup races occur).
 
 ### Validation
 

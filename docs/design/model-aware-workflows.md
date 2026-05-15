@@ -1,31 +1,31 @@
-# Model-Aware Molecule Constraints
+# Model-Aware Workflow Constraints
 
-> Plan for adding model-specific constraints to molecule steps with subscription-aware routing.
+> Plan for adding model-specific constraints to workflow steps with subscription-aware routing.
 
 **Status**: In Progress
 **Owner**: Design
-**Related**: [molecules.md](../concepts/molecules.md) | [agent-provider-interface.md](agent-provider-interface.md)
+**Related**: [workflows.md](../concepts/workflows.md) | [agent-provider-interface.md](agent-provider-interface.md)
 
 ---
 
 ## Relationship with Consensus
 
-Consensus and model-aware molecules are **complementary layers** that share the same session awareness infrastructure but serve different purposes:
+Consensus and model-aware workflows are **complementary layers** that share the same session awareness infrastructure but serve different purposes:
 
-| | Consensus | Molecules |
+| | Consensus | Workflows |
 |---|---|---|
 | **Pattern** | Fan-out | DAG routing |
 | **Shape** | Same prompt → N agents → compare | N steps → best model per step |
 | **Session infra** | `GT_AGENT` + `AgentPresetInfo` readiness | Same — reused, not rebuilt |
 | **Routing goal** | Diversity (multiple perspectives) | Optimality (right model for each step) |
 
-The provider resolution pipeline that Consensus v2 established — `GT_AGENT` env lookup → `AgentPresetInfo` → readiness detection (prompt polling or delay fallback) — is exactly the session awareness the molecule router needs for dispatch. See §5.3 (Two-Phase Routing).
+The provider resolution pipeline that Consensus v2 established — `GT_AGENT` env lookup → `AgentPresetInfo` → readiness detection (prompt polling or delay fallback) — is exactly the session awareness the workflow router needs for dispatch. See §5.3 (Two-Phase Routing).
 
 ---
 
 ## 1. Introduction / Overview
 
-Molecules currently support dependency-based DAG execution, but lack the ability to specify **which AI model** should execute each step. With multiple AI providers (Anthropic, OpenAI, DeepSeek, Google, etc.) and access types (API keys and subscriptions like Claude Code), we need:
+Workflows currently support dependency-based DAG execution, but lack the ability to specify **which AI model** should execute each step. With multiple AI providers (Anthropic, OpenAI, DeepSeek, Google, etc.) and access types (API keys and subscriptions like Claude Code), we need:
 
 1. **Per-step model constraints** — Specify required model or capability per step
 2. **Subscription support** — Support Claude Code and other subscription-based access (crucial for cost optimization)
@@ -39,14 +39,14 @@ Molecules currently support dependency-based DAG execution, but lack the ability
 
 | Goal | Description |
 |-------|-------------|
-| **Molecule-Level Constraints** | Add model/capability constraints to molecule steps |
+| **Workflow-Level Constraints** | Add model/capability constraints to workflow steps |
 | **Subscription Support** | Support both API key AND subscription-based access |
 | **Live Pricing** | Fetch pricing from OpenRouter with 24h local cache |
 | **Static Benchmarks** | Bundle MMLU/SWE scores; override via `~/.gt/models.toml` |
 | **Meta-Model Routing** | Heuristic-only scoring: no LLM calls |
 | **Local Usage Tracking** | `~/.gt/usage.jsonl` always written; OTel is additive |
-| **DAG Compatible** | Works with existing molecule DAG structure |
-| **Backward Compatible** | Existing formulas work without modification |
+| **DAG Compatible** | Works with existing workflow DAG structure |
+| **Backward Compatible** | Existing templates work without modification |
 
 ---
 
@@ -95,9 +95,9 @@ All implementation stories in this plan must pass these quality gates:
 - [x] Decision includes: selected model, reason, cost, MMLU/SWE scores
 - [x] Returns error when no model satisfies the constraints
 
-### US-004: Molecule Step Constraint Syntax
+### US-004: Workflow Step Constraint Syntax
 
-**Description**: As a formula author, I want to specify model constraints in molecule steps using a simple TOML syntax.
+**Description**: As a template author, I want to specify model constraints in workflow steps using a simple TOML syntax.
 
 **Acceptance Criteria**:
 - [x] Steps support `model = "claude-sonnet-4-5"` for exact model
@@ -134,10 +134,10 @@ All implementation stories in this plan must pass these quality gates:
 
 ### US-007: Batch DAG Execution with Model Assignment
 
-**Description**: As an operator, I want to execute an entire molecule with automatic model assignment per step.
+**Description**: As an operator, I want to execute an entire workflow with automatic model assignment per step.
 
 **Acceptance Criteria**:
-- [ ] `gt mol execute --auto-route <mol-id>` reads constraints and routes per step
+- [ ] `gt workflow execute --auto-route <wf-id>` reads constraints and routes per step
 - [ ] Parallel steps execute simultaneously when available
 - [ ] Failed routing shows which constraint could not be satisfied
 
@@ -259,7 +259,7 @@ type RoutingDecision struct {
     SWEScore     float64
 
     // Session resolution (Phase 2) — nil when no live session found
-    SessionID    string   // tmux session name, e.g. "gt-gastown-polecat-Toast"
+    SessionID    string   // tmux session name, e.g. "gt-gastown-worker-Toast"
     AgentPreset  string   // resolved GT_AGENT value, e.g. "claude", "gemini"
 }
 
@@ -306,9 +306,9 @@ func ResolveSession(decision *RoutingDecision, tmux Tmux) *RoutingDecision
 - Live idle session found → dispatch step directly to that session
 - No matching session → spawn a new session with the selected model (`AgentPresetInfo.Command + Args`)
 
-This means molecule steps target **live sessions by model capability**, not just by name. A step specifying `min_mmlu = 85` will route to whichever idle session happens to be running a qualifying model, without the formula author needing to know session names.
+This means workflow steps target **live sessions by model capability**, not just by name. A step specifying `min_mmlu = 85` will route to whichever idle session happens to be running a qualifying model, without the template author needing to know session names.
 
-### 5.4 Molecule Step Constraints
+### 5.4 Workflow Step Constraints
 
 ```toml
 # All constraint fields are optional and backward-compatible.
@@ -452,7 +452,7 @@ Written by `LoadDatabase`; refreshed after 24h. Do not edit manually.
 
 ```bash
 gt step <step-id>                       # execute step with model routing
-gt mol execute --auto-route <mol-id>    # batch DAG execution with routing
+gt workflow execute --auto-route <wf-id>    # batch DAG execution with routing
 gt usage                                # monthly cost summary
 gt usage --month 2025-02                # filter to specific month
 gt model route --task coding --mmlu 85  # debug: test routing logic
@@ -460,12 +460,12 @@ gt model route --task coding --mmlu 85  # debug: test routing logic
 
 ---
 
-## 9. Formula Examples
+## 9. Template Examples
 
 ### Example 1: Subscription-Preferred Workflow
 
 ```toml
-formula = "mol-subscription-aware"
+template = "wf-subscription-aware"
 version = 1
 
 [[steps]]
@@ -486,7 +486,7 @@ description = "Implement the fixes"
 ### Example 2: Multi-Model Code Review
 
 ```toml
-formula = "mol-multi-model-review"
+template = "wf-multi-model-review"
 version = 1
 
 [[steps]]
@@ -513,7 +513,7 @@ description = "Combine both reviews"
 ### Example 3: Cost-Optimized Workflow
 
 ```toml
-formula = "mol-cost-optimized"
+template = "wf-cost-optimized"
 version = 1
 
 [[steps]]
@@ -542,8 +542,8 @@ description = "Thorough work with quality model within budget"
 - [x] Create `internal/models/database.go` — static benchmarks + OpenRouter pricing + TOML overrides
 - [x] Create `internal/models/router.go` — `SelectModel()` heuristic scoring
 - [x] Create `internal/models/usage.go` — local JSONL tracking; `MonthlyStats`, `EstimateCost`
-- [x] Add routing fields to `internal/formula/types.go` Step struct
-- [x] Validate new fields in `internal/formula/parser.go`
+- [x] Add routing fields to `internal/template/types.go` Step struct
+- [x] Validate new fields in `internal/template/parser.go`
 
 ### Phase 2: Subscription Discovery (P0)
 
@@ -555,7 +555,7 @@ description = "Thorough work with quality model within budget"
 
 Implement `ResolveSession()` using the existing `GT_AGENT` + `AgentPresetInfo` infrastructure:
 
-- [ ] Scan live tmux sessions; read `GT_AGENT` env var per session (already done in `sling_helpers.go`)
+- [ ] Scan live tmux sessions; read `GT_AGENT` env var per session (already done in `dispatch_helpers.go`)
 - [ ] Look up `AgentPresetInfo` by agent name to get `ReadyPromptPrefix` / `ReadyDelayMs`
 - [ ] Implement idle check: prompt polling for agents with `ReadyPromptPrefix`, delay fallback otherwise
 - [ ] Return first idle session whose agent matches `RoutingDecision.ModelID`; set `SessionID` + `AgentPreset`
@@ -566,7 +566,7 @@ Implement `ResolveSession()` using the existing `GT_AGENT` + `AgentPresetInfo` i
 
 - [ ] Update `gt prime` to show model constraints, routing recommendation, and live session per step
 - [ ] Implement `gt step` for single-step execution with two-phase routing
-- [ ] Implement `gt mol execute --auto-route` for batch DAG execution
+- [ ] Implement `gt workflow execute --auto-route` for batch DAG execution
 - [ ] Implement `gt usage` and `gt usage --month`
 
 ### Phase 5: Usage Recording at Dispatch (P1)
@@ -615,11 +615,11 @@ needs = ["previous-step"]
 
 ## 12. Success Metrics
 
-- Formula steps can specify per-step model constraints
+- Template steps can specify per-step model constraints
 - Subscription access is detected and preferred over API keys automatically
 - Model pricing is fetched from OpenRouter and cached locally (no API key required)
 - Usage is tracked locally to `~/.gt/usage.jsonl` regardless of OTel configuration
-- Existing formulas continue to work unchanged
+- Existing templates continue to work unchanged
 
 ---
 
@@ -627,7 +627,7 @@ needs = ["previous-step"]
 
 | Question | Discussion |
 |----------|-------------|
-| **Dispatch mechanism** | Resolved: `ResolveSession()` targets the live tmux session directly. The routing decision (`SessionID`, `AgentPreset`) is the dispatch target — no separate env var injection needed. The step description is sent via the existing `tmux send-keys` / nudge path. |
+| **Dispatch mechanism** | Resolved: `ResolveSession()` targets the live tmux session directly. The routing decision (`SessionID`, `AgentPreset`) is the dispatch target — no separate env var injection needed. The step description is sent via the existing `tmux send-keys` / message path. |
 | **Model ID ↔ GT_AGENT mapping** | `GT_AGENT` values are agent preset names (`"claude"`, `"gemini"`), not model IDs (`"claude-sonnet-4-5"`). Need a mapping: `AgentPresetInfo` could carry a `DefaultModelID` field, or sessions could set an additional `GT_MODEL` env var at spawn time for precise matching. |
 | **Multiple sessions for same model** | If two Claude sessions are idle and both qualify, which gets the step? Current proposal: first idle session wins (FIFO). Alternative: round-robin or load-based. |
 | **Cost-based auto-switch** | Should the system switch to cheaper models mid-session if budget is nearly exhausted? |

@@ -11,7 +11,7 @@ Gas Town manages context injection for all supported agents. The mechanism varie
 | Claude Code, Gemini | `settings.json` lifecycle hooks | `<role>/.claude/settings.json` |
 | OpenCode | JS plugin | `workDir/.opencode/plugins/gastown.js` |
 | GitHub Copilot | JSON lifecycle hooks | `workDir/.github/hooks/gastown.json` |
-| Codex, others | Startup nudge fallback | *(no file — nudge only)* |
+| Codex, others | Startup message fallback | *(no file — message only)* |
 
 > **GitHub Copilot note**: Copilot CLI supports full executable lifecycle hooks
 > (`sessionStart`, `userPromptSubmitted`, `preToolUse`, `sessionEnd`) via
@@ -22,40 +22,40 @@ Gas Town manages context injection for all supported agents. The mechanism varie
 Gas Town manages `.claude/settings.json` files in gastown-managed parent directories
 and passes them to Claude Code via the `--settings` flag. This keeps customer repos
 clean while providing role-specific hook configuration. The hooks system provides
-a single source of truth with a base config and per-role/per-rig overrides.
+a single source of truth with a base config and per-role/per-project overrides.
 
 ## Architecture
 
 ```
 ~/.gt/hooks-base.json              ← Shared base config (all agents)
 ~/.gt/hooks-overrides/
-  ├── crew.json                    ← Override for all crew workers
-  ├── witness.json                 ← Override for all witnesses
-  ├── gastown__crew.json           ← Override for gastown crew specifically
+  ├── team.json                    ← Override for all team workers
+  ├── watcher.json                 ← Override for all watchers
+  ├── gastown__team.json           ← Override for gastown team specifically
   └── ...
 ```
 
-**Merge strategy:** `base → role → rig+role` (more specific wins)
+**Merge strategy:** `base → role → project+role` (more specific wins)
 
-For a target like `gastown/crew`:
+For a target like `gastown/team`:
 1. Start with base config
-2. Apply `crew` override (if exists)
-3. Apply `gastown/crew` override (if exists)
+2. Apply `team` override (if exists)
+3. Apply `gastown/team` override (if exists)
 
 ## Generated targets
 
-Each rig generates settings in shared parent directories (not per-worktree):
+Each project generates settings in shared parent directories (not per-worktree):
 
 | Target | Path | Override Key |
 |--------|------|--------------|
-| Crew (shared) | `<rig>/crew/.claude/settings.json` | `<rig>/crew` |
-| Witness | `<rig>/witness/.claude/settings.json` | `<rig>/witness` |
-| Refinery | `<rig>/refinery/.claude/settings.json` | `<rig>/refinery` |
-| Polecats (shared) | `<rig>/polecats/.claude/settings.json` | `<rig>/polecats` |
+| Team (shared) | `<project>/team/.claude/settings.json` | `<project>/team` |
+| Watcher | `<project>/watcher/.claude/settings.json` | `<project>/watcher` |
+| Merger | `<project>/merger/.claude/settings.json` | `<project>/merger` |
+| Workers (shared) | `<project>/workers/.claude/settings.json` | `<project>/workers` |
 
-Town-level targets:
-- `mayor/.claude/settings.json` (key: `mayor`)
-- `deacon/.claude/settings.json` (key: `deacon`)
+Workspace-level targets:
+- `coordinator/.claude/settings.json` (key: `coordinator`)
+- `supervisor/.claude/settings.json` (key: `supervisor`)
 
 Settings are passed to Claude Code via `--settings <path>`, which loads them as
 a separate priority tier that merges additively with project settings.
@@ -92,12 +92,12 @@ gt hooks base --show      # Print current base config
 
 ### `gt hooks override <target>`
 
-Edit overrides for a specific role or rig+role.
+Edit overrides for a specific role or project+role.
 
 ```bash
-gt hooks override crew              # Edit crew override
-gt hooks override gastown/witness   # Edit gastown witness override
-gt hooks override crew --show       # Print current override
+gt hooks override team              # Edit team override
+gt hooks override gastown/watcher   # Edit gastown watcher override
+gt hooks override team --show       # Print current override
 ```
 
 ### `gt hooks list`
@@ -148,20 +148,20 @@ The registry (`~/gt/hooks/registry.toml`) defines 7 hooks, 5 enabled by default:
 
 | Hook | Event | Enabled | Roles |
 |---|---|---|---|
-| pr-workflow-guard | PreToolUse | Yes | crew, polecat |
+| pr-workflow-guard | PreToolUse | Yes | team, worker |
 | session-prime | SessionStart | Yes | all |
 | pre-compact-prime | PreCompact | Yes | all |
 | mail-check | UserPromptSubmit | Yes | all |
-| costs-record | Stop | Yes | crew, polecat, witness, refinery |
-| clone-guard | PreToolUse | No | crew, polecat |
-| dangerous-command-guard | PreToolUse | Yes | crew, polecat |
+| costs-record | Stop | Yes | team, worker, watcher, merger |
+| clone-guard | PreToolUse | No | team, worker |
+| dangerous-command-guard | PreToolUse | Yes | team, worker |
 
 Additional hooks exist in settings.json files but are not yet in the registry:
 
-- **bd init guard** (gastown/crew, beads/crew) - blocks `bd init*` inside `.beads/`
-- **mol patrol guards** (gastown roles) - blocks persistent patrol molecules
+- **bd init guard** (gastown/team, beads/team) - blocks `bd init*` inside `.beads/`
+- **mol sweep guards** (gastown roles) - blocks persistent sweep workflows
 - **tmux clear-history** (gastown root) - clears terminal history on session start
-- **SessionStart .beads/ validation** (gastown/crew, beads/crew) - validates CWD
+- **SessionStart .beads/ validation** (gastown/team, beads/team) - validates CWD
 
 ## Design Decision: Registry as Catalog vs Source of Truth
 
@@ -181,13 +181,13 @@ Additional hooks exist in settings.json files but are not yet in the registry:
 ## Known Gaps
 
 1. **Registry doesn't cover all active hooks** — Several hooks in settings.json
-   files are not in `registry.toml` (bd-init-guard, mol-patrol-guard, tmux-clear,
+   files are not in `registry.toml` (bd-init-guard, wf-sweep-guard, tmux-clear,
    cwd-validation). These should be added so `gt hooks install` can manage them.
 
 2. **No `gt tap` commands beyond pr-workflow** — The tap framework has only one
    guard implemented. `gt tap guard dangerous-command` is referenced in the
    registry but does not exist yet. Priority order: dangerous-command, bd-init,
-   mol-patrol, then audit git-push.
+   wf-sweep, then audit git-push.
 
 3. **No `gt tap disable/enable` convenience commands** — Per-worktree
    enable/disable is possible via the override mechanism (`gt hooks override`
@@ -203,10 +203,10 @@ Additional hooks exist in settings.json files but are not yet in the registry:
 
 ## Integration
 
-### `gt rig add`
+### `gt project add`
 
-When a new rig is created, hooks are automatically synced for all the
-new rig's targets (crew, witness, refinery, polecats).
+When a new project is created, hooks are automatically synced for all the
+new project's targets (team, watcher, merger, workers).
 
 ### `gt doctor`
 
@@ -229,16 +229,16 @@ Example base:
 }
 ```
 
-Override for witness:
+Override for watcher:
 ```json
 {
   "SessionStart": [
-    { "matcher": "", "hooks": [{ "type": "command", "command": "gt prime --witness" }] }
+    { "matcher": "", "hooks": [{ "type": "command", "command": "gt prime --watcher" }] }
   ]
 }
 ```
 
-Result: The witness gets `gt prime --witness` instead of `gt prime`
+Result: The watcher gets `gt prime --watcher` instead of `gt prime`
 (same matcher = replace).
 
 ## Default base config

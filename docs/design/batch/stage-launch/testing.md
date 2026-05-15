@@ -1,6 +1,6 @@
-# Test Analysis: Convoy Stage & Launch
+# Test Analysis: Batch Stage & Launch
 
-Testing plan for `gt convoy stage` and `gt convoy launch` (PRD: `stage-launch/prd.md`).
+Testing plan for `gt batch stage` and `gt batch launch` (PRD: `stage-launch/prd.md`).
 
 ---
 
@@ -8,21 +8,21 @@ Testing plan for `gt convoy stage` and `gt convoy launch` (PRD: `stage-launch/pr
 
 | # | Invariant | Category | Blast Radius | Currently Tested? |
 |---|-----------|----------|-------------|-------------------|
-| I-1 | Cycles in blocking deps MUST prevent convoy creation | data | **high** | no |
-| I-2 | Beads with no valid rig MUST prevent convoy creation | data | **high** | no |
+| I-1 | Cycles in blocking deps MUST prevent batch creation | data | **high** | no |
+| I-2 | Beads with no valid project MUST prevent batch creation | data | **high** | no |
 | I-3 | Errors MUST produce non-zero exit code and no side effects | safety | **high** | no |
 | I-4 | Wave 1 contains ONLY tasks with zero unsatisfied blocking deps | data | **high** | no |
 | I-5 | `parent-child` deps NEVER create execution edges | data | **high** | partial (feeder tests) |
-| I-6 | Epics and non-slingable types are NEVER placed in waves | data | **high** | partial (`IsSlingableType`) |
-| I-7 | Daemon MUST NOT feed issues from `staged:*` convoys | safety | **high** | no |
+| I-6 | Epics and non-dispatchable types are NEVER placed in waves | data | **high** | partial (`IsDispatchableType`) |
+| I-7 | Daemon MUST NOT feed issues from `staged:*` batches | safety | **high** | no |
 | I-8 | `--launch` on `staged_warnings` MUST require `--force` | safety | medium | no |
-| I-9 | Re-staging a convoy MUST NOT create duplicates | data | medium | no |
+| I-9 | Re-staging a batch MUST NOT create duplicates | data | medium | no |
 | I-10 | `--json` output MUST be parseable JSON on stdout | data | medium | no |
 | I-11 | Wave computation is deterministic for the same input DAG | data | medium | no |
-| I-12 | All beads validated to exist before any convoy creation | safety | medium | no |
+| I-12 | All beads validated to exist before any batch creation | safety | medium | no |
 | I-13 | Launch dispatches ONLY Wave 1, not subsequent waves | safety | **high** | no |
 | I-14 | Dispatch failure for one task does NOT abort remaining Wave 1 tasks | liveness | medium | no |
-| I-15 | `gt convoy launch <id>` on already-open convoy MUST error | safety | low | no |
+| I-15 | `gt batch launch <id>` on already-open batch MUST error | safety | low | no |
 
 ---
 
@@ -35,8 +35,8 @@ Testing plan for `gt convoy stage` and `gt convoy launch` (PRD: `stage-launch/pr
 | F-01 | Nonexistent bead ID passed | high | immediate (bd show fails) | user fixes typo | no |
 | F-02 | Empty args (no bead IDs) | medium | immediate (arg validation) | usage help | no |
 | F-03 | Mixed input types (epic + task IDs) | medium | ambiguous | detect and error | no |
-| F-04 | Bead ID is actually a rig name | low | prefix check | error with hint | no |
-| F-05 | Convoy ID passed to stage that is already `open` | medium | status check | re-analyze and warn | no |
+| F-04 | Bead ID is actually a project name | low | prefix check | error with hint | no |
+| F-05 | Batch ID passed to stage that is already `open` | medium | status check | re-analyze and warn | no |
 | F-06 | Flag-like bead ID (`--verbose`) | low | immediate | reject | no |
 
 ### State failures
@@ -45,9 +45,9 @@ Testing plan for `gt convoy stage` and `gt convoy launch` (PRD: `stage-launch/pr
 |---|---------|-----------|-----------|----------|----------|
 | F-07 | Cycle in blocks deps (A blocks B blocks A) | medium | cycle detection | report path, refuse staging | no |
 | F-08 | Orphan tasks (no parent, no deps) in epic tree | medium | reachability check | warn, still stage | no |
-| F-09 | Stale convoy: re-stage finds beads deleted since first stage | low | bd show fails | error per-bead | no |
+| F-09 | Stale batch: re-stage finds beads deleted since first stage | low | bd show fails | error per-bead | no |
 | F-10 | Concurrent staging of same beads by two users | low | no detection | last write wins (acceptable) | no |
-| F-11 | Partial dep-add failure during convoy creation | medium | per-dep error check | partial tracking (existing pattern) | partial |
+| F-11 | Partial dep-add failure during batch creation | medium | per-dep error check | partial tracking (existing pattern) | partial |
 | F-12 | Epic has no children (empty DAG) | low | immediate | error: nothing to stage | no |
 
 ### Dependency failures
@@ -56,8 +56,8 @@ Testing plan for `gt convoy stage` and `gt convoy launch` (PRD: `stage-launch/pr
 |---|---------|-----------|-----------|----------|----------|
 | F-13 | `bd` binary not on PATH | low | exec error | clear error message | no |
 | F-14 | `bd dep list` returns malformed JSON | low | json.Unmarshal fails | error with raw output | no |
-| F-15 | `routes.jsonl` missing or corrupt | medium | parse error | error: cannot resolve rigs | partial |
-| F-16 | `gt sling` fails during launch dispatch | medium | exec error | continue to next task, report | no |
+| F-15 | `routes.jsonl` missing or corrupt | medium | parse error | error: cannot resolve projects | partial |
+| F-16 | `gt dispatch` fails during launch dispatch | medium | exec error | continue to next task, report | no |
 | F-17 | Dolt store unavailable during re-stage | low | store open fails | error | no |
 
 ### Timing failures
@@ -65,22 +65,22 @@ Testing plan for `gt convoy stage` and `gt convoy launch` (PRD: `stage-launch/pr
 | # | Failure | Likelihood | Detection | Recovery | Covered? |
 |---|---------|-----------|-----------|----------|----------|
 | F-18 | Bead closed between stage and launch | medium | status check at launch | skip closed, log | no |
-| F-19 | Rig parked between stage and launch | medium | park check at launch | skip parked rig, warn | no |
+| F-19 | Project parked between stage and launch | medium | park check at launch | skip parked project, warn | no |
 | F-20 | New deps added between stage and launch | low | re-analyze at launch | waves may differ (acceptable) | no |
 
 ### Configuration failures
 
 | # | Failure | Likelihood | Detection | Recovery | Covered? |
 |---|---------|-----------|-----------|----------|----------|
-| F-21 | Not inside a workspace (no mayor/rig/) | medium | workspace.FindFromCwd | clear error | no |
-| F-22 | Bead prefix maps to town root (path=".") | low | rig resolve returns "" | error: no valid rig | partial |
+| F-21 | Not inside a workspace (no coordinator/project/) | medium | workspace.FindFromCwd | clear error | no |
+| F-22 | Bead prefix maps to workspace root (path=".") | low | project resolve returns "" | error: no valid project | partial |
 | F-23 | Unknown bead prefix (not in routes.jsonl) | medium | GetRigNameForPrefix "" | error with suggestion | partial |
 
 ---
 
 ## Test Strategy Matrix
 
-### Unit tests (package `cmd`, `convoy`)
+### Unit tests (package `cmd`, `batch`)
 
 These test pure logic in isolation using in-memory data. No Dolt, no bd stubs.
 
@@ -97,7 +97,7 @@ These test pure logic in isolation using in-memory data. No Dolt, no bd stubs.
 | U-09 | Wave computation: mixed parallel + serial | `computeWaves(dag)` | -- | I-4 | P0 |
 | U-10 | Wave computation: deterministic output (run 100x) | `computeWaves(dag)` | -- | I-11 | P1 |
 | U-11 | Wave computation: excludes epics from waves | `computeWaves(dag)` | -- | I-6 | P0 |
-| U-12 | Wave computation: excludes non-slingable types | `computeWaves(dag)` | -- | I-6 | P0 |
+| U-12 | Wave computation: excludes non-dispatchable types | `computeWaves(dag)` | -- | I-6 | P0 |
 | U-13 | Wave computation: parent-child deps don't create edges | `computeWaves(dag)` | -- | I-5 | P0 |
 | U-14 | Wave computation: empty DAG -> error | `computeWaves(dag)` | F-12 | -- | P1 |
 | U-15 | DAG construction: blocks deps create edges | `buildDAG(beads)` | -- | I-4 | P0 |
@@ -106,8 +106,8 @@ These test pure logic in isolation using in-memory data. No Dolt, no bd stubs.
 | U-18 | DAG construction: parent-child recorded but no edge | `buildDAG(beads)` | -- | I-5 | P0 |
 | U-19 | DAG construction: related/tracks deps ignored | `buildDAG(beads)` | -- | -- | P2 |
 | U-20 | Error categorization: cycle is error (not warning) | `categorize(findings)` | -- | I-1, I-3 | P0 |
-| U-21 | Error categorization: no-rig is error | `categorize(findings)` | -- | I-2, I-3 | P0 |
-| U-22 | Error categorization: parked rig is warning | `categorize(findings)` | -- | -- | P1 |
+| U-21 | Error categorization: no-project is error | `categorize(findings)` | -- | I-2, I-3 | P0 |
+| U-22 | Error categorization: parked project is warning | `categorize(findings)` | -- | -- | P1 |
 | U-23 | Error categorization: orphan is warning | `categorize(findings)` | -- | -- | P1 |
 | U-24 | Error categorization: missing integration branch is warning | `categorize(findings)` | -- | -- | P2 |
 | U-25 | Status selection: no errors + no warnings -> staged_ready | `chooseStatus(errs, warns)` | -- | I-3 | P0 |
@@ -118,10 +118,10 @@ These test pure logic in isolation using in-memory data. No Dolt, no bd stubs.
 | U-30 | Wave table display: includes blockers column | `renderWaveTable(waves)` | -- | -- | P2 |
 | U-31 | JSON output: valid JSON, all required fields present | `renderJSON(result)` | -- | I-10 | P1 |
 | U-32 | JSON output: errors array populated on failure | `renderJSON(result)` | -- | I-10 | P1 |
-| U-33 | JSON output: convoy_id empty when errors found | `renderJSON(result)` | -- | I-3, I-10 | P1 |
-| U-34 | Error categorization: cross-rig routing mismatch is warning | `categorize(findings)` | -- | -- | P1 |
+| U-33 | JSON output: batch_id empty when errors found | `renderJSON(result)` | -- | I-3, I-10 | P1 |
+| U-34 | Error categorization: cross-project routing mismatch is warning | `categorize(findings)` | -- | -- | P1 |
 | U-35 | Error categorization: capacity estimation is warning | `categorize(findings)` | -- | -- | P2 |
-| U-36 | Tree node rendering: includes bead ID, title, type, status, rig | `renderTreeNode(node)` | -- | -- | P1 |
+| U-36 | Tree node rendering: includes bead ID, title, type, status, project | `renderTreeNode(node)` | -- | -- | P1 |
 | U-37 | Tree node rendering: blocked tasks show blockers inline | `renderTreeNode(node)` | -- | -- | P1 |
 | U-38 | Wave table summary line: total waves, tasks, parallelism per wave | `renderWaveTable(waves)` | -- | -- | P1 |
 | U-39 | Error output: each error includes suggested fix text | `renderErrors(errs)` | -- | I-3 | P1 |
@@ -135,64 +135,64 @@ These test the full command flow with stubbed `bd` and `gt` binaries.
 | IT-01 | Stage epic: walks parent-child tree, collects all descendants | US-001 | F-01 | I-12 | P0 |
 | IT-02 | Stage epic: nonexistent child fails entire stage | US-001, US-002 | F-01, F-09 | I-3, I-12 | P0 |
 | IT-03 | Stage task list: analyzes only given tasks | US-001 | -- | -- | P0 |
-| IT-04 | Stage convoy: reads tracked beads from existing convoy | US-001 | F-05 | -- | P1 |
-| IT-05 | Stage with cycle: refuses to create convoy | US-002 | F-07 | I-1, I-3 | P0 |
-| IT-06 | Stage with no valid rig: refuses to create convoy | US-002 | F-23 | I-2, I-3 | P0 |
+| IT-04 | Stage batch: reads tracked beads from existing batch | US-001 | F-05 | -- | P1 |
+| IT-05 | Stage with cycle: refuses to create batch | US-002 | F-07 | I-1, I-3 | P0 |
+| IT-06 | Stage with no valid project: refuses to create batch | US-002 | F-23 | I-2, I-3 | P0 |
 | IT-07 | Stage with errors: exit code non-zero, no bd create called | US-002 | -- | I-3 | P0 |
-| IT-08 | Stage with parked rig: creates convoy as staged_warnings | US-003 | F-19 | -- | P1 |
+| IT-08 | Stage with parked project: creates batch as staged_warnings | US-003 | F-19 | -- | P1 |
 | IT-09 | Stage epic with unreachable task (not in descendant tree): warns, creates staged_warnings | US-003 | F-08 | -- | P1 |
-| IT-10 | Stage clean: creates convoy as staged_ready | US-007 | -- | -- | P0 |
-| IT-11 | Stage convoy: tracks all slingable beads via deps | US-007 | F-11 | -- | P0 |
-| IT-12 | Stage convoy: description includes wave count + timestamp | US-007 | -- | -- | P2 |
-| IT-13 | Re-stage: updates status, no duplicate convoy | US-007 | F-09 | I-9 | P1 |
+| IT-10 | Stage clean: creates batch as staged_ready | US-007 | -- | -- | P0 |
+| IT-11 | Stage batch: tracks all dispatchable beads via deps | US-007 | F-11 | -- | P0 |
+| IT-12 | Stage batch: description includes wave count + timestamp | US-007 | -- | -- | P2 |
+| IT-13 | Re-stage: updates status, no duplicate batch | US-007 | F-09 | I-9 | P1 |
 | IT-14 | Launch staged_ready: transitions to open, dispatches Wave 1 | US-008 | F-16 | I-13 | P0 |
 | IT-15 | Launch staged_warnings without --force: errors | US-008 | -- | I-8 | P0 |
 | IT-16 | Launch staged_warnings with --force: dispatches | US-008 | -- | I-8 | P1 |
 | IT-17 | Launch dispatch failure: continues to next task | US-008 | F-16 | I-14 | P1 |
-| IT-18 | Launch already-open convoy: errors | US-010 | F-05 | I-15 | P1 |
-| IT-19 | `gt convoy launch <epic>` = `gt convoy stage <epic> --launch` | US-010 | -- | -- | P1 |
-| IT-20 | `gt convoy launch <task1> <task2>` works as alias | US-010 | -- | -- | P1 |
+| IT-18 | Launch already-open batch: errors | US-010 | F-05 | I-15 | P1 |
+| IT-19 | `gt batch launch <epic>` = `gt batch stage <epic> --launch` | US-010 | -- | -- | P1 |
+| IT-20 | `gt batch launch <task1> <task2>` works as alias | US-010 | -- | -- | P1 |
 | IT-21 | --json output: valid JSON with all fields | US-011 | -- | I-10 | P1 |
 | IT-22 | --json output: no human-readable text on stdout | US-011 | -- | I-10 | P1 |
 | IT-23 | Stage with --launch: full end-to-end (stage + dispatch) | US-008 | -- | I-4, I-13 | P0 |
 | IT-24 | Empty args: usage error | -- | F-02 | -- | P2 |
 | IT-25 | Flag-like bead ID: rejected | -- | F-06 | -- | P2 |
 | IT-26 | Stage with missing integration branch: warns, creates staged_warnings | US-003 | -- | -- | P1 |
-| IT-27 | Stage with cross-rig routing mismatch: warns, includes in output | US-003 | -- | -- | P1 |
+| IT-27 | Stage with cross-project routing mismatch: warns, includes in output | US-003 | -- | -- | P1 |
 | IT-28 | Stage with capacity warning: informational, creates staged_warnings | US-003 | -- | -- | P2 |
-| IT-29 | Launch output: convoy ID + `gt convoy status` command printed | US-009 | -- | -- | P1 |
-| IT-30 | Launch output: each dispatched task shows polecat name | US-009 | -- | -- | P1 |
-| IT-31 | Launch output: TUI hint (`gt convoy -i`) printed | US-009 | -- | -- | P2 |
+| IT-29 | Launch output: batch ID + `gt batch status` command printed | US-009 | -- | -- | P1 |
+| IT-30 | Launch output: each dispatched task shows worker name | US-009 | -- | -- | P1 |
+| IT-31 | Launch output: TUI hint (`gt batch -i`) printed | US-009 | -- | -- | P2 |
 | IT-32 | Launch output: daemon feed explanation printed | US-009 | -- | -- | P2 |
-| IT-33 | Launch staged_ready convoy: skips re-analysis, dispatches directly | US-010 | -- | -- | P0 |
+| IT-33 | Launch staged_ready batch: skips re-analysis, dispatches directly | US-010 | -- | -- | P0 |
 | IT-34 | --json with errors: non-zero exit code | US-011 | -- | I-3, I-10 | P1 |
 | IT-35 | Mixed input (epic + task IDs): errors with hint | -- | F-03 | -- | P1 |
-| IT-36 | Bead ID that looks like rig name: errors with hint | -- | F-04 | -- | P2 |
+| IT-36 | Bead ID that looks like project name: errors with hint | -- | F-04 | -- | P2 |
 | IT-37 | bd binary not on PATH: clear error message | -- | F-13 | -- | P2 |
 | IT-38 | Malformed JSON from bd: error with raw output | -- | F-14 | -- | P2 |
 | IT-39 | Not inside workspace: clear error | -- | F-21 | -- | P2 |
 | IT-40 | Display ordering: tree printed before wave table | US-005, US-006 | -- | -- | P2 |
-| IT-41 | Stage clean: convoy ID printed to stdout | US-007 | -- | -- | P1 |
+| IT-41 | Stage clean: batch ID printed to stdout | US-007 | -- | -- | P1 |
 | IT-42 | Bead closed between stage and launch: skip closed, log | US-008 | F-18 | -- | P1 |
 | IT-43 | Stage epic with isolated task (no blocking deps from other staged tasks): warns (epic input only — task-list input never warns for isolation) | US-003 | F-08 | -- | P1 |
 | IT-44 | Stage with missing/corrupt routes.jsonl: errors with clear message | US-002 | F-15 | I-2 | P2 |
 
-### Integration tests (real Dolt store, package `convoy`)
+### Integration tests (real Dolt store, package `batch`)
 
 These test DAG walking and wave computation against a real beads store.
 
 | ID | Test | User Story | Failure Modes | Invariants | Priority |
 |----|------|-----------|---------------|------------|----------|
 | DS-01 | Epic tree walk: collects all descendants (3 levels deep) | US-001 | -- | -- | P0 |
-| DS-02 | Epic tree walk: handles cross-rig external references | US-001 | -- | -- | P1 |
+| DS-02 | Epic tree walk: handles cross-project external references | US-001 | -- | -- | P1 |
 | DS-03 | Wave computation with real deps: 3-wave linear chain | US-004 | -- | I-4, I-5 | P0 |
 | DS-04 | Wave computation with real deps: parallel + serial mixed | US-004 | -- | I-4 | P0 |
 | DS-05 | Cycle detection with real store: 2-node cycle | US-002 | F-07 | I-1 | P0 |
 | DS-06 | isIssueBlocked integration: blocked task not in Wave 1 | US-004 | -- | I-4 | P1 |
-| DS-07 | Event-driven path skips staged_ready convoy (`CheckConvoysForIssue` → `feedNextReadyIssue`) | US-007 | -- | I-7 | P0 |
-| DS-08 | Event-driven path skips staged_warnings convoy | US-007 | -- | I-7 | P0 |
-| DS-09 | Stranded scan path excludes staged convoys (`findStrandedConvoys` queries `--status=open`) | US-007 | -- | I-7 | P0 |
-| DS-10 | Daemon feeds convoy after status transitions from staged_ready to open | US-008 | -- | I-7 | P1 |
+| DS-07 | Event-driven path skips staged_ready batch (`CheckBatchsForIssue` → `feedNextReadyIssue`) | US-007 | -- | I-7 | P0 |
+| DS-08 | Event-driven path skips staged_warnings batch | US-007 | -- | I-7 | P0 |
+| DS-09 | Stranded scan path excludes staged batches (`findStrandedBatchs` queries `--status=open`) | US-007 | -- | I-7 | P0 |
+| DS-10 | Daemon feeds batch after status transitions from staged_ready to open | US-008 | -- | I-7 | P1 |
 
 ### Snapshot tests (package `cmd`)
 
@@ -202,12 +202,12 @@ Capture and verify console output format stability.
 |----|------|-----------|----------|
 | SN-01 | Tree display: epic with 2 sub-epics, 5 tasks | US-005 | P2 |
 | SN-02 | Wave table: 3 waves with blockers column | US-006 | P2 |
-| SN-03 | Launch output: convoy ID, wave summary, polecat list, hints | US-009 | P2 |
+| SN-03 | Launch output: batch ID, wave summary, worker list, hints | US-009 | P2 |
 | SN-04 | Error output: cycle path formatting | US-002 | P2 |
-| SN-05 | Warning output: parked rig + orphan list | US-003 | P2 |
+| SN-05 | Warning output: parked project + orphan list | US-003 | P2 |
 | SN-06 | JSON output: full structure | US-011 | P2 |
 
-### Property tests (package `cmd` or `convoy`)
+### Property tests (package `cmd` or `batch`)
 
 Prove invariants hold over randomized DAGs.
 
@@ -254,23 +254,23 @@ Assessment of existing test infrastructure for stage/launch needs.
 
 **Proposal:** A `dagBuilder` test helper that accepts a declarative graph definition and produces:
 - A bd stub script that returns correct JSON for `show`, `dep list`, and `list` commands
-- A routes.jsonl file for rig resolution
+- A routes.jsonl file for project resolution
 - Optionally, real Dolt store issues + deps (for DS-* tests)
 
 ```go
 dag := newTestDAG(t).
     Epic("epic-1", "Root Epic").
-    Task("task-1", "First task", rig("gastown")).ParentOf("epic-1").
-    Task("task-2", "Second task", rig("gastown")).ParentOf("epic-1").BlockedBy("task-1").
-    Task("task-3", "Third task", rig("gastown")).ParentOf("epic-1").BlockedBy("task-2")
+    Task("task-1", "First task", project("gastown")).ParentOf("epic-1").
+    Task("task-2", "Second task", project("gastown")).ParentOf("epic-1").BlockedBy("task-1").
+    Task("task-3", "Third task", project("gastown")).ParentOf("epic-1").BlockedBy("task-2")
 // dag.BdStubScript() -> shell script
 // dag.RoutesJSONL() -> routes file content
 // dag.Populate(store) -> creates issues + deps in real Dolt store
 ```
 
-**Compound Value:** Every new convoy test (stage, launch, future milestones) reuses this. The graph definition IS the test documentation.
+**Compound Value:** Every new batch test (stage, launch, future milestones) reuses this. The graph definition IS the test documentation.
 
-**Exists Today?** No. `molecule_dag.go` has `buildDAG` but it operates on live beads, not test fixtures.
+**Exists Today?** No. `workflow_dag.go` has `buildDAG` but it operates on live beads, not test fixtures.
 
 **Priority:** P0 -- build this before writing integration tests.
 
@@ -352,7 +352,7 @@ Combined with property assertions: "every task in exactly one wave", "no task be
 
 | Pattern | Risk in Stage/Launch | Mitigation |
 |---------|---------------------|------------|
-| Sleep-based sync | Daemon integration tests (DS-09, DS-10) wait for convoy status transitions; temptation to add delays | Use completion channels or check bd state, never `time.Sleep` in tests |
+| Sleep-based sync | Daemon integration tests (DS-09, DS-10) wait for batch status transitions; temptation to add delays | Use completion channels or check bd state, never `time.Sleep` in tests |
 | God fixtures | One massive DAG used by all tests | Each test declares its own DAG via the builder; share nothing |
 | Assertion-free tests | "It didn't panic" is not a test | Every test asserts on: wave assignment, error/warning categorization, or bd commands logged |
 | Snapshot overload | Tempting to snapshot all console output | Use snapshots only for display format (SN-*); use specific assertions for logic (waves, errors) |
@@ -371,15 +371,15 @@ Combined with property assertions: "every task in exactly one wave", "no task be
 
 4. **Write integration tests for staging flow** (IT-01 through IT-07, IT-10, IT-11) -- full command flow with bd stubs.
 
-5. **Implement `gt convoy stage`** -- bead validation, DAG construction, analysis, convoy creation.
+5. **Implement `gt batch stage`** -- bead validation, DAG construction, analysis, batch creation.
 
-6. **Write daemon integration tests** (DS-07, DS-08, DS-09) -- staged convoys must not be fed via either feeding path (event-driven + stranded scan).
+6. **Write daemon integration tests** (DS-07, DS-08, DS-09) -- staged batches must not be fed via either feeding path (event-driven + stranded scan).
 
-7. **Implement daemon staged-convoy guard** -- add staged-status check in `CheckConvoysForIssue` (event-driven path, `operations.go`). Stranded scan path (`convoy.go:1231`) is already safe via `--status=open` query. Update `ensureKnownConvoyStatus` and `validateConvoyStatusTransition` for staged statuses.
+7. **Implement daemon staged-batch guard** -- add staged-status check in `CheckBatchsForIssue` (event-driven path, `operations.go`). Stranded scan path (`batch.go:1231`) is already safe via `--status=open` query. Update `ensureKnownBatchStatus` and `validateBatchStatusTransition` for staged statuses.
 
 8. **Write launch tests** (IT-14, IT-15, IT-23) -- dispatch Wave 1 only.
 
-9. **Implement `gt convoy launch`** -- status transition, Wave 1 dispatch.
+9. **Implement `gt batch launch`** -- status transition, Wave 1 dispatch.
 
 10. **Build `waveAssert` helper + property tests** (PT-01 through PT-04) -- prove invariants over random graphs.
 
@@ -396,7 +396,7 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 | 1 | bd show each bead, error if missing | IT-01, IT-02 |
 | 2 | Epic: walks full parent-child tree recursively | IT-01, DS-01, DS-02 |
 | 3 | Task list: analyzes only given tasks | IT-03 |
-| 4 | Convoy: reads tracked beads via dep list | IT-04 |
+| 4 | Batch: reads tracked beads via dep list | IT-04 |
 | 5 | DAG from blocks/conditional-blocks/waits-for | U-15, U-16, U-17 |
 | 6 | parent-child: recorded, no execution edges | U-13, U-18, PT-06 |
 
@@ -405,8 +405,8 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 | AC | Criterion | Tests |
 |---|---|---|
 | 1 | Cycles detected with cycle path | U-01..U-05, IT-05, DS-05, SN-04, PT-04 |
-| 2 | No valid rig detected | IT-06, U-21 |
-| 3 | Errors: no convoy, no status changes | IT-07, U-27 |
+| 2 | No valid project detected | IT-06, U-21 |
+| 3 | Errors: no batch, no status changes | IT-07, U-27 |
 | 4 | Error output: bead IDs + suggested fix | U-39, SN-04 |
 | 5 | Non-zero exit code on errors | IT-07 |
 
@@ -416,8 +416,8 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 |---|---|---|
 | 1 | Orphan detection (epic input only: unreachable from descendant tree + isolated in wave graph) | IT-09, IT-43, U-23 |
 | 2 | Missing integration branches | U-24, IT-26 |
-| 3 | Parked rigs | IT-08, U-22 |
-| 4 | Cross-rig routing warnings | U-34, IT-27 |
+| 3 | Parked projects | IT-08, U-22 |
+| 4 | Cross-project routing warnings | U-34, IT-27 |
 | 5 | Capacity estimation | U-35, IT-28 |
 | 6 | Warnings distinguished from errors | U-20..U-24 |
 | 7 | Warnings only -> staged_warnings | IT-08, U-26 |
@@ -429,7 +429,7 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 | 1 | Wave 1 = no unsatisfied blocking deps | U-06..U-09, DS-03, PT-01..PT-03 |
 | 2 | Wave N+1 = blockers all in earlier waves | U-07, U-08, PT-03 |
 | 3 | No blocking deps = Wave 1 | U-06, PT-01 |
-| 4 | Epics/non-slingable excluded | U-11, U-12 |
+| 4 | Epics/non-dispatchable excluded | U-11, U-12 |
 | 5 | Full descendant set or just given tasks | IT-01 + IT-03 (input), U-06..U-09 (waves) |
 
 ### US-005: DAG tree display
@@ -437,7 +437,7 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 | AC | Criterion | Tests |
 |---|---|---|
 | 1 | Epic: full tree with indentation | U-29, SN-01 |
-| 2 | Each node: bead ID, title, type, status, rig | U-36, SN-01 |
+| 2 | Each node: bead ID, title, type, status, project | U-36, SN-01 |
 | 3 | Sub-epics visually distinct | SN-01 |
 | 4 | Blocked tasks show blockers inline | U-37, SN-01 |
 | 5 | Task list: flat list | U-28 |
@@ -447,21 +447,21 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 
 | AC | Criterion | Tests |
 |---|---|---|
-| 1 | Table: wave #, IDs, titles, rig, blockers | U-30, SN-02 |
+| 1 | Table: wave #, IDs, titles, project, blockers | U-30, SN-02 |
 | 2 | Displayed after DAG tree | IT-40 |
 | 3 | Summary line: waves, tasks, parallelism | U-38, SN-02 |
 | 4 | Warnings after wave table for staged_warnings | SN-05 |
 
-### US-007: Convoy creation with staged status
+### US-007: Batch creation with staged status
 
 | AC | Criterion | Tests |
 |---|---|---|
 | 1 | No errors, no warnings -> staged_ready | IT-10, U-25 |
 | 2 | Warnings only -> staged_warnings | IT-08, U-26 |
-| 3 | Errors -> no convoy | IT-07, U-27 |
-| 4 | Tracks all slingable beads | IT-11 |
+| 3 | Errors -> no batch | IT-07, U-27 |
+| 4 | Tracks all dispatchable beads | IT-11 |
 | 5 | Description: wave count, task count, timestamp | IT-12 |
-| 6 | Convoy ID printed to console | IT-41 |
+| 6 | Batch ID printed to console | IT-41 |
 | 7 | Re-staging updates status, no duplicate | IT-13 |
 
 ### US-008: Launch — dispatch Wave 1
@@ -478,13 +478,13 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 
 | AC | Criterion | Tests |
 |---|---|---|
-| 1 | Convoy ID + status command | IT-29, SN-03 |
+| 1 | Batch ID + status command | IT-29, SN-03 |
 | 2 | Wave summary | SN-03 |
-| 3 | Each Wave 1 task with polecat | IT-30, SN-03 |
-| 4 | TUI hint (gt convoy -i) | IT-31, SN-03 |
+| 3 | Each Wave 1 task with worker | IT-30, SN-03 |
+| 4 | TUI hint (gt batch -i) | IT-31, SN-03 |
 | 5 | Daemon feeds explanation | IT-32, SN-03 |
 
-### US-010: gt convoy launch as alias
+### US-010: gt batch launch as alias
 
 | AC | Criterion | Tests |
 |---|---|---|
@@ -510,23 +510,23 @@ Every acceptance criterion in the PRD mapped to its covering test(s).
 | F-01 | Nonexistent bead ID | IT-01, IT-02 |
 | F-02 | Empty args | IT-24 |
 | F-03 | Mixed input types | IT-35 |
-| F-04 | Bead ID looks like rig name | IT-36 |
-| F-05 | Convoy already open | IT-18 |
+| F-04 | Bead ID looks like project name | IT-36 |
+| F-05 | Batch already open | IT-18 |
 | F-06 | Flag-like bead ID | IT-25 |
 | F-07 | Cycle in blocks deps | U-01..U-05, IT-05, DS-05, PT-04 |
 | F-08 | Orphan tasks | IT-09, IT-43 |
-| F-09 | Stale convoy on re-stage | IT-02, IT-13 |
+| F-09 | Stale batch on re-stage | IT-02, IT-13 |
 | F-10 | Concurrent staging | _(accepted risk, no test)_ |
 | F-11 | Partial dep-add failure | IT-11 (existing pattern) |
 | F-12 | Epic has no children | U-14 |
 | F-13 | bd not on PATH | IT-37 |
 | F-14 | Malformed JSON from bd | IT-38 |
 | F-15 | routes.jsonl missing | IT-06, IT-44 |
-| F-16 | gt sling fails during launch | IT-17 |
+| F-16 | gt dispatch fails during launch | IT-17 |
 | F-17 | Dolt unavailable | _(skips via setupTestStore)_ |
 | F-18 | Bead closed between stage and launch | IT-42 |
-| F-19 | Rig parked between stage and launch | IT-08 |
+| F-19 | Project parked between stage and launch | IT-08 |
 | F-20 | New deps between stage and launch | _(accepted risk, re-analysis handles)_ |
 | F-21 | Not inside workspace | IT-39 |
-| F-22 | Bead prefix maps to town root | IT-06 (existing coverage) |
+| F-22 | Bead prefix maps to workspace root | IT-06 (existing coverage) |
 | F-23 | Unknown bead prefix | IT-06 |

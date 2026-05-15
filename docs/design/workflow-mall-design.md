@@ -1,26 +1,26 @@
 # Mol Mall Design
 
-> **Status: Vision document** — Phase 1 (local formulas) exists. Phases 2-5 (registry, publishing, federation) are not implemented.
+> **Status: Vision document** — Phase 1 (local templates) exists. Phases 2-5 (registry, publishing, federation) are not implemented.
 
-> A marketplace for Gas Town formulas
+> A marketplace for Gas Town templates
 
 ## Vision
 
-**Mol Mall** is a registry for sharing formulas across Gas Town installations. Think npm for molecules, or Terraform Registry for workflows.
+**Mol Mall** is a registry for sharing templates across Gas Town installations. Think npm for workflows, or Terraform Registry for workflows.
 
 ```
-"Cook a formula, sling it to a polecat, the witness watches, refinery merges."
+"Cook a template, dispatch it to a worker, the watcher watches, merger merges."
 
-What if you could browse a mall of formulas, install one, and immediately
-have your polecats executing world-class workflows?
+What if you could browse a mall of templates, install one, and immediately
+have your workers executing world-class workflows?
 ```
 
 ### The Network Effect
 
-A well-designed formula for "code review" or "security audit" or "deploy to K8s" can spread across thousands of Gas Town installations. Each adoption means:
+A well-designed template for "code review" or "security audit" or "deploy to K8s" can spread across thousands of Gas Town installations. Each adoption means:
 - More agents executing proven workflows
 - More structured, trackable work output
-- Better capability routing (agents with track records on a formula get similar work)
+- Better capability routing (agents with track records on a template get similar work)
 
 ## Architecture
 
@@ -32,16 +32,16 @@ A well-designed formula for "code review" or "security audit" or "deploy to K8s"
 └─────────────────────────────────────────────────────────────────┘
 
 PUBLIC REGISTRY (molmall.gastown.io)
-├── Community formulas (MIT licensed)
-├── Official Gas Town formulas (blessed)
-├── Verified publisher formulas
+├── Community templates (MIT licensed)
+├── Official Gas Town templates (blessed)
+├── Verified publisher templates
 └── Open contribution model
 
 PRIVATE REGISTRY (self-hosted)
-├── Organization-specific formulas
+├── Organization-specific templates
 ├── Proprietary workflows
 ├── Internal deployment patterns
-└── Enterprise compliance formulas
+└── Enterprise compliance templates
 
 FEDERATED REGISTRY (HOP future)
 ├── Cross-organization discovery
@@ -53,16 +53,16 @@ FEDERATED REGISTRY (HOP future)
 ### URI Scheme
 
 ```
-hop://molmall.gastown.io/formulas/mol-polecat-work@4.0.0
+hop://molmall.gastown.io/templates/wf-worker-work@4.0.0
        └──────────────────┘         └──────────────┘ └───┘
-           registry host              formula name   version
+           registry host              template name   version
 
 # Short forms
-mol-polecat-work                    # Default registry, latest version
-mol-polecat-work@4                  # Major version
-mol-polecat-work@4.0.0              # Exact version
-@acme/mol-deploy                    # Scoped to publisher
-hop://acme.corp/formulas/mol-deploy # Full HOP URI
+wf-worker-work                    # Default registry, latest version
+wf-worker-work@4                  # Major version
+wf-worker-work@4.0.0              # Exact version
+@acme/wf-deploy                    # Scoped to publisher
+hop://acme.corp/templates/wf-deploy # Full HOP URI
 ```
 
 ### Registry API
@@ -70,8 +70,8 @@ hop://acme.corp/formulas/mol-deploy # Full HOP URI
 ```yaml
 # OpenAPI-style specification
 
-GET /formulas
-  # List all formulas
+GET /templates
+  # List all templates
   Query:
     - q: string          # Search query
     - capabilities: string[]   # Filter by capability tags
@@ -79,18 +79,18 @@ GET /formulas
     - limit: int
     - offset: int
   Response:
-    formulas:
-      - name: mol-polecat-work
+    templates:
+      - name: wf-worker-work
         version: 4.0.0
-        description: "Full polecat work lifecycle..."
+        description: "Full worker work lifecycle..."
         author: steve@gastown.io
         downloads: 12543
         capabilities: [go, testing, code-review]
 
-GET /formulas/{name}
-  # Get formula metadata
+GET /templates/{name}
+  # Get template metadata
   Response:
-    name: mol-polecat-work
+    name: wf-worker-work
     versions: [4.0.0, 3.2.1, 3.2.0, ...]
     latest: 4.0.0
     author: steve@gastown.io
@@ -102,51 +102,51 @@ GET /formulas/{name}
     stats:
       downloads: 12543
       stars: 234
-      used_by: 89  # towns using this formula
+      used_by: 89  # workspaces using this template
 
-GET /formulas/{name}/{version}
+GET /templates/{name}/{version}
   # Get specific version
   Response:
-    name: mol-polecat-work
+    name: wf-worker-work
     version: 4.0.0
     checksum: sha256:abc123...
     signature: <optional PGP signature>
-    content: <base64 or URL to .formula.toml>
+    content: <base64 or URL to .template.toml>
     changelog: "Added self-cleaning model..."
     published_at: 2026-01-10T00:00:00Z
 
-POST /formulas
-  # Publish formula (authenticated)
+POST /templates
+  # Publish template (authenticated)
   Body:
-    name: mol-my-workflow
+    name: wf-my-workflow
     version: 1.0.0
-    content: <formula TOML>
+    content: <template TOML>
     changelog: "Initial release"
   Auth: Bearer token (linked to HOP identity)
 
-GET /formulas/{name}/{version}/download
-  # Download formula content
-  Response: raw .formula.toml content
+GET /templates/{name}/{version}/download
+  # Download template content
+  Response: raw .template.toml content
 ```
 
-## Formula Package Format
+## Template Package Format
 
 ### Simple Case: Single File
 
-Most formulas are single `.formula.toml` files:
+Most templates are single `.template.toml` files:
 
 ```bash
-gt formula install mol-polecat-code-review
-# Downloads mol-polecat-code-review.formula.toml to ~/gt/.beads/formulas/
+gt template install wf-worker-code-review
+# Downloads wf-worker-code-review.template.toml to ~/gt/.beads/templates/
 ```
 
-### Complex Case: Formula Bundle
+### Complex Case: Template Bundle
 
-Some formulas need supporting files (scripts, templates, configs):
+Some templates need supporting files (scripts, templates, configs):
 
 ```
-mol-deploy-k8s.formula.bundle/
-├── formula.toml              # Main formula
+wf-deploy-k8s.template.bundle/
+├── template.toml              # Main template
 ├── templates/
 │   ├── deployment.yaml.tmpl
 │   └── service.yaml.tmpl
@@ -158,14 +158,14 @@ mol-deploy-k8s.formula.bundle/
 Bundle format:
 ```bash
 # Bundles are tarballs
-mol-deploy-k8s-1.0.0.bundle.tar.gz
+wf-deploy-k8s-1.0.0.bundle.tar.gz
 ```
 
 Installation:
 ```bash
-gt formula install mol-deploy-k8s
-# Extracts to ~/gt/.beads/formulas/mol-deploy-k8s/
-# formula.toml is at mol-deploy-k8s/formula.toml
+gt template install wf-deploy-k8s
+# Extracts to ~/gt/.beads/templates/wf-deploy-k8s/
+# template.toml is at wf-deploy-k8s/template.toml
 ```
 
 ## Installation Flow
@@ -173,9 +173,9 @@ gt formula install mol-deploy-k8s
 ### Basic Install
 
 ```bash
-$ gt formula install mol-polecat-code-review
+$ gt template install wf-worker-code-review
 
-Resolving mol-polecat-code-review...
+Resolving wf-worker-code-review...
   Registry: molmall.gastown.io
   Version:  1.2.0 (latest)
   Author:   steve@gastown.io
@@ -184,26 +184,26 @@ Resolving mol-polecat-code-review...
 Downloading... ████████████████████ 100%
 Verifying checksum... ✓
 
-Installed to: ~/gt/.beads/formulas/mol-polecat-code-review.formula.toml
+Installed to: ~/gt/.beads/templates/wf-worker-code-review.template.toml
 ```
 
 ### Version Pinning
 
 ```bash
-$ gt formula install mol-polecat-work@4.0.0
+$ gt template install wf-worker-work@4.0.0
 
-Installing mol-polecat-work@4.0.0 (pinned)...
+Installing wf-worker-work@4.0.0 (pinned)...
 ✓ Installed
 
-$ gt formula list --installed
-  mol-polecat-work           4.0.0   [pinned]
-  mol-polecat-code-review    1.2.0   [latest]
+$ gt template list --installed
+  wf-worker-work           4.0.0   [pinned]
+  wf-worker-code-review    1.2.0   [latest]
 ```
 
 ### Upgrade Flow
 
 ```bash
-$ gt formula upgrade mol-polecat-code-review
+$ gt template upgrade wf-worker-code-review
 
 Checking for updates...
   Current: 1.2.0
@@ -216,29 +216,29 @@ Changelog for 1.3.0:
 Upgrade? [y/N] y
 
 Downloading... ✓
-Installed: mol-polecat-code-review@1.3.0
+Installed: wf-worker-code-review@1.3.0
 ```
 
 ### Lock File
 
 ```json
-// ~/gt/.beads/formulas/.lock.json
+// ~/gt/.beads/templates/.lock.json
 {
   "version": 1,
-  "formulas": {
-    "mol-polecat-work": {
+  "templates": {
+    "wf-worker-work": {
       "version": "4.0.0",
       "pinned": true,
       "checksum": "sha256:abc123...",
       "installed_at": "2026-01-10T00:00:00Z",
-      "source": "hop://molmall.gastown.io/formulas/mol-polecat-work@4.0.0"
+      "source": "hop://molmall.gastown.io/templates/wf-worker-work@4.0.0"
     },
-    "mol-polecat-code-review": {
+    "wf-worker-code-review": {
       "version": "1.3.0",
       "pinned": false,
       "checksum": "sha256:def456...",
       "installed_at": "2026-01-10T12:00:00Z",
-      "source": "hop://molmall.gastown.io/formulas/mol-polecat-code-review@1.3.0"
+      "source": "hop://molmall.gastown.io/templates/wf-worker-code-review@1.3.0"
     }
   }
 }
@@ -249,15 +249,15 @@ Installed: mol-polecat-code-review@1.3.0
 ### First-Time Setup
 
 ```bash
-$ gt formula publish --init
+$ gt template publish --init
 
 Setting up Mol Mall publishing...
 
 1. Create account at https://molmall.gastown.io/signup
 2. Generate API token at https://molmall.gastown.io/settings/tokens
-3. Run: gt formula login
+3. Run: gt template login
 
-$ gt formula login
+$ gt template login
 Token: ********
 Logged in as: steve@gastown.io
 ```
@@ -265,12 +265,12 @@ Logged in as: steve@gastown.io
 ### Publishing
 
 ```bash
-$ gt formula publish mol-polecat-work
+$ gt template publish wf-worker-work
 
-Publishing mol-polecat-work...
+Publishing wf-worker-work...
 
 Pre-flight checks:
-  ✓ formula.toml is valid
+  ✓ template.toml is valid
   ✓ Version 4.0.0 not yet published
   ✓ Required fields present (name, version, description)
   ✓ Skills declared
@@ -278,9 +278,9 @@ Pre-flight checks:
 Publish to molmall.gastown.io? [y/N] y
 
 Uploading... ✓
-Published: hop://molmall.gastown.io/formulas/mol-polecat-work@4.0.0
+Published: hop://molmall.gastown.io/templates/wf-worker-work@4.0.0
 
-View at: https://molmall.gastown.io/formulas/mol-polecat-work
+View at: https://molmall.gastown.io/templates/wf-worker-work
 ```
 
 ### Verification Levels
@@ -313,17 +313,17 @@ AUDITED
 
 ## Capability Tagging
 
-### Formula Capability Declaration
+### Template Capability Declaration
 
 ```toml
-[formula.capabilities]
-# What capabilities does this formula exercise? Used for agent routing.
+[template.capabilities]
+# What capabilities does this template exercise? Used for agent routing.
 primary = ["go", "testing", "code-review"]
 secondary = ["git", "ci-cd"]
 
 # Capability weights (optional, for fine-grained routing)
-[formula.capabilities.weights]
-go = 0.3           # 30% of formula work is Go
+[template.capabilities.weights]
+go = 0.3           # 30% of template work is Go
 testing = 0.4      # 40% is testing
 code-review = 0.3  # 30% is code review
 ```
@@ -331,26 +331,26 @@ code-review = 0.3  # 30% is code review
 ### Capability-Based Search
 
 ```bash
-$ gt formula search --capabilities="security,go"
+$ gt template search --capabilities="security,go"
 
-Formulas matching capabilities: security, go
+Templates matching capabilities: security, go
 
-  mol-security-audit           v2.1.0   ⭐ 4.8   📥 8,234
+  wf-security-audit           v2.1.0   ⭐ 4.8   📥 8,234
     Capabilities: security, go, code-review
     "Comprehensive security audit workflow"
 
-  mol-dependency-scan          v1.0.0   ⭐ 4.2   📥 3,102
+  wf-dependency-scan          v1.0.0   ⭐ 4.2   📥 3,102
     Capabilities: security, go, supply-chain
     "Scan Go dependencies for vulnerabilities"
 ```
 
 ### Agent Accountability
 
-When a polecat completes a formula, the execution is tracked:
+When a worker completes a template, the execution is tracked:
 
 ```
-Polecat: beads/amber
-Formula: mol-polecat-code-review@1.3.0
+Worker: beads/amber
+Template: wf-worker-code-review@1.3.0
 Completed: 2026-01-10T15:30:00Z
 Capabilities exercised:
   - code-review (primary)
@@ -361,7 +361,7 @@ Capabilities exercised:
 This execution record enables:
 1. **Routing** - Agents with successful track records get similar work
 2. **Debugging** - Trace which agent did what, when
-3. **Quality metrics** - Track success rates by agent and formula
+3. **Quality metrics** - Track success rates by agent and template
 
 ## Private Registries
 
@@ -387,32 +387,32 @@ registries:
 # Docker deployment
 docker run -d \
   -p 8080:8080 \
-  -v /data/formulas:/formulas \
+  -v /data/templates:/templates \
   -e AUTH_PROVIDER=oidc \
   gastown/molmall-registry:latest
 
 # Configuration
-MOLMALL_STORAGE=s3://bucket/formulas
+MOLMALL_STORAGE=s3://bucket/templates
 MOLMALL_AUTH=oidc
 MOLMALL_OIDC_ISSUER=https://auth.acme.corp
 ```
 
 ## Federation
 
-Federation enables formula sharing across organizations using the Highway Operations Protocol (HOP).
+Federation enables template sharing across organizations using the Highway Operations Protocol (HOP).
 
 ### Cross-Registry Discovery
 
 ```bash
-$ gt formula search "deploy kubernetes" --federated
+$ gt template search "deploy kubernetes" --federated
 
 Searching across federated registries...
 
   molmall.gastown.io:
-    mol-deploy-k8s           v3.0.0   🏛️ Official
+    wf-deploy-k8s           v3.0.0   🏛️ Official
 
   molmall.acme.corp:
-    @acme/mol-deploy-k8s     v2.1.0   ✓ Verified
+    @acme/wf-deploy-k8s     v2.1.0   ✓ Verified
 
   molmall.bigco.io:
     @bigco/k8s-workflow      v1.0.0   ⚠️ Unverified
@@ -424,35 +424,35 @@ The `hop://` URI scheme provides cross-registry entity references:
 
 ```bash
 # Full HOP URI
-gt formula install hop://molmall.acme.corp/formulas/@acme/mol-deploy@2.1.0
+gt template install hop://molmall.acme.corp/templates/@acme/wf-deploy@2.1.0
 
 # Resolution via HOP (Highway Operations Protocol)
 1. Parse hop:// URI
 2. Resolve registry endpoint (DNS/HOP discovery)
 3. Authenticate (if required)
-4. Download formula
+4. Download template
 5. Verify checksum/signature
-6. Install to town-level
+6. Install to workspace-level
 ```
 
 ## Implementation Phases
 
 ### Phase 1: Local Commands (Now)
 
-See [Formula Resolution](formula-resolution.md) for the implemented three-tier resolution system.
+See [Template Resolution](template-resolution.md) for the implemented three-tier resolution system.
 
 ### Phase 2: Manual Sharing
 
-- Formula export/import
-- `gt formula export mol-polecat-work > mol-polecat-work.formula.toml`
-- `gt formula import < mol-polecat-work.formula.toml`
+- Template export/import
+- `gt template export wf-worker-work > wf-worker-work.template.toml`
+- `gt template import < wf-worker-work.template.toml`
 - Lock file format
 
 ### Phase 3: Public Registry
 
 - molmall.gastown.io launch
-- `gt formula install` from registry
-- `gt formula publish` flow
+- `gt template install` from registry
+- `gt template publish` flow
 - Basic search and browse
 
 ### Phase 4: Enterprise Features
@@ -471,5 +471,5 @@ See [Formula Resolution](formula-resolution.md) for the implemented three-tier r
 
 ## Related Documents
 
-- [Formula Resolution](formula-resolution.md) - Local resolution order
-- [Molecules](../concepts/molecules.md) - Formula lifecycle (cook, pour, squash)
+- [Template Resolution](template-resolution.md) - Local resolution order
+- [Workflows](../concepts/workflows.md) - Template lifecycle (cook, pour, squash)

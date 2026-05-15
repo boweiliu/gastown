@@ -1,6 +1,6 @@
-# Gastown OTel Data Model
+# gastown OTel Data Model
 
-All Gastown telemetry events are OTel log records exported via OTLP
+All gastown telemetry events are OTel log records exported via OTLP
 (`GT_OTEL_LOGS_URL`). Every record carries a `run.id` attribute — a UUID
 generated once per agent spawn — so all records from a single agent session
 can be retrieved and correlated.
@@ -12,12 +12,12 @@ can be retrieved and correlated.
 ### 1.1 Instance
 
 The outermost grouping. Derived at agent spawn time from the machine hostname
-and the town root directory basename.
+and the workspace root directory basename.
 
 | Attribute | Type | Description |
 |---|---|---|
 | `instance` | string | `hostname:basename(town_root)` — e.g. `"laptop:gt"` |
-| `town_root` | string | absolute path to the town root — e.g. `"/Users/pa/gt"` |
+| `town_root` | string | absolute path to the workspace root — e.g. `"/Users/pa/gt"` |
 
 ### 1.2 Run
 
@@ -28,12 +28,12 @@ session carry the same `run.id`.
 |---|---|---|
 | `run.id` | string (UUID v4) | generated at spawn; propagated via `GT_RUN` |
 | `instance` | string | `hostname:basename(town_root)` |
-| `town_root` | string | absolute town root path |
+| `town_root` | string | absolute workspace root path |
 | `agent_type` | string | `"claudecode"`, `"opencode"`, `"copilot"`, … |
-| `role` | string | `polecat` · `witness` · `mayor` · `refinery` · `crew` · `deacon` · `dog` · `boot` |
+| `role` | string | `worker` · `watcher` · `coordinator` · `merger` · `team` · `supervisor` · `helper` · `boot` |
 | `agent_name` | string | specific name within the role (e.g. `"wyvern-Toast"`); equals role for singletons |
 | `session_id` | string | tmux pane name |
-| `rig` | string | rig name; empty for town-level agents |
+| `project` | string | project name; empty for workspace-level agents |
 
 ---
 
@@ -47,12 +47,12 @@ Emitted once per agent spawn. Anchors all subsequent events for that run.
 |---|---|---|
 | `run.id` | string | run UUID |
 | `instance` | string | `hostname:basename(town_root)` |
-| `town_root` | string | absolute town root path |
+| `town_root` | string | absolute workspace root path |
 | `agent_type` | string | `"claudecode"` · `"opencode"` · `"copilot"` · … |
-| `role` | string | Gastown role |
+| `role` | string | gastown role |
 | `agent_name` | string | agent name |
 | `session_id` | string | tmux pane name |
-| `rig` | string | rig name (empty = town-level) |
+| `project` | string | project name (empty = workspace-level) |
 | `issue_id` | string | bead ID of the work item assigned to this agent |
 | `git_branch` | string | git branch of the working directory at spawn time |
 | `git_commit` | string | HEAD SHA of the working directory at spawn time |
@@ -67,22 +67,22 @@ tmux session lifecycle events.
 |---|---|---|
 | `run.id` | string | run UUID |
 | `session_id` | string | tmux pane name |
-| `role` | string | Gastown role |
+| `role` | string | gastown role |
 | `status` | string | `"ok"` · `"error"` |
 
 ---
 
 ### `prime`
 
-Emitted on each `gt prime` invocation. The rendered formula is emitted
-separately as `prime.context` (same attributes plus `formula`).
+Emitted on each `gt prime` invocation. The rendered template is emitted
+separately as `prime.context` (same attributes plus `template`).
 
 | Attribute | Type | Description |
 |---|---|---|
 | `run.id` | string | run UUID |
-| `role` | string | Gastown role |
+| `role` | string | gastown role |
 | `hook_mode` | bool | true when invoked from a hook |
-| `formula` | string | full rendered formula (`prime.context` only) |
+| `template` | string | full rendered template (`prime.context` only) |
 | `status` | string | `"ok"` · `"error"` |
 
 ---
@@ -158,7 +158,7 @@ in a shell.
 
 ### `mail`
 
-All operations on the Gastown mail system.
+All operations on the gastown mail system.
 
 | Attribute | Type | Description |
 |---|---|---|
@@ -189,50 +189,50 @@ Emitted whenever an agent transitions to a new state (idle → working, etc.).
 | `run.id` | string | run UUID |
 | `agent_id` | string | agent identifier |
 | `new_state` | string | new state (`"idle"`, `"working"`, `"done"`, …) |
-| `hook_bead` | string | bead ID the agent is currently processing; empty if none |
+| `assignment_bead` | string | bead ID the agent is currently processing; empty if none |
 | `status` | string | `"ok"` · `"error"` |
 
 ---
 
-### `mol.cook` / `mol.wisp` / `mol.squash` / `mol.burn`
+### `mol.cook` / `mol.ephemeral` / `mol.squash` / `mol.burn`
 
-Molecule lifecycle events emitted at each stage of the formula workflow.
+Workflow lifecycle events emitted at each stage of the template workflow.
 
-**`mol.cook`** — formula compiled to a proto (prerequisite for wisp creation):
+**`mol.cook`** — template compiled to a proto (prerequisite for ephemeral creation):
 
 | Attribute | Type | Description |
 |---|---|---|
 | `run.id` | string | run UUID |
-| `formula_name` | string | formula name (e.g. `"mol-polecat-work"`) |
+| `template_name` | string | template name (e.g. `"wf-worker-work"`) |
 | `status` | string | `"ok"` · `"error"` |
 
-**`mol.wisp`** — proto instantiated as a live wisp (ephemeral molecule instance):
+**`mol.ephemeral`** — proto instantiated as a live ephemeral (ephemeral workflow instance):
 
 | Attribute | Type | Description |
 |---|---|---|
 | `run.id` | string | run UUID |
-| `formula_name` | string | formula name |
-| `wisp_root_id` | string | root bead ID of the created wisp |
-| `bead_id` | string | base bead bonded to the wisp; empty for standalone formula slinging |
+| `template_name` | string | template name |
+| `ephemeral_root_id` | string | root bead ID of the created ephemeral |
+| `bead_id` | string | base bead bonded to the ephemeral; empty for standalone template dispatching |
 | `status` | string | `"ok"` · `"error"` |
 
-**`mol.squash`** — molecule execution completed and collapsed to a digest:
+**`mol.squash`** — workflow execution completed and collapsed to a digest:
 
 | Attribute | Type | Description |
 |---|---|---|
 | `run.id` | string | run UUID |
-| `mol_id` | string | molecule root bead ID |
+| `mol_id` | string | workflow root bead ID |
 | `done_steps` | int | number of steps completed |
-| `total_steps` | int | total steps in the molecule |
+| `total_steps` | int | total steps in the workflow |
 | `digest_created` | bool | false when `--no-digest` flag was set |
 | `status` | string | `"ok"` · `"error"` |
 
-**`mol.burn`** — molecule destroyed without creating a digest:
+**`mol.burn`** — workflow destroyed without creating a digest:
 
 | Attribute | Type | Description |
 |---|---|---|
 | `run.id` | string | run UUID |
-| `mol_id` | string | molecule root bead ID |
+| `mol_id` | string | workflow root bead ID |
 | `children_closed` | int | number of descendant step beads closed |
 | `status` | string | `"ok"` · `"error"` |
 
@@ -240,16 +240,16 @@ Molecule lifecycle events emitted at each stage of the formula workflow.
 
 ### `bead.create`
 
-Emitted for each child bead created during molecule instantiation
-(`bd mol pour` / `InstantiateMolecule`). Allows tracing the full
-parent → child bead graph for a given molecule.
+Emitted for each child bead created during workflow instantiation
+(`bd workflow pour` / `InstantiateWorkflow`). Allows tracing the full
+parent → child bead graph for a given workflow.
 
 | Attribute | Type | Description |
 |---|---|---|
 | `run.id` | string | run UUID |
 | `bead_id` | string | newly created child bead ID |
-| `parent_id` | string | parent (wisp root / base) bead ID |
-| `mol_source` | string | molecule proto bead ID that drove the instantiation |
+| `parent_id` | string | parent (ephemeral root / base) bead ID |
+| `mol_source` | string | workflow proto bead ID that drove the instantiation |
 
 ---
 
@@ -259,13 +259,13 @@ All carry `run.id`.
 
 | Event body | Key attributes |
 |---|---|
-| `sling` | `bead`, `target`, `status` |
-| `nudge` | `target`, `status` |
+| `dispatch` | `bead`, `target`, `status` |
+| `message` | `target`, `status` |
 | `done` | `exit_type` (`COMPLETED` · `ESCALATED` · `DEFERRED`), `status` |
-| `polecat.spawn` | `name`, `status` |
-| `polecat.remove` | `name`, `status` |
-| `formula.instantiate` | `formula_name`, `bead_id`, `status` (top-level formula-on-bead result) |
-| `convoy.create` | `bead_id`, `status` |
+| `worker.spawn` | `name`, `status` |
+| `worker.remove` | `name`, `status` |
+| `template.instantiate` | `template_name`, `bead_id`, `status` (top-level template-on-bead result) |
+| `batch.create` | `bead_id`, `status` |
 | `daemon.restart` | `agent_type` |
 | `pane.output` | `session`, `content` (opt-in: `GT_LOG_PANE_OUTPUT=true`) |
 
@@ -274,7 +274,7 @@ All carry `run.id`.
 ## 3. Recommended indexed attributes
 
 ```
-run.id, instance, town_root, session_id, rig, role, agent_type,
+run.id, instance, town_root, session_id, project, role, agent_type,
 event_type, msg.thread_id, msg.from, msg.to
 ```
 
@@ -293,7 +293,7 @@ event_type, msg.thread_id, msg.from, msg.to
 | `GT_LOG_PANE_OUTPUT` | operator | opt-in: stream raw tmux pane output |
 | `GT_LOG_MAIL_BODY` | operator | opt-in: include mail body in `mail` records (truncated to 256 bytes) |
 | `GT_LOG_PROMPT_KEYS` | operator | opt-in: include prompt text in `prompt.send` records (truncated to 256 bytes) |
-| `GT_LOG_PRIME_CONTEXT` | operator | opt-in: log full rendered formula in `prime.context` records |
+| `GT_LOG_PRIME_CONTEXT` | operator | opt-in: log full rendered template in `prime.context` records |
 
 `GT_RUN` is also surfaced as `gt.run_id` in `OTEL_RESOURCE_ATTRIBUTES` for `bd`
 subprocesses, correlating their own telemetry to the parent run.

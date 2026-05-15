@@ -13,8 +13,8 @@ This enables both local control and global coordination.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 1. WISP LAYER (transient, town-local)                       │
-│    Location: <rig>/.beads-wisp/config/                      │
+│ 1. EPHEMERAL LAYER (transient, workspace-local)                       │
+│    Location: <project>/.beads-ephemeral/config/                      │
 │    Synced: Never                                            │
 │    Use: Temporary local overrides                           │
 └─────────────────────────────┬───────────────────────────────┘
@@ -22,7 +22,7 @@ This enables both local control and global coordination.
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. RIG BEAD LAYER (persistent, synced globally)             │
-│    Location: <rig>/.beads/ (rig identity bead labels)       │
+│    Location: <project>/.beads/ (project identity bead labels)       │
 │    Synced: Via git (all clones see it)                      │
 │    Use: Project-wide operational state                      │
 └─────────────────────────────┬───────────────────────────────┘
@@ -31,8 +31,8 @@ This enables both local control and global coordination.
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. TOWN DEFAULTS                                            │
 │    Location: ~/gt/config.json or ~/gt/.beads/               │
-│    Synced: N/A (per-town)                                   │
-│    Use: Town-wide policies                                  │
+│    Synced: N/A (per-workspace)                                   │
+│    Use: Workspace-wide policies                                  │
 └─────────────────────────────┬───────────────────────────────┘
                               │ if missing
                               ▼
@@ -50,7 +50,7 @@ For most properties, the first non-nil value wins:
 
 ```go
 func GetConfig(key string) interface{} {
-    if val := wisp.Get(key); val != nil {
+    if val := ephemeral.Get(key); val != nil {
         if val == Blocked { return nil }
         return val
     }
@@ -66,14 +66,14 @@ func GetConfig(key string) interface{} {
 
 ### Stacking Semantics (Integers)
 
-For integer properties, values from wisp and bead layers **add** to the base:
+For integer properties, values from ephemeral and bead layers **add** to the base:
 
 ```go
 func GetIntConfig(key string) int {
-    base := getBaseDefault(key)    // Town or system default
+    base := getBaseDefault(key)    // Workspace or system default
     beadAdj := rigBead.GetInt(key) // 0 if missing
-    wispAdj := wisp.GetInt(key)    // 0 if missing
-    return base + beadAdj + wispAdj
+    ephemeralAdj := ephemeral.GetInt(key)    // 0 if missing
+    return base + beadAdj + ephemeralAdj
 }
 ```
 
@@ -84,19 +84,19 @@ This enables temporary adjustments without changing the base value.
 You can explicitly block a property from being inherited:
 
 ```bash
-gt rig config set gastown auto_restart --block
+gt project config set gastown auto_restart --block
 ```
 
-This creates a "blocked" marker in the wisp layer. Even if the rig bead
+This creates a "blocked" marker in the ephemeral layer. Even if the project bead
 or defaults say `auto_restart: true`, the lookup returns nil.
 
-## Rig Identity Beads
+## Project Identity Beads
 
-Each rig has an identity bead for operational state:
+Each project has an identity bead for operational state:
 
 ```yaml
-id: gt-rig-gastown
-type: rig
+id: gt-project-gastown
+type: project
 name: gastown
 repo: git@github.com:steveyegge/gastown.git
 prefix: gt
@@ -106,30 +106,30 @@ labels:
   - priority:normal
 ```
 
-These beads sync via git, so all clones of the rig see the same state.
+These beads sync via git, so all clones of the project see the same state.
 
-## Two-Level Rig Control
+## Two-Level Project Control
 
 ### Level 1: Park (Local, Ephemeral)
 
 ```bash
-gt rig park gastown      # Stop services, daemon won't restart
-gt rig unpark gastown    # Allow services to run
+gt project park gastown      # Stop services, daemon won't restart
+gt project unpark gastown    # Allow services to run
 ```
 
-- Stored in wisp layer (`.beads-wisp/config/`)
-- Only affects this town
+- Stored in ephemeral layer (`.beads-ephemeral/config/`)
+- Only affects this workspace
 - Disappears on cleanup
 - Use: Local maintenance, debugging
 
 ### Level 2: Dock (Global, Persistent)
 
 ```bash
-gt rig dock gastown      # Set status:docked label on rig bead
-gt rig undock gastown    # Remove label
+gt project dock gastown      # Set status:docked label on project bead
+gt project undock gastown    # Remove label
 ```
 
-- Stored on rig identity bead
+- Stored on project identity bead
 - Syncs to all clones via git
 - Permanent until explicitly changed
 - Use: Project-wide maintenance, coordinated downtime
@@ -139,8 +139,8 @@ gt rig undock gastown    # Remove label
 The daemon checks both levels before auto-restarting:
 
 ```go
-func shouldAutoRestart(rig *Rig) bool {
-    status := rig.GetConfig("status")
+func shouldAutoRestart(project *Project) bool {
+    status := project.GetConfig("status")
     if status == "parked" || status == "docked" {
         return false
     }
@@ -154,7 +154,7 @@ func shouldAutoRestart(rig *Rig) bool {
 |-----|------|----------|-------------|
 | `status` | string | Override | operational/parked/docked |
 | `auto_restart` | bool | Override | Daemon auto-restart behavior |
-| `max_polecats` | int | Override | Maximum concurrent polecats |
+| `max_workers` | int | Override | Maximum concurrent workers |
 | `priority_adjustment` | int | **Stack** | Scheduling priority modifier |
 | `maintenance_window` | string | Override | When maintenance allowed |
 | `dnd` | bool | Override | Do not disturb mode |
@@ -164,36 +164,36 @@ func shouldAutoRestart(rig *Rig) bool {
 ### View Configuration
 
 ```bash
-gt rig config show gastown           # Show effective config (all layers)
-gt rig config show gastown --layer   # Show which layer each value comes from
+gt project config show gastown           # Show effective config (all layers)
+gt project config show gastown --layer   # Show which layer each value comes from
 ```
 
 ### Set Configuration
 
 ```bash
-# Set in wisp layer (local, ephemeral)
-gt rig config set gastown key value
+# Set in ephemeral layer (local, ephemeral)
+gt project config set gastown key value
 
 # Set in bead layer (global, permanent)
-gt rig config set gastown key value --global
+gt project config set gastown key value --global
 
 # Block inheritance
-gt rig config set gastown key --block
+gt project config set gastown key --block
 
-# Clear from wisp layer
-gt rig config unset gastown key
+# Clear from ephemeral layer
+gt project config unset gastown key
 ```
 
-### Rig Lifecycle
+### Project Lifecycle
 
 ```bash
-gt rig park gastown          # Local: stop + prevent restart
-gt rig unpark gastown        # Local: allow restart
+gt project park gastown          # Local: stop + prevent restart
+gt project unpark gastown        # Local: allow restart
 
-gt rig dock gastown          # Global: mark as offline
-gt rig undock gastown        # Global: mark as operational
+gt project dock gastown          # Global: mark as offline
+gt project undock gastown        # Global: mark as operational
 
-gt rig status gastown        # Show current state
+gt project status gastown        # Show current state
 ```
 
 ## Examples
@@ -202,61 +202,61 @@ gt rig status gastown        # Show current state
 
 ```bash
 # Base priority: 0 (from defaults)
-# Give this rig temporary priority boost for urgent work
+# Give this project temporary priority boost for urgent work
 
-gt rig config set gastown priority_adjustment 10
+gt project config set gastown priority_adjustment 10
 
 # Effective priority: 0 + 10 = 10
 # When done, clear it:
 
-gt rig config unset gastown priority_adjustment
+gt project config unset gastown priority_adjustment
 ```
 
 ### Local Maintenance
 
 ```bash
 # I'm upgrading the local clone, don't restart services
-gt rig park gastown
+gt project park gastown
 
 # ... do maintenance ...
 
-gt rig unpark gastown
+gt project unpark gastown
 ```
 
 ### Project-Wide Maintenance
 
 ```bash
 # Major refactor in progress, all clones should pause
-gt rig dock gastown
+gt project dock gastown
 
-# Syncs via git - other towns see the rig as docked
+# Syncs via git - other workspaces see the project as docked
 bd sync
 
 # When done:
-gt rig undock gastown
+gt project undock gastown
 bd sync
 ```
 
 ### Block Auto-Restart Locally
 
 ```bash
-# Rig bead says auto_restart: true
+# Project bead says auto_restart: true
 # But I'm debugging and don't want that here
 
-gt rig config set gastown auto_restart --block
+gt project config set gastown auto_restart --block
 
-# Now auto_restart returns nil for this town only
+# Now auto_restart returns nil for this workspace only
 ```
 
 ## Implementation Notes
 
-### Wisp Storage
+### Ephemeral Storage
 
-Wisp config stored in `.beads-wisp/config/<rig>.json`:
+Ephemeral config stored in `.beads-ephemeral/config/<project>.json`:
 
 ```json
 {
-  "rig": "gastown",
+  "project": "gastown",
   "values": {
     "status": "parked",
     "priority_adjustment": 10
@@ -265,13 +265,13 @@ Wisp config stored in `.beads-wisp/config/<rig>.json`:
 }
 ```
 
-### Rig Bead Labels
+### Project Bead Labels
 
-Rig operational state stored as labels on the rig identity bead:
+Project operational state stored as labels on the project identity bead:
 
 ```bash
-bd label add gt-rig-gastown status:docked
-bd label remove gt-rig-gastown status:docked
+bd label add gt-project-gastown status:docked
+bd label remove gt-project-gastown status:docked
 ```
 
 ### Daemon Integration
@@ -279,17 +279,17 @@ bd label remove gt-rig-gastown status:docked
 The daemon's lifecycle manager checks config before starting services:
 
 ```go
-func (d *Daemon) maybeStartRigServices(rig string) {
-    r := d.getRig(rig)
+func (d *Daemon) maybeStartRigServices(project string) {
+    r := d.getRig(project)
 
     status := r.GetConfig("status")
     if status == "parked" || status == "docked" {
-        log.Info("Rig %s is offline, skipping auto-start", rig)
+        log.Info("Project %s is offline, skipping auto-start", project)
         return
     }
 
-    d.ensureWitness(rig)
-    d.ensureRefinery(rig)
+    d.ensureWatcher(project)
+    d.ensureMerger(project)
 }
 ```
 
@@ -302,8 +302,8 @@ trail. Labels cache the current state for fast queries.
 
 | Event Type | Description | Payload |
 |------------|-------------|---------|
-| `patrol.muted` | Patrol cycle disabled | `{reason, until?}` |
-| `patrol.unmuted` | Patrol cycle re-enabled | `{reason?}` |
+| `sweep.muted` | Sweep cycle disabled | `{reason, until?}` |
+| `sweep.unmuted` | Sweep cycle re-enabled | `{reason?}` |
 | `agent.started` | Agent session began | `{session_id?}` |
 | `agent.stopped` | Agent session ended | `{reason, outcome?}` |
 | `mode.degraded` | System entered degraded mode | `{reason}` |
@@ -313,31 +313,31 @@ trail. Labels cache the current state for fast queries.
 
 ```bash
 # Create operational event
-bd create --type=event --event-type=patrol.muted \
-  --actor=human:overseer --target=agent:deacon \
-  --payload='{"reason":"fixing convoy deadlock","until":"gt-abc1"}'
+bd create --type=event --event-type=sweep.muted \
+  --actor=human:overseer --target=agent:supervisor \
+  --payload='{"reason":"fixing batch deadlock","until":"gt-abc1"}'
 
 # Query recent events for an agent
-bd list --type=event --target=agent:deacon --limit=10
+bd list --type=event --target=agent:supervisor --limit=10
 
 # Query current state via labels
-bd list --type=role --label=patrol:muted
+bd list --type=role --label=sweep:muted
 ```
 
 ### Labels-as-State Pattern
 
 Events capture the full history. Labels cache the current state:
 
-- `patrol:muted` / `patrol:active`
+- `sweep:muted` / `sweep:active`
 - `mode:degraded` / `mode:normal`
 - `status:idle` / `status:working`
 
 State change flow: create event bead (immutable), then update role bead labels (cache).
 
 ```bash
-# Mute patrol
-bd create --type=event --event-type=patrol.muted ...
-bd update role-deacon --add-label=patrol:muted --remove-label=patrol:active
+# Mute sweep
+bd create --type=event --event-type=sweep.muted ...
+bd update role-supervisor --add-label=sweep:muted --remove-label=sweep:active
 ```
 
 ### Configuration vs State
@@ -346,18 +346,18 @@ bd update role-deacon --add-label=patrol:muted --remove-label=patrol:active
 |------|---------|---------|
 | **Static config** | TOML files | Daemon tick interval |
 | **Role directives** | Markdown files | Operator behavioral policy per role |
-| **Formula overlays** | TOML files | Per-step formula modifications |
-| **Operational state** | Beads (events + labels) | Patrol muted |
-| **Runtime flags** | Marker files | `.deacon-disabled` |
+| **Template overlays** | TOML files | Per-step template modifications |
+| **Operational state** | Beads (events + labels) | Sweep muted |
+| **Runtime flags** | Marker files | `.supervisor-disabled` |
 
 *Events are the source of truth. Labels are the cache.*
 
 For Boot triage and degraded mode details, see [Watchdog Chain](watchdog-chain.md).
 
-## Role Directives and Formula Overlays
+## Role Directives and Template Overlays
 
 Directives and overlays extend the property layer model to agent behavior.
-They follow the same rig > town > system precedence as other config.
+They follow the same project > workspace > system precedence as other config.
 
 ### Directives (Behavioral Policy)
 
@@ -370,38 +370,38 @@ SYSTEM LAYER:   Embedded role template (compiled in)
 TOWN LAYER:     ~/gt/directives/<role>.md
                         │ concatenated with
                         ▼
-RIG LAYER:      ~/gt/<rig>/directives/<role>.md
+RIG LAYER:      ~/gt/<project>/directives/<role>.md
 ```
 
-Both town and rig directives concatenate. Rig content appears last and wins
+Both workspace and project directives concatenate. Project content appears last and wins
 conflicts (same as CSS specificity — later rules override earlier ones).
 
-### Overlays (Formula Modifications)
+### Overlays (Template Modifications)
 
-Per-formula TOML files that modify individual steps:
+Per-template TOML files that modify individual steps:
 
 ```
-SYSTEM LAYER:   Embedded formula (compiled in)
+SYSTEM LAYER:   Embedded template (compiled in)
                         │ if overlay exists
                         ▼
-TOWN LAYER:     ~/gt/formula-overlays/<formula>.toml
-                        │ rig replaces town entirely
+TOWN LAYER:     ~/gt/template-overlays/<template>.toml
+                        │ project replaces workspace entirely
                         ▼
-RIG LAYER:      ~/gt/<rig>/formula-overlays/<formula>.toml
+RIG LAYER:      ~/gt/<project>/template-overlays/<template>.toml
 ```
 
-Unlike directives, overlays use **full replacement** at the rig level — if a
-rig overlay exists, the town overlay is ignored entirely. This prevents
+Unlike directives, overlays use **full replacement** at the project level — if a
+project overlay exists, the workspace overlay is ignored entirely. This prevents
 conflicting step modifications from merging unpredictably.
 
 ### Precedence Summary
 
-| Config Type | Town + Rig Interaction | Rationale |
+| Config Type | Workspace + Project Interaction | Rationale |
 |-------------|----------------------|-----------|
-| Rig properties | First non-nil wins (override) | Standard config lookup |
+| Project properties | First non-nil wins (override) | Standard config lookup |
 | Integer properties | Values stack (additive) | Allows adjustments |
-| Role directives | Concatenate (rig last) | Additive policy; rig gets last word |
-| Formula overlays | Rig replaces town | Step mods can conflict; full replacement is safer |
+| Role directives | Concatenate (project last) | Additive policy; project gets last word |
+| Template overlays | Project replaces workspace | Step mods can conflict; full replacement is safer |
 
 See [directives-and-overlays.md](directives-and-overlays.md) for the full
 reference with TOML format, examples, and `gt doctor` integration.
@@ -409,6 +409,6 @@ reference with TOML format, examples, and `gt doctor` integration.
 ## Related Documents
 
 - `~/gt/docs/hop/PROPERTY-LAYERS.md` - Strategic architecture
-- `wisp-architecture.md` - Wisp system design
+- `ephemeral-architecture.md` - Ephemeral system design
 - `agent-as-bead.md` - Agent identity beads (similar pattern)
 - [directives-and-overlays.md](directives-and-overlays.md) - Full reference

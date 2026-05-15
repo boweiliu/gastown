@@ -1,15 +1,15 @@
-# Sandboxed Polecat Execution (exitbox + daytona)
+# Sandboxed Worker Execution (exitbox + daytona)
 
 > **Date:** 2026-03-02
-> **Author:** mayor
+> **Author:** coordinator
 > **Status:** Proposal
-> **Related:** polecat-lifecycle-patrol.md, architecture.md
+> **Related:** worker-lifecycle-sweep.md, architecture.md
 
 ---
 
 ## 1. Problem Statement
 
-Every polecat today runs directly on the host machine in a tmux session under the
+Every worker today runs directly on the host machine in a tmux session under the
 user's own UID, with full access to the host filesystem, network, and credentials.
 This creates two distinct problems:
 
@@ -22,7 +22,7 @@ identity. Credential exfiltration is a real threat.
 sessions without resource contention. Distributing workloads to cloud containers
 (daytona) decouples throughput from local hardware.
 
-Both problems are addressed by a single mechanism: configurable polecat execution
+Both problems are addressed by a single mechanism: configurable worker execution
 backends.
 
 ---
@@ -34,7 +34,7 @@ An agent session does two independent things that require different treatment:
 | Plane | What runs | Where it must run |
 |---|---|---|
 | **Agent work** | LLM inference, file edits, code execution, `git` operations | Inside the sandbox / container — needs the worktree |
-| **Control plane** | `gt prime`, `gt done`, `gt mail`, `bd show/update`, events, nudges | Reaches back to the host — needs Dolt, `.runtime/`, mail |
+| **Control plane** | `gt prime`, `gt done`, `gt mail`, `bd show/update`, events, messages | Reaches back to the host — needs Dolt, `.runtime/`, mail |
 
 Keeping these planes separate is the key to a clean design.
 
@@ -48,16 +48,16 @@ Keeping these planes separate is the key to a clean design.
 Host machine
 ┌─────────────────────────────────────────────────────┐
 │                                                     │
-│  GasTown daemon                                     │
+│  gastown daemon                                     │
 │  ┌──────────────────────────────────────────────┐   │
 │  │  SessionManager.Start()                      │   │
-│  │    exec env GT_RIG=... GT_POLECAT=...        │   │
+│  │    exec env GT_RIG=... GT_worker=...        │   │
 │  │    claude --mode=direct                      │   │
 │  └──────────────┬───────────────────────────────┘   │
 │                 │  tmux new-session                  │
 │                 ▼                                    │
 │           ┌──────────┐   gt prime / gt done          │
-│           │  polecat │ ──────────────────────────►  │
+│           │  worker │ ──────────────────────────►  │
 │           │  (tmux)  │   bd show / bd update         │
 │           └──────────┘   (direct, loopback Dolt)     │
 │                                                     │
@@ -76,10 +76,10 @@ is still reachable.
 Host machine
 ┌─────────────────────────────────────────────────────┐
 │                                                     │
-│  GasTown daemon                                     │
+│  gastown daemon                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │  exec env GT_RIG=... GT_POLECAT=...          │   │
-│  │  exitbox run --profile=gastown-polecat --    │   │
+│  │  exec env GT_RIG=... GT_worker=...          │   │
+│  │  exitbox run --profile=gastown-worker --    │   │
 │  │  claude --mode=direct                        │   │
 │  └──────────────┬───────────────────────────────┘   │
 │                 │  tmux new-session                  │
@@ -87,7 +87,7 @@ Host machine
 │  ┌─────────────────────────┐                        │
 │  │  exitbox sandbox        │  gt / bd calls          │
 │  │  ┌─────────────────┐    │ ──────────────────────► │
-│  │  │ polecat (agent) │    │   loopback — direct     │
+│  │  │ worker (agent) │    │   loopback — direct     │
 │  │  └─────────────────┘    │   (Dolt, .runtime/)     │
 │  │  policy:                │                        │
 │  │  - rw: worktree only    │                        │
@@ -108,7 +108,7 @@ git fetch, and git push — goes through the host's mTLS proxy. The container ha
 Host machine                      Daytona cloud container
 ┌───────────────────────────┐     ┌──────────────────────────────────────┐
 │                           │     │                                      │
-│  GasTown daemon           │     │  tmux pane: daytona exec <ws>        │
+│  gastown daemon           │     │  tmux pane: daytona exec <ws>        │
 │  ┌──────────────────────┐ │     │  ┌────────────────────────────────┐  │
 │  │ SessionManager       │ │     │  │ claude --mode=direct           │  │
 │  │  - issues cert       │ │     │  │                                │  │
@@ -117,15 +117,15 @@ Host machine                      Daytona cloud container
 │  └──────────────────────┘ │     │  │  POST /v1/exec over mTLS       │  │
 │                           │     │  └───────────────┬────────────────┘  │
 │  gt-proxy-server          │     │                  │ mTLS (cert CN     │
-│  ┌──────────────────────┐ │◄────┼──────────────────┘  gt-rig-name)     │
+│  ┌──────────────────────┐ │◄────┼──────────────────┘  gt-project-name)     │
 │  │ /v1/exec             │ │     │                                      │
 │  │  - validates cert CN │ │     │  git fetch / git push origin         │
 │  │  - injects --identity│ │     │  (origin = proxy git endpoint)       │
 │  │  - runs gt/bd on host│ │     │  ↓                                   │
 │  │                      │ │◄────┼──── git smart HTTP over mTLS ────────┘
-│  │ /v1/git/<rig>/       │ │     │
+│  │ /v1/git/<project>/       │ │     │
 │  │  upload-pack (fetch) │ │     │  Container git remote:
-│  │  receive-pack (push) │ │     │    origin = https://host:9876/v1/git/<rig>
+│  │  receive-pack (push) │ │     │    origin = https://host:9876/v1/git/<project>
 │  │  ↕ .repo.git on host │ │     │
 │  └──────────────────────┘ │     The container needs:
 │         │                 │     - gt-proxy-client binary (as gt + bd)
@@ -151,23 +151,23 @@ The startup command builder inserts the wrapper tokens between
 
 ```
 # Local (no wrapper):
-exec env GT_RIG=gastown GT_POLECAT=furiosa ... claude --mode=direct
+exec env GT_RIG=gastown GT_worker=furiosa ... claude --mode=direct
 
 # exitbox:
-exec env GT_RIG=gastown GT_POLECAT=furiosa ... \
-    exitbox run --profile=gastown-polecat -- claude --mode=direct
+exec env GT_RIG=gastown GT_worker=furiosa ... \
+    exitbox run --profile=gastown-worker -- claude --mode=direct
 
 # daytona:
-exec env GT_RIG=gastown GT_POLECAT=furiosa ... \
+exec env GT_RIG=gastown GT_worker=furiosa ... \
     daytona exec furiosa-ws -- claude --mode=direct
 ```
 
 This wraps the entire session; tmux still manages the pane, and `tmux send-keys`
-still delivers nudges — no changes to the messaging layer.
+still delivers messages — no changes to the messaging layer.
 
 Exposed as:
-- `settings/config.json`: `agent.exec_wrapper: ["exitbox", "run", "--profile=gastown-polecat", "--"]`
-- CLI flag: `gt sling <bead> --exec-wrapper "..."`
+- `settings/config.json`: `agent.exec_wrapper: ["exitbox", "run", "--profile=gastown-worker", "--"]`
+- CLI flag: `gt dispatch <bead> --exec-wrapper "..."`
 
 ### 4.2 mTLS proxy — `gt-proxy-server` and `gt-proxy-client`
 
@@ -176,9 +176,9 @@ Two new lightweight binaries handle all communication from container → host.
 #### gt-proxy-server (runs on host)
 
 - Listens on a configured address and port (`proxy_listen_addr`, e.g. `0.0.0.0:9876`)
-- Requires mTLS: client cert must be signed by the GasTown CA
+- Requires mTLS: client cert must be signed by the gastown CA
 - **CLI relay model**: forwards argv to `gt`/`bd` on the host and streams stdout/stderr/exitCode back verbatim
-- Injects `--identity <rig>/<name>` (extracted from cert `CN=gt-<rig>-<name>`) for commands that require it
+- Injects `--identity <project>/<name>` (extracted from cert `CN=gt-<project>-<name>`) for commands that require it
 - Maintains an explicit allowlist of permitted subcommands — no arbitrary shell execution
 
 ```
@@ -196,7 +196,7 @@ The CLI relay approach means:
 
 - Detects `GT_PROXY_URL` + `GT_PROXY_CERT` + `GT_PROXY_KEY` in environment
 - If set: forwards argv wholesale to proxy server over mTLS, prints response, exits with server's exit code
-- If not set: falls through to normal local execution (backward-compatible; used by local polecats)
+- If not set: falls through to normal local execution (backward-compatible; used by local workers)
 - Installed as both `gt` and `bd` via symlinks
 
 #### Git relay — fetch and push via `.repo.git`
@@ -206,48 +206,48 @@ the host. The proxy speaks git smart HTTP with mTLS:
 
 ```
 # Clone / fetch (upload-pack)
-GET  /v1/git/<rig>/info/refs?service=git-upload-pack
-POST /v1/git/<rig>/git-upload-pack
+GET  /v1/git/<project>/info/refs?service=git-upload-pack
+POST /v1/git/<project>/git-upload-pack
 
 # Push (receive-pack)
-GET  /v1/git/<rig>/info/refs?service=git-receive-pack
-POST /v1/git/<rig>/git-receive-pack
+GET  /v1/git/<project>/info/refs?service=git-receive-pack
+POST /v1/git/<project>/git-receive-pack
 ```
 
 The proxy runs `git upload-pack` or `git receive-pack` against
-`~/gt/<rig>/.repo.git` as a subprocess.
+`~/gt/<project>/.repo.git` as a subprocess.
 
 **The container never contacts GitHub.** Its `origin` remote points at the proxy:
 ```
-remote.origin.url = https://<host>:9876/v1/git/<rig>
+remote.origin.url = https://<host>:9876/v1/git/<project>
 ```
 
-Branch-scoped authorization is enforced by cert CN: a polecat may only push refs
-under `polecat/<cn-name>-*`; attempting to push `main` or another polecat's
+Branch-scoped authorization is enforced by cert CN: a worker may only push refs
+under `worker/<cn-name>-*`; attempting to push `main` or another worker's
 branch is rejected (403). Fetch is unrestricted (read-only).
 
-`.repo.git` (the bare repo GasTown already maintains at `~/gt/<rig>/.repo.git`)
+`.repo.git` (the bare repo gastown already maintains at `~/gt/<project>/.repo.git`)
 is the ideal endpoint:
 - It already has `origin` → GitHub configured on the host side
 - It is a bare repo — can both serve fetches and receive pushes unconditionally
 - `gt done` already uses it as a fallback push target
-- All polecat worktrees are created from it
+- All worker worktrees are created from it
 
 **Host → GitHub sync:** After a successful receive-pack, the proxy enqueues an
 async upstream push job (`git -C .repo.git push origin <branch>`). The host also
 periodically fetches from GitHub so that `.repo.git` stays up-to-date for new
 container clones.
 
-### 4.3 CA and per-polecat certificates
+### 4.3 CA and per-worker certificates
 
-GasTown generates a self-signed CA at daemon startup (`~/gt/.runtime/ca/`). For
-each daytona-mode polecat, it issues a short-lived leaf certificate:
+gastown generates a self-signed CA at daemon startup (`~/gt/.runtime/ca/`). For
+each daytona-mode worker, it issues a short-lived leaf certificate:
 
-- **CN**: `gt-<rig>-<name>` (e.g. `gt-gastown-furiosa`)
+- **CN**: `gt-<project>-<name>` (e.g. `gt-gastown-furiosa`)
 - **SAN**: `session:<sessionID>`
 - **TTL**: configurable via `proxy_cert_ttl` (default 24h)
 
-Five environment variables are set in the polecat's startup env:
+Five environment variables are set in the worker's startup env:
 
 | Variable | Purpose |
 |---|---|
@@ -267,65 +267,65 @@ proxy calls from that cert are immediately rejected.
 
 `daytona exec <ws> -- cmd` connects to an already-running workspace container.
 It is analogous to `docker exec` or `ssh user@host cmd` — it requires the
-workspace to already exist and be running. GasTown must own the full workspace
+workspace to already exist and be running. gastown must own the full workspace
 lifecycle:
 
 ```
 daytona create → daytona start → [daytona exec, repeatedly] → daytona stop → daytona delete
       ▲                ▲                    ▲                      ▲               ▲
-  gt sling         auto on create      polecat sessions         gt session     cleanup
+  gt dispatch         auto on create      worker sessions         gt session     cleanup
   (once per                                                         stop
-   polecat)
+   worker)
 ```
 
-#### Workspace states and GasTown actions
+#### Workspace states and gastown actions
 
-| State | daytona CLI | GasTown triggers |
+| State | daytona CLI | gastown triggers |
 |---|---|---|
-| Does not exist | `daytona create <repo> --name <ws>` | `gt sling` (first time for this polecat) |
-| Stopped | `daytona start <ws>` | `gt session start` / `gt sling` resume |
-| Running | `daytona exec <ws> -- cmd` | Normal polecat operation |
-| Running, polecat done | `daytona stop <ws>` | `gt session stop` / TTL expiry |
-| No longer needed | `daytona delete <ws>` | `gt polecat remove` / manual |
+| Does not exist | `daytona create <repo> --name <ws>` | `gt dispatch` (first time for this worker) |
+| Stopped | `daytona start <ws>` | `gt session start` / `gt dispatch` resume |
+| Running | `daytona exec <ws> -- cmd` | Normal worker operation |
+| Running, worker done | `daytona stop <ws>` | `gt session stop` / TTL expiry |
+| No longer needed | `daytona delete <ws>` | `gt worker remove` / manual |
 
-GasTown stops (not deletes) workspaces on session end, preserving git state for
+gastown stops (not deletes) workspaces on session end, preserving git state for
 the next session. Deletion is an explicit operator action.
 
-#### Full provisioning sequence at `gt sling`
+#### Full provisioning sequence at `gt dispatch`
 
 ```
-gt sling <bead> --daytona
+gt dispatch <bead> --daytona
   │
-  ├─ 1. Create polecat branch (host, instant):
-  │       git -C ~/gt/<rig>/.repo.git fetch origin
-  │       git -C ~/gt/<rig>/.repo.git branch polecat/<name>-<ts> origin/main
+  ├─ 1. Create worker branch (host, instant):
+  │       git -C ~/gt/<project>/.repo.git fetch origin
+  │       git -C ~/gt/<project>/.repo.git branch worker/<name>-<ts> origin/main
   │
-  ├─ 2. Issue polecat mTLS cert (host, instant)
+  ├─ 2. Issue worker mTLS cert (host, instant)
   │
   ├─ 3. Provision daytona workspace (slow: 30–120s):
-  │       daytona create https://<host>:9876/v1/git/<rig>
-  │         --name gt-<rig>-<polecat>
-  │         --branch polecat/<name>-<ts>
-  │         --devcontainer-path .devcontainer/gastown-polecat
+  │       daytona create https://<host>:9876/v1/git/<project>
+  │         --name gt-<project>-<worker>
+  │         --branch worker/<name>-<ts>
+  │         --devcontainer-path .devcontainer/gastown-worker
   │       (clones from proxy → .repo.git; runs onCreateCommand)
   │
   ├─ 4. Inject cert into workspace:
-  │       daytona exec gt-<rig>-<polecat> -- mkdir -p /run/gt-proxy
-  │       daytona exec gt-<rig>-<polecat> -- tee /run/gt-proxy/client.crt < <cert>
-  │       daytona exec gt-<rig>-<polecat> -- tee /run/gt-proxy/client.key < <key>
-  │       daytona exec gt-<rig>-<polecat> -- tee /run/gt-proxy/ca.crt < <ca>
+  │       daytona exec gt-<project>-<worker> -- mkdir -p /run/gt-proxy
+  │       daytona exec gt-<project>-<worker> -- tee /run/gt-proxy/client.crt < <cert>
+  │       daytona exec gt-<project>-<worker> -- tee /run/gt-proxy/client.key < <key>
+  │       daytona exec gt-<project>-<worker> -- tee /run/gt-proxy/ca.crt < <ca>
   │
   ├─ 5. Post-create setup:
-  │       daytona exec gt-<rig>-<polecat> -- gt prime --write-prime-md
-  │       daytona exec gt-<rig>-<polecat> -- [overlay files, setup hooks]
+  │       daytona exec gt-<project>-<worker> -- gt prime --write-prime-md
+  │       daytona exec gt-<project>-<worker> -- [overlay files, setup hooks]
   │
   ├─ 6. Register agent bead via proxy:
   │       (proxy client calls bd create/update with state=spawning)
   │
   └─ 7. Start tmux pane:
-          tmux new-window -n <polecat>
-          tmux send-keys "daytona exec gt-<rig>-<polecat> \
-            --env GT_RIG=<rig> --env GT_POLECAT=<name> \
+          tmux new-window -n <worker>
+          tmux send-keys "daytona exec gt-<project>-<worker> \
+            --env GT_RIG=<project> --env GT_worker=<name> \
             --env GT_PROXY_URL=... --env GT_PROXY_CERT=... \
             --env GT_PROXY_KEY=... --env GIT_SSL_CERT=... \
             --env GIT_SSL_KEY=... --env GIT_SSL_CAINFO=... \
@@ -338,8 +338,8 @@ becomes `daytona start` instead of `daytona create`.
 
 #### Git topology: proxy-served clone
 
-For local polecats, `AddWithOptions` creates a git worktree — a linked checkout
-from `.repo.git`, sharing the object store. For daytona polecats, the container
+For local workers, `AddWithOptions` creates a git worktree — a linked checkout
+from `.repo.git`, sharing the object store. For daytona workers, the container
 clones from the proxy's git endpoint independently. The branch is created locally
 in `.repo.git`; no GitHub push is required before provisioning.
 
@@ -348,7 +348,7 @@ Host (.repo.git)                     Container
 ┌──────────────────┐                 ┌──────────────────────┐
 │ origin → GitHub  │   git clone     │  origin → proxy      │
 │                  │ ◄──── via ────► │  (full standalone     │
-│ polecat/nova-42  │   mTLS proxy    │   .git, not worktree) │
+│ worker/nova-42  │   mTLS proxy    │   .git, not worktree) │
 └──────────────────┘                 └──────────────────────┘
         ▲                                     │
         │ daemon pushes                       │ git push origin
@@ -359,7 +359,7 @@ Host (.repo.git)                     Container
 
 #### What is NOT needed for daytona that is required locally
 
-- No host-side `polecats/<name>/<rig>/` directory — the container IS the worktree
+- No host-side `workers/<name>/<project>/` directory — the container IS the worktree
 - No `git worktree add` — container clones from proxy, which serves from `.repo.git`
 - No `.beads` redirect file — all Dolt access goes through the mTLS proxy
 - No `WorktreeAddFromRef` call in `manager.go` — daytona-mode skips it
@@ -369,17 +369,17 @@ Host (.repo.git)                     Container
 #### Devcontainer profile
 
 ```json
-// .devcontainer/gastown-polecat/devcontainer.json
+// .devcontainer/gastown-worker/devcontainer.json
 {
-  "name": "GasTown Polecat",
+  "name": "gastown Worker",
   "image": "ubuntu:24.04",
-  "onCreateCommand": "bash .devcontainer/gastown-polecat/setup.sh",
+  "onCreateCommand": "bash .devcontainer/gastown-worker/setup.sh",
   "remoteUser": "vscode"
 }
 ```
 
 ```bash
-# .devcontainer/gastown-polecat/setup.sh
+# .devcontainer/gastown-worker/setup.sh
 set -e
 npm install -g @anthropic-ai/claude-code
 curl -fsSL https://releases.gastown.dev/gt-proxy-client/latest/linux-amd64 -o /usr/local/bin/gt
@@ -388,8 +388,8 @@ ln -sf /usr/local/bin/gt /usr/local/bin/bd
 apt-get install -y git
 ```
 
-Alternatively, GasTown can distribute a pre-built Docker image
-(`ghcr.io/steveyegge/gastown-polecat:latest`) and reference it directly,
+Alternatively, gastown can distribute a pre-built Docker image
+(`ghcr.io/steveyegge/gastown-worker:latest`) and reference it directly,
 bypassing the setup script. This is more reliable for production use.
 
 The `DaytonaConfig` struct:
@@ -406,7 +406,7 @@ type DaytonaConfig struct {
 
 ---
 
-## 5. Nudging, Observation, and Multi-Polecat Sessions
+## 5. Nudging, Observation, and Multi-Worker Sessions
 
 ### 5.1 How nudging still works
 
@@ -416,7 +416,7 @@ like an SSH-connected process: the local tmux pane runs the `daytona` CLI, which
 proxies stdin/stdout to the remote container. From the local tmux server's
 perspective, the pane is live and accepting input; `send-keys` delivers keystrokes
 into the `daytona exec` stdin stream, which forwards them to the remote Claude
-process. **No changes are needed to `NudgeSession`, `WaitForIdle`, or the nudge
+process. **No changes are needed to `NudgeSession`, `WaitForIdle`, or the message
 queue.**
 
 ```
@@ -446,13 +446,13 @@ to the local process tree.
 up". Simple and correct in practice: if `daytona exec` exits, the session is dead.
 This is handled by G5 (`ExecWrapper[0]` auto-added to accepted process names).
 
-**Option 2 (future):** Health check endpoint — polecat periodically writes a
+**Option 2 (future):** Health check endpoint — worker periodically writes a
 heartbeat via the mTLS proxy; daemon checks for stale heartbeats. More accurate
 but more complex.
 
 ### 5.3 Human observation
 
-Attach to any polecat's tmux pane on the host:
+Attach to any worker's tmux pane on the host:
 
 ```bash
 tmux attach -t gt-gastown-furiosa        # interactive
@@ -460,15 +460,15 @@ tmux attach -t gt-gastown-furiosa -r     # read-only
 ```
 
 The terminal output is the remote Claude TUI rendered through the `daytona exec`
-tunnel — identical to watching a local polecat.
+tunnel — identical to watching a local worker.
 
-### 5.4 Multi-polecat window grouping (optional)
+### 5.4 Multi-worker window grouping (optional)
 
-For remote polecats it is ergonomic to group them into one tmux session with
-multiple windows — one window per polecat:
+For remote workers it is ergonomic to group them into one tmux session with
+multiple windows — one window per worker:
 
 ```
-tmux session: gt-gastown (one session per rig)
+tmux session: gt-gastown (one session per project)
   window 0: furiosa    ← daytona exec furiosa-ws -- claude
   window 1: nova       ← daytona exec nova-ws -- claude
   window 2: drake      ← daytona exec drake-ws -- claude
@@ -476,44 +476,44 @@ tmux session: gt-gastown (one session per rig)
 ```
 
 `FindAgentPane` already handles multi-window sessions (enumerates all panes via
-`tmux list-panes -s`), so the nudge path requires no changes. Window-grouping is
-enabled per-rig with `group_sessions: true`. When enabled, `gt sling` creates a
-new window in the existing rig session rather than a new session.
+`tmux list-panes -s`), so the message path requires no changes. Window-grouping is
+enabled per-project with `group_sessions: true`. When enabled, `gt dispatch` creates a
+new window in the existing project session rather than a new session.
 
-### 5.5 Summary of changes needed for nudge / observation
+### 5.5 Summary of changes needed for message / observation
 
 | Concern | Change needed |
 |---|---|
-| Nudge delivery | **None** — `send-keys` to local pane, daytona exec tunnels it |
-| Mail nudge queue | **None** — same path, same code |
+| Message delivery | **None** — `send-keys` to local pane, daytona exec tunnels it |
+| Mail message queue | **None** — same path, same code |
 | Liveness detection | **G5** — add `daytona` to `GT_PROCESS_NAMES` |
 | Human observation | **None** — `tmux attach` works as-is |
-| Multi-polecat window grouping | **Optional** — new `group_sessions` setting + window creation in G6 |
+| Multi-worker window grouping | **Optional** — new `group_sessions` setting + window creation in G6 |
 
 ---
 
 ## 6. Implementation Plan
 
-Deliverables are ordered with standalone work first (no GasTown changes) followed
-by GasTown changes in dependency order.
+Deliverables are ordered with standalone work first (no gastown changes) followed
+by gastown changes in dependency order.
 
-### 6.1 Standalone deliverables (no GasTown changes)
+### 6.1 Standalone deliverables (no gastown changes)
 
 **S1 — exitbox policy profile**
 
-Write the policy file permitting a polecat session:
+Write the policy file permitting a worker session:
 - Read + execute: `gt`, `bd`, `claude`, `node`, `git`
-- Read + write: polecat worktree (`~/gt/<rig>/polecats/<name>/`)
-- Read: town shared dirs (`~/gt/.beads/`, `~/gt/.runtime/`)
+- Read + write: worker worktree (`~/gt/<project>/workers/<name>/`)
+- Read: workspace shared dirs (`~/gt/.beads/`, `~/gt/.runtime/`)
 - Network: loopback only (`127.0.0.1:3307`)
-- Write: heartbeat and nudge queue dirs
+- Write: heartbeat and message queue dirs
 
-Manually test: `exitbox run --profile=gastown-polecat -- claude --mode=direct` in
+Manually test: `exitbox run --profile=gastown-worker -- claude --mode=direct` in
 a tmux pane. Run `gt prime` → `gt done`.
 
 **S2 — standalone `gt-proxy-server` + `gt-proxy-client`**
 
-Build and test entirely outside GasTown. Spin up any Docker container, inject the
+Build and test entirely outside gastown. Spin up any Docker container, inject the
 cert env vars, run `gt prime` and `gt done` from inside.
 
 Open question answered by this step: does `daytona exec` inherit parent env or
@@ -521,28 +521,28 @@ require explicit `--env` flags?
 
 **S3 — daytona smoke test**
 
-With the S2 proxy running on the host, manually exercise the full polecat lifecycle:
+With the S2 proxy running on the host, manually exercise the full worker lifecycle:
 1. Test whether `daytona create` accepts a custom git endpoint URL as the repo
    source:
    ```bash
-   daytona create https://<host>:9876/v1/git/<rig> \
-     --name test-polecat --branch polecat/test-1
+   daytona create https://<host>:9876/v1/git/<project> \
+     --name test-worker --branch worker/test-1
    ```
    If this works: container clones from proxy → `.repo.git`. Ideal path.
    If daytona only accepts GitHub URLs: fallback — `daytona create <github-url>`
-   + post-create `git remote set-url origin https://<proxy>/v1/git/<rig>` via
+   + post-create `git remote set-url origin https://<proxy>/v1/git/<project>` via
    `daytona exec`.
-2. Inject cert and env vars explicitly, run `gt prime`, `gt hook`, `gt done`.
+2. Inject cert and env vars explicitly, run `gt prime`, `gt assignment`, `gt done`.
 3. Verify `git push origin` routes to proxy → lands in `.repo.git` on host.
 4. Verify `git fetch origin` pulls from proxy → `.repo.git` (not from GitHub).
-5. `daytona stop test-polecat` — verify workspace persists; `daytona start` +
+5. `daytona stop test-worker` — verify workspace persists; `daytona start` +
    re-exec works.
 
 This step confirms: (a) which host IP/address is reachable from inside a daytona
 container, (b) that `GIT_SSL_*` vars are honoured by the container's git binary,
 (c) whether daytona supports custom git endpoints for cloning.
 
-### 6.2 GasTown code changes
+### 6.2 gastown code changes
 
 | ID | Change | Files | Size |
 |---|---|---|---|
@@ -552,7 +552,7 @@ container, (b) that `GIT_SSL_*` vars are honoured by the container's git binary,
 | G4 | `ExecWrapper` field + startup command threading | `internal/config/types.go`, `internal/config/loader.go` | ~35 lines |
 | G5 | Process detection for wrapped launchers | `internal/tmux/tmux.go` | ~12 lines |
 | G6 | `DaytonaConfig` + workspace provisioning | `internal/config/types.go`, `internal/daytona/` (new) | ~150 lines |
-| G7 | Skip local worktree creation for daytona-mode polecats | `internal/polecat/manager.go` | ~25 lines |
+| G7 | Skip local worktree creation for daytona-mode workers | `internal/worker/manager.go` | ~25 lines |
 
 ### 6.3 Dependency order
 
@@ -585,7 +585,7 @@ G7  skip local worktree
 An abstraction layer replacing `tmux new-session` with a generic backend
 interface. Rejected for initial implementation: `daytona exec` already behaves
 like a local process from tmux's perspective, so a backend abstraction buys
-nothing. Revisit only if `daytona exec` proves insufficient for nudge delivery.
+nothing. Revisit only if `daytona exec` proves insufficient for message delivery.
 
 ### 7.2 exitbox using the mTLS proxy
 
@@ -608,25 +608,25 @@ Out of scope.
 
 ### exitbox
 
-- [ ] `exitbox run --profile=gastown-polecat -- gt prime` succeeds inside sandbox (loopback Dolt reachable)
-- [ ] `gt sling <bead> --exec-wrapper "exitbox run --profile=gastown-polecat --"` starts a live session
-- [ ] Polecat receives nudge via `tmux send-keys` into the exitbox pane
+- [ ] `exitbox run --profile=gastown-worker -- gt prime` succeeds inside sandbox (loopback Dolt reachable)
+- [ ] `gt dispatch <bead> --exec-wrapper "exitbox run --profile=gastown-worker --"` starts a live session
+- [ ] Worker receives message via `tmux send-keys` into the exitbox pane
 - [ ] `gt done` completes fully inside sandbox: git push to remote + bd update via loopback Dolt
 - [ ] Liveness detection sees the correct process (exitbox or agent, depending on exec behavior)
-- [ ] Existing local polecats unaffected (no regression)
+- [ ] Existing local workers unaffected (no regression)
 
 ### daytona + proxy
 
 - [ ] `gt-proxy-server` starts on host; CA initialised at `~/gt/.runtime/ca/`
-- [ ] Polecat cert issued and injected into daytona workspace at `/run/gt-proxy/`
+- [ ] Worker cert issued and injected into daytona workspace at `/run/gt-proxy/`
 - [ ] `gt prime` inside container succeeds (control-plane routed via proxy)
 - [ ] `gt done` inside container: `git push origin` → proxy receive-pack → `.repo.git` on host → daemon pushes to GitHub
 - [ ] `git fetch origin` inside container: fetches from proxy → `.repo.git` (not from GitHub)
-- [ ] Proxy rejects a push to `main` or another polecat's branch (CN-scoped authorization)
+- [ ] Proxy rejects a push to `main` or another worker's branch (CN-scoped authorization)
 - [ ] Proxy rejects control-plane calls from a revoked or mismatched cert
-- [ ] `gt sling <bead> --daytona <workspace>` provisions workspace, issues cert, starts session end-to-end
-- [ ] Nudge delivered via tmux pane running `daytona exec`
-- [ ] Local worktree creation skipped for daytona-mode polecats
+- [ ] `gt dispatch <bead> --daytona <workspace>` provisions workspace, issues cert, starts session end-to-end
+- [ ] Message delivered via tmux pane running `daytona exec`
+- [ ] Local worktree creation skipped for daytona-mode workers
 - [ ] Session end: cert deny-listed; subsequent proxy calls rejected
 - [ ] Container operates with zero outbound internet access and all operations succeed
 
@@ -653,10 +653,10 @@ Out of scope.
    How often? On-demand triggered by proxy upload-pack, or on a timer?
 
 5. **Workspace warm pool** — First-time `daytona create` takes 30–120s. For
-   low-latency `gt sling`, should GasTown maintain a pool of pre-provisioned warm
+   low-latency `gt dispatch`, should gastown maintain a pool of pre-provisioned warm
    workspaces? Optional optimisation, not required for initial implementation.
 
-6. **Devcontainer distribution** — Ship `.devcontainer/gastown-polecat/` in the
-   GasTown repo, or publish a standalone Docker image
-   (`ghcr.io/steveyegge/gastown-polecat:latest`)? The image approach is more
+6. **Devcontainer distribution** — Ship `.devcontainer/gastown-worker/` in the
+   gastown repo, or publish a standalone Docker image
+   (`ghcr.io/steveyegge/gastown-worker:latest`)? The image approach is more
    reliable for production; devcontainer is more transparent and self-contained.

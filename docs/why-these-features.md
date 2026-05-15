@@ -37,9 +37,9 @@ or worse, the human's name.
 attributed:
 
 ```
-Git commits:    gastown/polecats/toast <owner@example.com>
-Beads records:  created_by: gastown/crew/joe
-Event logs:     actor: gastown/polecats/nux
+Git commits:    gastown/workers/toast <owner@example.com>
+Beads records:  created_by: gastown/team/joe
+Event logs:     actor: gastown/workers/nux
 ```
 
 **Why it matters:**
@@ -59,10 +59,10 @@ choose?
 
 ```bash
 # What has this agent done?
-bd audit --actor=gastown/polecats/toast
+bd audit --actor=gastown/workers/toast
 
 # Success rate on Go projects
-bd stats --actor=gastown/polecats/toast --tag=go
+bd stats --actor=gastown/workers/toast --tag=go
 ```
 
 **Why it matters:**
@@ -77,7 +77,7 @@ on similar tasks, track their completion rates and quality, make informed decisi
 
 ## Feature: Capability-Based Routing
 
-> **Status: Planned** — Skill tracking and automatic routing are not yet implemented. Work assignment is currently manual via `gt sling`.
+> **Status: Planned** — Skill tracking and automatic routing are not yet implemented. Work assignment is currently manual via `gt dispatch`.
 
 **The problem:** You have work in Go, Python, TypeScript, Rust. You have agents
 with varying capabilities. Manual assignment doesn't scale.
@@ -87,7 +87,7 @@ capabilities (derived from their work history). Matching is automatic:
 
 ```bash
 # Agent capabilities (derived from work history)
-bd skills gastown/polecats/toast
+bd skills gastown/workers/toast
 # → go: 47 tasks, python: 12 tasks, typescript: 3 tasks
 
 # Route based on fit
@@ -152,7 +152,7 @@ depends_on:
 
 ## Feature: Federation
 
-> **Status: Planned** — Federation via the Highway Operations Protocol (HOP) is designed but not yet implemented. Gas Town currently operates as a single-town system.
+> **Status: Planned** — Federation via the Highway Operations Protocol (HOP) is designed but not yet implemented. Gas Town currently operates as a single-workspace system.
 
 **The problem:** Enterprise projects span multiple repositories, multiple teams,
 sometimes multiple organizations (contractors, partners). Visibility is fragmented.
@@ -183,7 +183,7 @@ acceptable? Did it pass review?
 
 ```json
 {
-  "validated_by": "gastown/refinery",
+  "validated_by": "gastown/merger",
   "validation_type": "merge",
   "timestamp": "2025-01-15T10:30:00Z",
   "quality_signals": {
@@ -211,11 +211,11 @@ happening until it's done (or failed).
 ```bash
 bd activity --follow
 
-[14:32:08] + patrol-x7k.arm-ace bonded (5 steps)
-[14:32:09] → patrol-x7k.arm-ace.capture in_progress
-[14:32:10] ✓ patrol-x7k.arm-ace.capture completed
-[14:32:14] ✓ patrol-x7k.arm-ace.decide completed
-[14:32:17] ✓ patrol-x7k.arm-ace COMPLETE
+[14:32:08] + sweep-x7k.arm-ace bonded (5 steps)
+[14:32:09] → sweep-x7k.arm-ace.capture in_progress
+[14:32:10] ✓ sweep-x7k.arm-ace.capture completed
+[14:32:14] ✓ sweep-x7k.arm-ace.decide completed
+[14:32:17] ✓ sweep-x7k.arm-ace COMPLETE
 ```
 
 **Why it matters:**

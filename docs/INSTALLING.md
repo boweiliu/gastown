@@ -92,7 +92,7 @@ bd version
 dolt version
 ```
 
-Homebrew installs the runtime dependencies declared by the core formula. The
+Homebrew installs the runtime dependencies declared by the core template. The
 `gastownhall/gastown` tap is reserved for emergency updates. If you build from
 source instead, install `dolt` first, install `bd` with Go, and ensure
 `$GOPATH/bin` (usually `~/go/bin`) is in your PATH. On macOS, do not install
@@ -118,24 +118,24 @@ gt install ~/gt --shell
 # This creates:
 #   ~/gt/
 #   ├── CLAUDE.md          # Identity anchor (run gt prime)
-#   ├── mayor/             # Mayor config and state
-#   ├── rigs/              # Project containers (initially empty)
-#   └── .beads/            # Town-level issue tracking
+#   ├── coordinator/             # Coordinator config and state
+#   ├── projects/              # Project containers (initially empty)
+#   └── .beads/            # Workspace-level issue tracking
 ```
 
-### Step 3: Add a Project (Rig)
+### Step 3: Add a Project (Project)
 
 ```bash
 # Add your first project
-gt rig add myproject https://github.com/you/repo.git
+gt project add myproject https://github.com/you/repo.git
 
 # This clones the repo and sets up:
 #   ~/gt/myproject/
 #   ├── .beads/            # Project issue tracking
-#   ├── mayor/rig/         # Mayor's clone (canonical)
-#   ├── refinery/rig/      # Merge queue processor
-#   ├── witness/           # Worker monitor
-#   └── polecats/          # Worker clones (created on demand)
+#   ├── coordinator/project/         # Coordinator's clone (canonical)
+#   ├── merger/project/      # Merge queue processor
+#   ├── watcher/           # Worker monitor
+#   └── workers/          # Worker clones (created on demand)
 ```
 
 ### Step 4: Verify Installation
@@ -163,7 +163,7 @@ gt config agent list
 gt config agent set codex-low "codex --thinking low"
 gt config agent set claude-haiku "claude --model haiku --dangerously-skip-permissions"
 
-# Set the town default agent (used when a rig doesn't specify one)
+# Set the workspace default agent (used when a project doesn't specify one)
 gt config default-agent codex-low
 ```
 
@@ -171,7 +171,7 @@ You can also override the agent per command without changing defaults:
 
 ```bash
 gt start --agent codex-low
-gt sling gt-abc12 myproject --agent claude-haiku
+gt dispatch gt-abc12 myproject --agent claude-haiku
 ```
 
 ## Minimal Mode vs Full Stack Mode
@@ -184,16 +184,16 @@ Run individual runtime instances manually. Gas Town only tracks state.
 
 ```bash
 # Create and assign work
-gt convoy create "Fix bugs" gt-abc12
-gt sling gt-abc12 myproject
+gt batch create "Fix bugs" gt-abc12
+gt dispatch gt-abc12 myproject
 
 # Run runtime manually
-cd ~/gt/myproject/polecats/<worker>
+cd ~/gt/myproject/workers/<worker>
 claude --resume          # Claude Code
 # or: codex              # Codex CLI
 
 # Check progress
-gt convoy list
+gt batch list
 ```
 
 **When to use**: Testing, simple workflows, or when you prefer manual control.
@@ -207,16 +207,16 @@ Agents run in tmux sessions. Daemon manages lifecycle automatically.
 gt daemon start
 
 # Create and assign work (workers spawn automatically)
-gt convoy create "Feature X" gt-abc12 gt-def34
-gt sling gt-abc12 myproject
-gt sling gt-def34 myproject
+gt batch create "Feature X" gt-abc12 gt-def34
+gt dispatch gt-abc12 myproject
+gt dispatch gt-def34 myproject
 
 # Monitor on dashboard
-gt convoy list
+gt batch list
 
 # Attach to any agent session
-gt mayor attach
-gt witness attach myproject
+gt coordinator attach
+gt watcher attach myproject
 ```
 
 **When to use**: Production workflows with multiple concurrent agents.
@@ -227,10 +227,10 @@ Gas Town is modular. Enable only what you need:
 
 | Configuration | Roles | Use Case |
 |--------------|-------|----------|
-| **Polecats only** | Workers | Manual spawning, no monitoring |
-| **+ Witness** | + Monitor | Automatic lifecycle, stuck detection |
-| **+ Refinery** | + Merge queue | MR review, code integration |
-| **+ Mayor** | + Coordinator | Cross-project coordination |
+| **Workers only** | Workers | Manual spawning, no monitoring |
+| **+ Watcher** | + Monitor | Automatic lifecycle, stuck detection |
+| **+ Merger** | + Merge queue | MR review, code integration |
+| **+ Coordinator** | + Coordinator | Cross-project coordination |
 
 ## Troubleshooting
 
@@ -292,7 +292,7 @@ git config --global credential.helper cache
 If experiencing beads problems:
 
 ```bash
-cd ~/gt/myproject/mayor/rig
+cd ~/gt/myproject/coordinator/project
 bd status                  # Check database health
 bd doctor                  # Run beads health check
 ```
@@ -322,7 +322,7 @@ rm -rf ~/gt
 After installation:
 
 1. **Read the README** - Core concepts and workflows
-2. **Try a simple workflow** - `bd create "Test task"` then `gt convoy create "Test" <bead-id>`
+2. **Try a simple workflow** - `bd create "Test task"` then `gt batch create "Test" <bead-id>`
 3. **Explore docs** - `docs/reference.md` for command reference
 4. **Run doctor regularly** - `gt doctor` catches problems early
-5. **Join the Wasteland** - `gt wl join hop/wl-commons` to browse and claim federated work (see [WASTELAND.md](WASTELAND.md))
+5. **Join the Archive** - `gt archive join hop/wl-commons` to browse and claim federated work (see [ARCHIVE.md](ARCHIVE.md))

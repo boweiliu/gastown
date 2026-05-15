@@ -2,7 +2,7 @@
 
 Gas Town overrides several tmux keybindings to provide session navigation
 and operational shortcuts. All bindings are conditional — they only activate
-in Gas Town sessions (those matching a registered rig prefix or `hq-`).
+in Gas Town sessions (those matching a registered project prefix or `hq-`).
 Non-GT sessions retain the user's original bindings.
 
 ## Session Cycle Groups (prefix+n / prefix+p)
@@ -12,12 +12,12 @@ They cycle within groups based on the current session type:
 
 | Group | Sessions included | Example |
 |-------|-------------------|---------|
-| **Town** | Mayor + Deacon | `hq-mayor` ↔ `hq-deacon` |
-| **Crew** | All crew in the same rig | `gt-crew-max` ↔ `gt-crew-joe` |
-| **Rig ops** | Witness + Refinery + Polecats in the same rig | `gt-witness` ↔ `gt-refinery` ↔ `gt-furiosa` ↔ `gt-nux` |
+| **Workspace** | Coordinator + Supervisor | `hq-coordinator` ↔ `hq-supervisor` |
+| **Team** | All team in the same project | `gt-team-max` ↔ `gt-team-joe` |
+| **Project ops** | Watcher + Merger + Workers in the same project | `gt-watcher` ↔ `gt-merger` ↔ `gt-furiosa` ↔ `gt-nux` |
 
-Groups are per-rig: `gt-witness` cycles with `gt-refinery` and gastown
-polecats, but NOT with `bd-witness` or `bd-refinery`.
+Groups are per-project: `gt-watcher` cycles with `gt-merger` and gastown
+workers, but NOT with `bd-watcher` or `bd-merger`.
 
 If a group has only one session, prefix+n/p is a no-op.
 
@@ -30,9 +30,9 @@ If a group has only one session, prefix+n/p is a no-op.
 
 ## How Bindings Are Set Up
 
-Bindings are configured by `ConfigureGasTownSession()` in the tmux package,
-which is called whenever a session is created (by the daemon for patrol
-agents, by the witness for polecats, by `gt crew at` for crew). This means:
+Bindings are configured by `ConfiguregastownSession()` in the tmux package,
+which is called whenever a session is created (by the daemon for sweep
+agents, by the watcher for workers, by `gt team at` for team). This means:
 
 - Bindings are set on the **first** Gas Town session created on a tmux server
 - They apply server-wide (tmux keybindings are global, not per-session)
@@ -43,7 +43,7 @@ agents, by the witness for polecats, by `gt crew at` for crew). This means:
 
 ### Prefix pattern
 
-The `if-shell` guard uses a regex built from all registered rig prefixes:
+The `if-shell` guard uses a regex built from all registered project prefixes:
 
 ```bash
 echo '#{session_name}' | grep -Eq '^(bd|gt|hq)-'

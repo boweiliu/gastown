@@ -82,20 +82,20 @@ with other agents using `gt` commands — never by printing text or using raw tm
 
 ### Nudging Agents (Immediate Delivery)
 
-`gt nudge` sends a message directly to another agent's active session:
+`gt message` sends a message directly to another agent's active session:
 
 ```bash
-gt nudge mayor "Status update: PR review complete"
-gt nudge laneassist/crew/dom "Check your mail — PR ready for review"
-gt nudge witness "Polecat health check needed"
-gt nudge refinery "Merge queue has items"
+gt message coordinator "Status update: PR review complete"
+gt message laneassist/team/dom "Check your mail — PR ready for review"
+gt message watcher "Worker health check needed"
+gt message merger "Merge queue has items"
 ```
 
 **Target formats:**
-- Role shortcuts: `mayor`, `deacon`, `witness`, `refinery`
-- Full path: `<rig>/crew/<name>`, `<rig>/polecats/<name>`
+- Role shortcuts: `coordinator`, `supervisor`, `watcher`, `merger`
+- Full path: `<project>/team/<name>`, `<project>/workers/<name>`
 
-**Important:** `gt nudge` is the ONLY way to send text to another agent's session.
+**Important:** `gt message` is the ONLY way to send text to another agent's session.
 Never print "Hey @name" — the other agent cannot see your terminal output.
 
 ### Sending Mail (Persistent Messages)
@@ -108,8 +108,8 @@ gt mail inbox                    # List messages
 gt mail read <id>                # Read a specific message
 
 # Sending (use --stdin for multi-line content)
-gt mail send mayor/ -s "Subject" -m "Short message"
-gt mail send laneassist/crew/dom -s "PR Review" --stdin <<'BODY'
+gt mail send coordinator/ -s "Subject" -m "Short message"
+gt mail send laneassist/team/dom -s "PR Review" --stdin <<'BODY'
 Multi-line message content here.
 Details about the PR and what to look for.
 BODY
@@ -120,9 +120,9 @@ gt mail send --human -s "Subject" -m "Message to overseer"
 
 | Want to... | Command | Why |
 |------------|---------|-----|
-| Wake a sleeping agent | `gt nudge <target> "msg"` | Immediate delivery |
+| Wake a sleeping agent | `gt message <target> "msg"` | Immediate delivery |
 | Send detailed task/info | `gt mail send <target> -s "..." --stdin` | Persists across restarts |
-| Both: send + wake | `gt mail send` then `gt nudge` | Mail carries payload, nudge wakes |
+| Both: send + wake | `gt mail send` then `gt message` | Mail carries payload, message wakes |
 
 ### Context Recovery
 
@@ -131,7 +131,7 @@ identity, and any pending work.
 
 ```bash
 gt prime              # Full context reload
-gt hook               # Check for assigned work
+gt assignment               # Check for assigned work
 gt mail inbox         # Check for messages
 ```
 

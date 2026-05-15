@@ -1,4 +1,4 @@
-# Witness AT Team Lead: Implementation Spec
+# Watcher AT Team Lead: Implementation Spec
 
 > **Status: Future architecture — NOT YET IMPLEMENTED**
 > The current system uses tmux-based session management. This document describes
@@ -7,7 +7,7 @@
 
 > **Bead:** gt-ky4jf
 > **Date:** 2026-02-08
-> **Author:** furiosa (gastown polecat)
+> **Author:** furiosa (gastown worker)
 > **Depends on:** AT spike report (gt-3nqoz), AT integration design (agent-teams-integration.md)
 > **Status:** Phase 1 implementation spec
 
@@ -15,15 +15,15 @@
 
 ## Overview
 
-This document specifies how the Witness becomes an AT team lead, replacing the
-current tmux-based polecat session management with Claude Code Agent Teams.
+This document specifies how the Watcher becomes an AT team lead, replacing the
+current tmux-based worker session management with Claude Code Agent Teams.
 
-The Witness enters delegate mode (structurally enforced coordination-only), spawns
-polecat teammates for assigned work, monitors them via AT's native lifecycle hooks,
+The Watcher enters delegate mode (structurally enforced coordination-only), spawns
+worker teammates for assigned work, monitors them via AT's native lifecycle hooks,
 and syncs completions to beads at task boundaries.
 
 **What changes:** Session management layer (tmux → AT).
-**What stays:** Beads as ledger, gt mail for cross-rig, molecules/formulas, `gt done`.
+**What stays:** Beads as ledger, gt mail for cross-project, workflows/templates, `gt done`.
 
 ---
 
@@ -41,7 +41,7 @@ and syncs completions to beads at task boundaries.
 | Hooks fire for teammates | GO | All relevant hooks confirmed |
 | Custom agent definitions | GO | `.claude/agents/*.md` works |
 | Delegate mode enforcement | GO | Structural, not behavioral |
-| Teammate cycling | WORKAROUND | Handoff + respawn pattern |
+| Teammate cycling | WORKAROUND | Transfer + respawn pattern |
 | Token cost acceptable | CONDITIONAL | Sonnet teammates reduce cost |
 | gt/bd command access | GO | PATH via SessionStart hook |
 | Task list with dependencies | GO | Native match to Gas Town workflow |
@@ -51,8 +51,8 @@ and syncs completions to beads at task boundaries.
 ### Critical Blockers
 
 1. **No per-teammate working directory** — AT teammates inherit lead's cwd. Workaround: `cd` in spawn prompt + PreToolUse hook (`gt validate-worktree-scope`) for structural enforcement.
-2. **No session resumption for teammates** — Crashed teammates cannot resume. Workaround: PreCompact handoff + beads state recovery + Witness respawn.
-3. **Token cost ~7x per teammate** — Mitigated by using Sonnet for polecat teammates, Opus for Witness lead only.
+2. **No session resumption for teammates** — Crashed teammates cannot resume. Workaround: PreCompact transfer + beads state recovery + Watcher respawn.
+3. **Token cost ~7x per teammate** — Mitigated by using Sonnet for worker teammates, Opus for Watcher lead only.
 
 ### Risk Register Summary
 
@@ -68,16 +68,16 @@ AT's file-locked task claiming eliminates Dolt write contention (estimated 80-90
 
 ---
 
-## 1. Witness in Delegate Mode
+## 1. Watcher in Delegate Mode
 
-### What Tools the Witness Keeps
+### What Tools the Watcher Keeps
 
-In delegate mode, the Witness has access to:
+In delegate mode, the Watcher has access to:
 
 | Tool | Purpose |
 |------|---------|
 | `Teammate` | Spawn/shutdown teammates, send messages, manage team |
-| `TaskCreate` | Create AT tasks for polecat work |
+| `TaskCreate` | Create AT tasks for worker work |
 | `TaskUpdate` | Update task status, set dependencies |
 | `TaskList` | Monitor team progress |
 | `TaskGet` | Read task details |
@@ -87,57 +87,57 @@ In delegate mode, the Witness has access to:
 
 ### The ZFC Upgrade
 
-Current state: "Witness doesn't implement" is enforced by CLAUDE.md instructions.
+Current state: "Watcher doesn't implement" is enforced by CLAUDE.md instructions.
 Agents can and do violate this under pressure.
 
-New state: Delegate mode structurally removes implementation tools. The Witness
+New state: Delegate mode structurally removes implementation tools. The Watcher
 literally *cannot* edit files. This is the strongest possible ZFC compliance —
 the constraint is in the machinery, not in the instructions.
 
-### Witness Needs Bash for gt/bd Commands
+### Watcher Needs Bash for gt/bd Commands
 
-**Problem:** Delegate mode removes Bash access, but the Witness needs to run
+**Problem:** Delegate mode removes Bash access, but the Watcher needs to run
 `gt mail`, `bd show`, `bd close`, and other coordination commands.
 
 **Solution options (in order of preference):**
 
 1. **Custom agent definition with selective tools.** Create
-   `.claude/agents/witness-lead.md` that uses `permissionMode: delegate` but
+   `.claude/agents/watcher-lead.md` that uses `permissionMode: delegate` but
    adds back Bash via the `tools` allowlist. This gives structural enforcement
    for file editing while preserving command access:
 
    ```yaml
    ---
-   name: witness-lead
+   name: watcher-lead
    permissionMode: delegate
    tools: Teammate, TaskCreate, TaskUpdate, TaskList, TaskGet, Bash
    ---
    ```
 
-   **Risk:** Bash access means the Witness *could* edit files via sed/echo.
+   **Risk:** Bash access means the Watcher *could* edit files via sed/echo.
    Mitigated by: PreToolUse hook on Bash that rejects file-modifying commands.
 
-2. **Hooks as command proxy.** The Witness doesn't run commands directly.
+2. **Hooks as command proxy.** The Watcher doesn't run commands directly.
    Instead, hooks fire at turn boundaries and execute gt/bd commands based on
-   AT task state. The Witness coordinates purely through AT tools; the hooks
+   AT task state. The Watcher coordinates purely through AT tools; the hooks
    handle the beads bridge.
 
-   **Risk:** Less flexible — Witness can't make ad-hoc bd queries. But it's
+   **Risk:** Less flexible — Watcher can't make ad-hoc bd queries. But it's
    the purest delegate mode implementation.
 
 3. **Teammate as command runner.** Spawn a lightweight "ops" teammate whose
-   sole job is running gt/bd commands on the Witness's behalf. The Witness
+   sole job is running gt/bd commands on the Watcher's behalf. The Watcher
    sends commands via AT messaging; the ops teammate executes and returns results.
 
    **Risk:** Token overhead for a simple command proxy. But it preserves
-   strict delegate mode for the Witness.
+   strict delegate mode for the Watcher.
 
 **Recommendation:** Option 1 (custom agent with selective tools). It's pragmatic,
-preserves the Witness's ability to query beads state, and the PreToolUse hook
+preserves the Watcher's ability to query beads state, and the PreToolUse hook
 provides sufficient guardrails. Pure delegate mode is aspirational but the
-Witness genuinely needs to read beads state for coordination decisions.
+Watcher genuinely needs to read beads state for coordination decisions.
 
-### PreToolUse Guard for Witness Bash
+### PreToolUse Guard for Watcher Bash
 
 ```json
 {
@@ -145,13 +145,13 @@ Witness genuinely needs to read beads state for coordination decisions.
     "matcher": "Bash",
     "hooks": [{
       "type": "command",
-      "command": "gt witness-bash-guard"
+      "command": "gt watcher-bash-guard"
     }]
   }]
 }
 ```
 
-The `gt witness-bash-guard` script:
+The `gt watcher-bash-guard` script:
 - Allows: `gt *`, `bd *`, `git status`, `git log`, read-only commands
 - Blocks: `echo >`, `cat >`, `sed -i`, `vim`, `nano`, any write operation
 - Returns exit code 2 with reason on block
@@ -162,14 +162,14 @@ The `gt witness-bash-guard` script:
 
 ### The Spawn Flow
 
-When work arrives (via convoy, gt sling, or direct assignment):
+When work arrives (via batch, gt dispatch, or direct assignment):
 
 ```
-1. Witness receives work (mail, convoy dispatch, bd ready)
-2. Witness creates AT team (if not already active)
+1. Watcher receives work (mail, batch dispatch, bd ready)
+2. Watcher creates AT team (if not already active)
 3. For each issue to dispatch:
    a. Create AT task with issue details and dependencies
-   b. Spawn polecat teammate assigned to that task
+   b. Spawn worker teammate assigned to that task
 4. Teammates self-claim tasks and begin execution
 ```
 
@@ -178,37 +178,37 @@ When work arrives (via convoy, gt sling, or direct assignment):
 ```
 Teammate({
   operation: "spawnTeam",
-  team_name: "<rig-name>-work",
-  description: "Polecat work team for <convoy/sprint description>"
+  team_name: "<project-name>-work",
+  description: "Worker work team for <batch/sprint description>"
 })
 ```
 
-Team naming convention: `<rig>-work` for the primary work team.
-One team per rig per active convoy. Multiple convoys = multiple teams
-(AT limitation: one team per session, so Witness manages one convoy
+Team naming convention: `<project>-work` for the primary work team.
+One team per project per active batch. Multiple batches = multiple teams
+(AT limitation: one team per session, so Watcher manages one batch
 at a time).
 
 ### AT Task Creation from Beads Issues
 
-For each issue dispatched to a polecat:
+For each issue dispatched to a worker:
 
 ```
 TaskCreate({
   subject: "<issue title>",
-  description: "Issue: <issue-id>\n<issue description>\n\nWorktree: /path/to/<polecat>/\nFormula: mol-polecat-work",
+  description: "Issue: <issue-id>\n<issue description>\n\nWorktree: /path/to/<worker>/\nFormula: wf-worker-work",
   activeForm: "Working on <issue title>",
   metadata: {
     "bead_id": "<issue-id>",
     "worktree": "/path/to/worktree",
-    "molecule": "<mol-id>"
+    "workflow": "<wf-id>"
   }
 })
 ```
 
 **Key fields in metadata:**
 - `bead_id`: Links AT task back to the beads issue for sync
-- `worktree`: The git worktree path this polecat should use
-- `molecule`: The mol-polecat-work instance for this issue
+- `worktree`: The git worktree path this worker should use
+- `workflow`: The wf-worker-work instance for this issue
 
 ### Dependency Mapping
 
@@ -226,29 +226,29 @@ TaskUpdate({
 This enables AT's native self-claim: when task A completes, task B becomes
 unblocked and the next idle teammate picks it up automatically.
 
-### Polecat Teammate Spawn
+### Worker Teammate Spawn
 
 ```
 Task({
-  subagent_type: "polecat",
-  team_name: "<rig>-work",
-  name: "<polecat-name>",
+  subagent_type: "worker",
+  team_name: "<project>-work",
+  name: "<worker-name>",
   model: "sonnet",
-  prompt: "You are polecat <name>. Your worktree is <path>.\n\nAssigned issue: <id> - <title>\n<description>\n\nWorkflow:\n1. cd <worktree>\n2. Run `gt prime` for full context\n3. Follow mol-polecat-work steps\n4. When done: commit, push, run `gt done`"
+  prompt: "You are worker <name>. Your worktree is <path>.\n\nAssigned issue: <id> - <title>\n<description>\n\nWorkflow:\n1. cd <worktree>\n2. Run `gt prime` for full context\n3. Follow wf-worker-work steps\n4. When done: commit, push, run `gt done`"
 })
 ```
 
 **Model selection:**
-- Polecat teammates: `model: "sonnet"` (execution-focused, cost-efficient)
-- Witness lead: Opus (judgment, coordination, quality review)
-- Refinery teammate (Phase 2): `model: "sonnet"` (mechanical merge work)
+- Worker teammates: `model: "sonnet"` (execution-focused, cost-efficient)
+- Watcher lead: Opus (judgment, coordination, quality review)
+- Merger teammate (Phase 2): `model: "sonnet"` (mechanical merge work)
 
-### The `.claude/agents/polecat.md` Definition
+### The `.claude/agents/worker.md` Definition
 
 ```yaml
 ---
-name: polecat
-description: Gas Town polecat worker agent (persistent identity, ephemeral sessions)
+name: worker
+description: Gas Town worker worker agent (persistent identity, ephemeral sessions)
 model: sonnet
 hooks:
   SessionStart:
@@ -264,20 +264,20 @@ hooks:
     - matcher: "auto"
       hooks:
         - type: command
-          command: "gt handoff --reason compaction"
+          command: "gt transfer --reason compaction"
   Stop:
     - hooks:
         - type: command
           command: "gt signal stop"
 ---
 
-You are a Gas Town polecat (persistent identity, ephemeral sessions).
+You are a Gas Town worker (persistent identity, ephemeral sessions).
 
 ## Startup
 1. `cd` to your assigned worktree (given in your spawn prompt)
 2. Run `gt prime` for full context
-3. Check your hook: `gt hook`
-4. Follow molecule steps: `bd mol current`
+3. Check your hook: `gt assignment`
+4. Follow workflow steps: `bd workflow current`
 
 ## Work Protocol
 - Mark steps in_progress before starting: `bd update <id> --status=in_progress`
@@ -294,7 +294,7 @@ When all steps done:
 
 ### Worktree Assignment
 
-Each polecat teammate operates in its own git worktree. Since AT doesn't support
+Each worker teammate operates in its own git worktree. Since AT doesn't support
 per-teammate working directories natively, enforcement is via:
 
 1. **Spawn prompt:** First instruction is `cd /path/to/worktree`
@@ -302,13 +302,13 @@ per-teammate working directories natively, enforcement is via:
    targeting paths outside the assigned worktree
 3. **Environment variable:** `GT_WORKTREE=/path/to/worktree` set via SessionStart hook
 
-The Witness creates worktrees before spawning teammates:
+The Watcher creates worktrees before spawning teammates:
 ```bash
-git worktree add /path/to/polecats/<name>/<rig> -b polecat/<name>/<issue-id>
+git worktree add /path/to/workers/<name>/<project> -b worker/<name>/<issue-id>
 ```
 
 This matches the current worktree management — the change is WHO creates them
-(Witness via AT, not `gt sling` via Go daemon).
+(Watcher via AT, not `gt dispatch` via Go daemon).
 
 ---
 
@@ -325,11 +325,11 @@ Layer 2 (Beads/Dolt, durable): Issue creation, completion, audit trail
 
 | AT Event | Beads Action | Trigger |
 |----------|-------------|---------|
-| Task claimed (in_progress) | `bd update <id> --status=in_progress` | TaskCompleted hook / polecat prompt |
+| Task claimed (in_progress) | `bd update <id> --status=in_progress` | TaskCompleted hook / worker prompt |
 | Task completed | `bd close <step-id>` | TaskCompleted hook |
-| New issue discovered | AT task created by Witness | Witness reads polecat message |
+| New issue discovered | AT task created by Watcher | Watcher reads worker message |
 | Teammate idle | Check beads for more work | TeammateIdle hook |
-| Team shutdown | Verify all beads synced | Witness cleanup routine |
+| Team shutdown | Verify all beads synced | Watcher cleanup routine |
 
 ### TaskCompleted Hook for Bead Sync
 
@@ -365,21 +365,21 @@ Hook configuration:
 `bd close` fails (Dolt contention), it will be retried at the next sync point.
 The AT task list is the real-time truth; beads catches up at boundaries.
 
-### Polecat-Side Bead Updates
+### Worker-Side Bead Updates
 
-Polecats still run `bd update` and `bd close` directly as part of their molecule
+Workers still run `bd update` and `bd close` directly as part of their workflow
 workflow. The TaskCompleted hook is a safety net, not the primary mechanism. This
 means:
 
-- Polecat marks molecule step in_progress → `bd update --status=in_progress`
-- Polecat completes molecule step → `bd close <step-id>`
+- Worker marks workflow step in_progress → `bd update --status=in_progress`
+- Worker completes workflow step → `bd close <step-id>`
 - AT task completion → TaskCompleted hook also fires `bd close` (idempotent)
 
 Double-close is safe: `bd close` on an already-closed bead is a no-op.
 
 ### Sync Verification at Team Shutdown
 
-Before the Witness shuts down the team, it verifies beads are in sync:
+Before the Watcher shuts down the team, it verifies beads are in sync:
 
 ```
 For each AT task marked completed:
@@ -391,7 +391,7 @@ For each AT task marked completed:
 
 This is the "boundary sync" pattern from the integration design: AT handles
 real-time coordination, beads catches up at lifecycle boundaries (team shutdown,
-convoy completion).
+batch completion).
 
 ---
 
@@ -409,8 +409,8 @@ Teammate running
     │
     ├── Context filling → PreCompact hook fires
     │   │
-    │   └── gt handoff --reason compaction
-    │       ├── Saves current molecule step to beads
+    │   └── gt transfer --reason compaction
+    │       ├── Saves current workflow step to beads
     │       ├── Saves progress notes
     │       └── Saves git branch state
     │
@@ -430,44 +430,44 @@ If a teammate crashes or is shut down (not just compacted):
 ```
 Teammate stops
     │
-    └── SubagentStop hook fires on Witness (lead)
+    └── SubagentStop hook fires on Watcher (lead)
         │
         ├── Read teammate's last known state from beads
-        │   └── Which molecule step was in_progress?
+        │   └── Which workflow step was in_progress?
         │   └── What branch was being worked on?
         │
         ├── Assess: recoverable or escalate?
         │   ├── Normal completion: AT task done, beads synced → no action
         │   ├── Incomplete work: respawn with resume context
-        │   └── Repeated crashes: escalate to Witness mail → Mayor
+        │   └── Repeated crashes: escalate to Watcher mail → Coordinator
         │
         └── If recoverable: spawn replacement teammate
-            └── Task({ subagent_type: "polecat", ... resume prompt ... })
+            └── Task({ subagent_type: "worker", ... resume prompt ... })
 ```
 
-### SubagentStop Hook (Witness Side)
+### SubagentStop Hook (Watcher Side)
 
 ```json
 {
   "SubagentStop": [{
-    "matcher": "polecat",
+    "matcher": "worker",
     "hooks": [{
       "type": "command",
-      "command": "gt witness-teammate-stopped"
+      "command": "gt watcher-teammate-stopped"
     }]
   }]
 }
 ```
 
-The `gt witness-teammate-stopped` script:
+The `gt watcher-teammate-stopped` script:
 1. Reads the stopped agent's transcript path (available in hook input)
 2. Checks AT task status — was the task completed?
 3. Checks beads — was `gt done` run?
 4. If completed: no action (normal lifecycle)
 5. If incomplete: outputs `{ "decision": "block", "reason": "Teammate <name> stopped before completing task <id>. Beads state: <status>. Respawn needed." }`
 
-The "block" decision prevents the Witness from going idle, injecting the
-respawn instruction as context for the Witness to act on.
+The "block" decision prevents the Watcher from going idle, injecting the
+respawn instruction as context for the Watcher to act on.
 
 ### Respawn Prompt Template
 
@@ -476,11 +476,11 @@ Teammate <name> stopped before completing work.
 
 Last known state:
 - Issue: <bead-id> (<title>)
-- Molecule step: <step-id> (in_progress)
+- Workflow step: <step-id> (in_progress)
 - Branch: <branch-name>
 - Worktree: <path>
 
-Spawn a replacement polecat with this context. The new teammate
+Spawn a replacement worker with this context. The new teammate
 should read beads state and continue from the last checkpoint.
 ```
 
@@ -490,8 +490,8 @@ Track respawn attempts per issue. If a teammate crashes 3 times on the
 same issue:
 
 1. Mark the AT task as blocked
-2. File a bead: `bd create --title "Polecat crash loop on <issue>" --type bug`
-3. Mail the Witness/Mayor for escalation
+2. File a bead: `bd create --title "Worker crash loop on <issue>" --type bug`
+3. Mail the Watcher/Coordinator for escalation
 4. Do NOT respawn — the issue has a structural problem
 
 Tracking: Use AT task metadata `{ "respawn_count": N }` incremented on
@@ -509,16 +509,16 @@ crash tracking only matters during the current team session.
 | Teammate crash | SubagentStop hook | Respawn or escalate (see above) |
 | Teammate stuck (no progress) | TeammateIdle hook | Send message asking for status |
 | Test failures | TaskCompleted hook (exit 2) | Block completion, teammate must fix |
-| Merge conflict | Polecat messages Witness | Witness advises or reassigns |
+| Merge conflict | Worker messages Watcher | Watcher advises or reassigns |
 | Dolt write failure | bd command exit code | Retry with backoff (existing mechanism) |
-| AT team crash | Witness session dies | Daemon/Boot/Deacon chain detects, restarts Witness |
-| Worktree scope violation | PreToolUse hook | Block the operation, warn polecat |
+| AT team crash | Watcher session dies | Daemon/Boot/Supervisor chain detects, restarts Watcher |
+| Worktree scope violation | PreToolUse hook | Block the operation, warn worker |
 
 ### TeammateIdle Hook
 
 ```bash
 #!/bin/bash
-# gt witness-teammate-idle
+# gt watcher-teammate-idle
 # Fires when a teammate is about to go idle
 
 export PATH="$HOME/go/bin:$HOME/.local/bin:$PATH"
@@ -567,33 +567,33 @@ exit 0
 
 ---
 
-## 6. Convoy Mapping to AT Teams
+## 6. Batch Mapping to AT Teams
 
 ### The Natural Mapping
 
 | Gas Town | AT Equivalent |
 |----------|--------------|
-| Convoy | AT team lifecycle |
-| Convoy issues | AT tasks |
-| War Rig (per-rig convoy execution) | AT team instance |
+| Batch | AT team lifecycle |
+| Batch issues | AT tasks |
+| War Project (per-project batch execution) | AT team instance |
 | Ready front (unblocked issues) | Unblocked AT tasks |
 | Dispatch | AT task creation + teammate spawn |
 | Completion tracking | AT task list status |
 
-### One Convoy = One AT Team Session
+### One Batch = One AT Team Session
 
-A convoy arrives at a rig. The Witness creates an AT team for that convoy:
+A batch arrives at a project. The Watcher creates an AT team for that batch:
 
 ```
-Convoy hq-abc arrives at gastown
+Batch hq-abc arrives at gastown
     │
-    ├── Witness creates team: "gastown-convoy-abc"
+    ├── Watcher creates team: "gastown-batch-abc"
     │
-    ├── For each issue in convoy:
+    ├── For each issue in batch:
     │   ├── Create AT task (with bead_id in metadata)
     │   └── Set dependencies (from beads dep graph)
     │
-    ├── Spawn N polecat teammates (N = min(issues, max_polecats))
+    ├── Spawn N worker teammates (N = min(issues, max_workers))
     │
     ├── Teammates self-claim tasks from ready front
     │
@@ -603,40 +603,40 @@ Convoy hq-abc arrives at gastown
     │   └── Beads synced via TaskCompleted hook
     │
     └── All tasks done:
-        ├── Witness verifies beads sync
-        ├── Witness sends convoy completion to Mayor (gt mail)
+        ├── Watcher verifies beads sync
+        ├── Watcher sends batch completion to Coordinator (gt mail)
         └── Team shutdown
 ```
 
-### Multiple Convoys
+### Multiple Batches
 
-AT limitation: one team per session. If a second convoy arrives while the
+AT limitation: one team per session. If a second batch arrives while the
 first is active:
 
-**Option A: Sequential processing.** Finish convoy 1, then start convoy 2.
-Simple, no concurrency issues. Acceptable if convoy throughput is sufficient.
+**Option A: Sequential processing.** Finish batch 1, then start batch 2.
+Simple, no concurrency issues. Acceptable if batch throughput is sufficient.
 
-**Option B: Convoy queue.** The Witness queues incoming convoys and processes
-them in order. The queue lives in beads (mail inbox) — the Witness checks for
-new convoys when the current team finishes.
+**Option B: Batch queue.** The Watcher queues incoming batches and processes
+them in order. The queue lives in beads (mail inbox) — the Watcher checks for
+new batches when the current team finishes.
 
-**Option C: Multiple Witness sessions.** The daemon spawns a second Witness
-session for the second convoy. Each Witness manages its own AT team. This
-requires the daemon to support multiple Witness instances per rig.
+**Option C: Multiple Watcher sessions.** The daemon spawns a second Watcher
+session for the second batch. Each Watcher manages its own AT team. This
+requires the daemon to support multiple Watcher instances per project.
 
 **Recommendation:** Option A for Phase 1 (sequential). Option C for Phase 2+
-if throughput demands it. The convoy queue in Option B is implicit in beads
-already (unprocessed convoy mail = queued work).
+if throughput demands it. The batch queue in Option B is implicit in beads
+already (unprocessed batch mail = queued work).
 
 ### Steady-State Worker Pool
 
-For large convoys (20+ issues), the Witness doesn't spawn 20 teammates at once.
+For large batches (20+ issues), the Watcher doesn't spawn 20 teammates at once.
 Instead:
 
 ```
-max_teammates = 5  # configurable per rig
+max_teammates = 5  # configurable per project
 
-1. Spawn max_teammates polecats
+1. Spawn max_teammates workers
 2. Create all AT tasks (with dependencies)
 3. Teammates self-claim from ready front
 4. As teammates complete tasks:
@@ -649,7 +649,7 @@ AT's self-claim mechanism is the key enabler. Teammates don't die after one
 task — they pick up the next one. This eliminates the current spawn/nuke
 overhead per issue.
 
-**When a teammate needs to cycle** (compaction), the Witness spawns a
+**When a teammate needs to cycle** (compaction), the Watcher spawns a
 replacement, not an additional teammate. The pool size stays at max_teammates.
 
 ---
@@ -660,34 +660,34 @@ replacement, not an additional teammate. The pool size stays at max_teammates.
 
 ```
                     ┌─────────────────┐
-                    │    Witness       │
+                    │    Watcher       │
                     │  (AT Team Lead)  │
                     │                  │
     gt mail ←──────│── Bridge ──────→ AT messaging
-    (cross-rig,    │                  (intra-team,
+    (cross-project,    │                  (intra-team,
      persistent)   │                   ephemeral)
                     └─────────────────┘
 ```
 
 ### Inbound: gt mail → AT message
 
-When the Witness receives gt mail relevant to an active teammate:
+When the Watcher receives gt mail relevant to an active teammate:
 
 ```
 gt mail inbox
     │
-    ├── From Mayor: "Priority shift — issue X is now P0"
-    │   └── Witness sends AT message to relevant teammate:
-    │       Teammate({ operation: "write", target_agent_id: "<polecat>",
+    ├── From Coordinator: "Priority shift — issue X is now P0"
+    │   └── Watcher sends AT message to relevant teammate:
+    │       Teammate({ operation: "write", target_agent_id: "<worker>",
     │                  value: "Priority update: <issue> is now P0. Expedite." })
     │
-    ├── From Refinery: "Merge conflict on <branch>"
-    │   └── Witness sends AT message to the polecat on that branch:
-    │       Teammate({ operation: "write", target_agent_id: "<polecat>",
+    ├── From Merger: "Merge conflict on <branch>"
+    │   └── Watcher sends AT message to the worker on that branch:
+    │       Teammate({ operation: "write", target_agent_id: "<worker>",
     │                  value: "Merge conflict detected. Rebase on main." })
     │
-    └── From another rig's Witness: "Dependency <issue> is done"
-        └── Witness creates/unblocks AT task for downstream work
+    └── From another project's Watcher: "Dependency <issue> is done"
+        └── Watcher creates/unblocks AT task for downstream work
 ```
 
 ### Outbound: AT event → gt mail
@@ -697,15 +697,15 @@ When AT events need to reach entities outside the team:
 ```
 Teammate completes final task
     │
-    └── Witness detects all tasks done
+    └── Watcher detects all tasks done
         │
-        ├── gt mail send gastown/refinery -s "MERGE_READY: <branch>"
-        │   └── Refinery processes merge queue
+        ├── gt mail send gastown/merger -s "MERGE_READY: <branch>"
+        │   └── Merger processes merge queue
         │
-        ├── gt mail send mayor/ -s "CONVOY COMPLETE: hq-abc"
-        │   └── Mayor updates convoy tracking
+        ├── gt mail send coordinator/ -s "BATCH COMPLETE: hq-abc"
+        │   └── Coordinator updates batch tracking
         │
-        └── gt mail send gastown/witness -s "POLECAT_DONE: <name>"
+        └── gt mail send gastown/watcher -s "worker_done: <name>"
             └── (Self-mail for beads record)
 ```
 
@@ -713,31 +713,31 @@ Teammate completes final task
 
 | Communication | Channel | Why |
 |--------------|---------|-----|
-| Witness ↔ Polecat | AT messaging | Same team, real-time, ephemeral |
-| Polecat ↔ Polecat | AT messaging | Same team, coordination chatter |
-| Witness → Refinery | gt mail | Different lifecycle, needs persistence |
-| Witness → Mayor | gt mail | Cross-rig, needs persistence |
-| Mayor → Witness | gt mail | Cross-rig, needs persistence |
-| Polecat escalation | AT message to Witness, Witness relays via gt mail | Bridge pattern |
+| Watcher ↔ Worker | AT messaging | Same team, real-time, ephemeral |
+| Worker ↔ Worker | AT messaging | Same team, coordination chatter |
+| Watcher → Merger | gt mail | Different lifecycle, needs persistence |
+| Watcher → Coordinator | gt mail | Cross-project, needs persistence |
+| Coordinator → Watcher | gt mail | Cross-project, needs persistence |
+| Worker escalation | AT message to Watcher, Watcher relays via gt mail | Bridge pattern |
 
 ### The Relay Pattern
 
-Polecats can't send gt mail directly to entities outside their team (AT
+Workers can't send gt mail directly to entities outside their team (AT
 messaging is team-scoped). Instead:
 
 ```
-Polecat needs to escalate to Mayor:
+Worker needs to escalate to Coordinator:
     │
-    ├── Polecat sends AT message to Witness:
-    │   "ESCALATE: Need Mayor decision on auth approach"
+    ├── Worker sends AT message to Watcher:
+    │   "ESCALATE: Need Coordinator decision on auth approach"
     │
-    └── Witness relays via gt mail:
-        gt mail send mayor/ -s "ESCALATE from polecat <name>" -m "..."
+    └── Watcher relays via gt mail:
+        gt mail send coordinator/ -s "ESCALATE from worker <name>" -m "..."
 ```
 
-This is analogous to the current model where polecats mail the Witness and
-the Witness escalates. The difference: AT messaging is real-time (no Dolt
-sync lag), and the Witness can relay immediately.
+This is analogous to the current model where workers mail the Watcher and
+the Watcher escalates. The difference: AT messaging is real-time (no Dolt
+sync lag), and the Watcher can relay immediately.
 
 ---
 
@@ -764,7 +764,7 @@ sync lag), and the Witness can relay immediately.
       }]
     }],
     "SubagentStop": [{
-      "matcher": "polecat",
+      "matcher": "worker",
       "hooks": [{
         "type": "command",
         "command": ".claude/hooks/teammate-stopped.sh"
@@ -774,12 +774,12 @@ sync lag), and the Witness can relay immediately.
 }
 ```
 
-### `.claude/agents/witness-lead.md`
+### `.claude/agents/watcher-lead.md`
 
 ```yaml
 ---
-name: witness-lead
-description: Gas Town Witness operating as AT team lead
+name: watcher-lead
+description: Gas Town Watcher operating as AT team lead
 model: opus
 permissionMode: delegate
 hooks:
@@ -791,40 +791,40 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "gt witness-bash-guard"
+          command: "gt watcher-bash-guard"
   Stop:
     - hooks:
         - type: command
           command: "gt signal stop"
 ---
 
-You are the Gas Town Witness for this rig.
+You are the Gas Town Watcher for this project.
 
 ## Role
-You coordinate polecat workers. You NEVER implement code directly.
+You coordinate worker workers. You NEVER implement code directly.
 Delegate mode enforces this structurally — you cannot edit files.
 
 ## Startup
 1. Check for incoming work: `gt mail inbox`, `bd ready`
 2. Create AT team if work is available
-3. Spawn polecat teammates for each issue
+3. Spawn worker teammates for each issue
 4. Monitor progress via AT task list
 
 ## During Work
 - Monitor teammate progress via TaskList
-- Relay cross-rig messages (gt mail ↔ AT messages)
+- Relay cross-project messages (gt mail ↔ AT messages)
 - Handle teammate crashes (respawn or escalate)
 - Enforce quality via plan approval
 
 ## Completion
 - Verify all AT tasks completed
 - Verify beads are synced (all issues closed)
-- Send MERGE_READY to Refinery via gt mail
-- Send convoy completion to Mayor via gt mail
+- Send MERGE_READY to Merger via gt mail
+- Send batch completion to Coordinator via gt mail
 - Shutdown team
 ```
 
-### `.claude/agents/polecat.md`
+### `.claude/agents/worker.md`
 
 See Section 2 above for the full definition.
 
@@ -836,76 +836,76 @@ See Section 2 above for the full definition.
 
 | Component | Replacement | Notes |
 |-----------|-------------|-------|
-| `gt sling` (polecat spawn) | `Teammate({ operation: "spawn" })` | AT native |
-| `gt polecat nuke` | `Teammate({ operation: "requestShutdown" })` | AT native |
-| tmux session management | AT manages teammate sessions | No more tmux for polecats |
-| `gt nudge` (tmux send-keys) | `Teammate({ operation: "write" })` | AT messaging |
+| `gt dispatch` (worker spawn) | `Teammate({ operation: "spawn" })` | AT native |
+| `gt worker nuke` | `Teammate({ operation: "requestShutdown" })` | AT native |
+| tmux session management | AT manages teammate sessions | No more tmux for workers |
+| `gt message` (tmux send-keys) | `Teammate({ operation: "write" })` | AT messaging |
 | Zombie detection (tmux-based) | SubagentStop / TeammateIdle hooks | Structural |
-| Witness "are you stuck?" polling | TeammateIdle hook (automatic) | Event-driven |
-| Polecat-to-polecat isolation | Prompt + PreToolUse hook | Behavioral → hook-enforced |
+| Watcher "are you stuck?" polling | TeammateIdle hook (automatic) | Event-driven |
+| Worker-to-worker isolation | Prompt + PreToolUse hook | Behavioral → hook-enforced |
 
 ### Infrastructure Kept (Phase 1)
 
 | Component | Why |
 |-----------|-----|
 | Beads (Dolt) | Durable ledger — AT tasks are ephemeral |
-| gt mail | Cross-rig communication — AT is team-scoped |
-| Molecules/formulas | Work templates — AT tasks created from these |
-| `gt done` | Polecat self-clean — unchanged lifecycle |
+| gt mail | Cross-project communication — AT is team-scoped |
+| Workflows/templates | Work templates — AT tasks created from these |
+| `gt done` | Worker self-clean — unchanged lifecycle |
 | Git worktrees | Filesystem isolation — AT doesn't provide this |
-| Daemon/Boot/Deacon | Health monitoring — AT has no crash recovery |
-| Refinery (separate) | Different lifecycle (Phase 2 brings it in-band) |
-| Convoy tracking | Cross-rig work orders — above AT scope |
+| Daemon/Boot/Supervisor | Health monitoring — AT has no crash recovery |
+| Merger (separate) | Different lifecycle (Phase 2 brings it in-band) |
+| Batch tracking | Cross-project work orders — above AT scope |
 
 ### Dolt Write Pressure Reduction
 
-**Current:** Every `bd update`, `bd close`, `bd create` from every polecat
-= concurrent Dolt writes. 20 polecats = 20+ concurrent commits.
+**Current:** Every `bd update`, `bd close`, `bd create` from every worker
+= concurrent Dolt writes. 20 workers = 20+ concurrent commits.
 
 **With AT:** Real-time task coordination happens in AT (file-locked, no Dolt).
 Dolt writes only at boundaries:
-- `bd close` when a molecule step completes (1 per task)
-- `bd create` when polecats discover new issues (rare)
+- `bd close` when a workflow step completes (1 per task)
+- `bd create` when workers discover new issues (rare)
 
 **Estimated reduction: 80-90%.** The remaining writes are naturally staggered
 across minutes (task completions), not milliseconds (concurrent status updates).
 
 ---
 
-## 10. Witness Startup Flow (Updated)
+## 10. Watcher Startup Flow (Updated)
 
 ```
-Witness session starts (managed by daemon)
+Watcher session starts (managed by daemon)
     │
     ├── SessionStart hook: gt prime --hook
     │   └── Loads role context, checks hook
     │
     ├── Check for work:
-    │   ├── gt mail inbox (convoy dispatch, priority changes)
+    │   ├── gt mail inbox (batch dispatch, priority changes)
     │   ├── bd ready (unblocked issues)
-    │   └── gt hook (hooked work)
+    │   └── gt assignment (assigned work)
     │
     ├── If work available:
     │   │
     │   ├── Create AT team:
-    │   │   Teammate({ operation: "spawnTeam", team_name: "<rig>-work" })
+    │   │   Teammate({ operation: "spawnTeam", team_name: "<project>-work" })
     │   │
     │   ├── Create AT tasks from beads issues:
     │   │   For each issue: TaskCreate({ subject, description, metadata: { bead_id } })
     │   │   Set dependencies: TaskUpdate({ addBlockedBy: [...] })
     │   │
-    │   ├── Create worktrees for polecats:
-    │   │   For each polecat: git worktree add ...
+    │   ├── Create worktrees for workers:
+    │   │   For each worker: git worktree add ...
     │   │
-    │   ├── Spawn polecat teammates:
+    │   ├── Spawn worker teammates:
     │   │   For each (up to max_teammates):
-    │   │     Task({ subagent_type: "polecat", team_name: "...", name: "..." })
+    │   │     Task({ subagent_type: "worker", team_name: "...", name: "..." })
     │   │
     │   └── Enter monitoring loop:
     │       ├── Watch AT task list for completions
     │       ├── Handle teammate crashes (SubagentStop)
     │       ├── Relay gt mail ↔ AT messages
-    │       ├── Check for new convoy arrivals
+    │       ├── Check for new batch arrivals
     │       └── When all tasks done: cleanup and report
     │
     └── If no work:
@@ -919,20 +919,20 @@ Witness session starts (managed by daemon)
 
 ### In Scope
 
-1. Witness as AT team lead in delegate mode (with Bash for gt/bd)
-2. Polecat teammates with `.claude/agents/polecat.md`
+1. Watcher as AT team lead in delegate mode (with Bash for gt/bd)
+2. Worker teammates with `.claude/agents/worker.md`
 3. Bead sync via TaskCompleted hook
-4. Session cycling via PreCompact handoff + respawn
+4. Session cycling via PreCompact transfer + respawn
 5. Basic error handling (crash detection, respawn, crash loop prevention)
 6. Mail bridge (gt mail ↔ AT messaging)
-7. Single-convoy sequential processing
+7. Single-batch sequential processing
 
 ### Out of Scope (Phase 2+)
 
-1. Refinery as AT teammate
-2. Multiple concurrent convoys
-3. Cross-rig AT coordination
-4. Crew squads / shadow workers
+1. Merger as AT teammate
+2. Multiple concurrent batches
+3. Cross-project AT coordination
+4. Team squads / shadow workers
 5. Advanced plan approval workflows
 6. Performance optimization (token cost tuning)
 
@@ -940,15 +940,15 @@ Witness session starts (managed by daemon)
 
 | Criterion | Test |
 |-----------|------|
-| Witness stays in delegate mode | Verify Witness cannot write/edit files |
-| Polecats complete work | End-to-end: spawn → implement → push → gt done |
+| Watcher stays in delegate mode | Verify Watcher cannot write/edit files |
+| Workers complete work | End-to-end: spawn → implement → push → gt done |
 | Beads sync correctly | AT task completion → bd close fires → bead is closed |
 | Session cycling works | Force compaction → new teammate resumes from beads |
-| Crash recovery works | Kill a teammate → Witness detects → respawns |
-| Mail bridge works | Mayor sends mail → Witness relays to polecat |
+| Crash recovery works | Kill a teammate → Watcher detects → respawns |
+| Mail bridge works | Coordinator sends mail → Watcher relays to worker |
 | Dolt writes reduced | Measure bd command frequency: before vs after |
 | Token cost acceptable | `/cost` shows < 3x overhead vs current model |
-| Convoy completes | Full convoy lifecycle: dispatch → work → merge → done |
+| Batch completes | Full batch lifecycle: dispatch → work → merge → done |
 
 ---
 
@@ -957,26 +957,26 @@ Witness session starts (managed by daemon)
 ### Current Architecture → Phase 1
 
 The transition is additive: AT runs alongside existing infrastructure during
-validation. The Witness can fall back to tmux-based management if AT fails.
+validation. The Watcher can fall back to tmux-based management if AT fails.
 
 ```
 Step 1: Enable AT feature flag in gastown .claude/settings.json
-Step 2: Create .claude/agents/polecat.md and .claude/agents/witness-lead.md
+Step 2: Create .claude/agents/worker.md and .claude/agents/watcher-lead.md
 Step 3: Implement hook scripts (task-completed-sync, teammate-idle, teammate-stopped)
-Step 4: Implement gt witness-bash-guard
+Step 4: Implement gt watcher-bash-guard
 Step 5: Implement gt validate-worktree-scope
-Step 6: Implement gt witness-teammate-stopped
-Step 7: Update Witness startup to create AT team instead of tmux polecat sessions
-Step 8: Test with 2 polecats on a small convoy
+Step 6: Implement gt watcher-teammate-stopped
+Step 7: Update Watcher startup to create AT team instead of tmux worker sessions
+Step 8: Test with 2 workers on a small batch
 Step 9: Validate all criteria above
-Step 10: If validated: expand to 3-5 polecats, larger convoys
+Step 10: If validated: expand to 3-5 workers, larger batches
 ```
 
 ### Rollback Plan
 
 If Phase 1 fails:
 1. Disable AT feature flag
-2. Witness reverts to tmux-based polecat management
+2. Watcher reverts to tmux-based worker management
 3. No beads data lost (beads sync is additive)
 4. File lessons-learned bead for Phase 1 retry
 

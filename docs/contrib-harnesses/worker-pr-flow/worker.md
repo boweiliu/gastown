@@ -1,14 +1,14 @@
-## PR-Flow Polecat Policy
+## PR-Flow Worker Policy
 
-> **Rig Policy — overrides formula instructions where they conflict.**
+> **Project Policy — overrides template instructions where they conflict.**
 
-This rig uses a **polecat → GitHub PR → human review** flow. After pushing
+This project uses a **worker → GitHub PR → human review** flow. After pushing
 your branch, you MUST ensure a GitHub PR is open for it before running
 `gt done`.
 
-This overrides the canonical Refinery merge-queue assumption embedded in
-`mol-polecat-work`. `gt done` is still the completion signal — but in this
-rig, a visible PR is the gating artifact for review.
+This overrides the canonical Merger merge-queue assumption embedded in
+`wf-worker-work`. `gt done` is still the completion signal — but in this
+project, a visible PR is the gating artifact for review.
 
 ### Required steps after implementation
 
@@ -35,10 +35,10 @@ rig, a visible PR is the gating artifact for review.
 ### If `gh` commands fail
 
 Auth, rate-limit, missing PR template, or unknown base branch — do NOT skip
-PR creation to unblock yourself. Escalate to your Witness:
+PR creation to unblock yourself. Escalate to your Watcher:
 
 ```bash
-gt mail send <rig>/witness -s "HELP: gh pr create failed" -m "Branch: $(git branch --show-current)
+gt mail send <project>/watcher -s "HELP: gh pr create failed" -m "Branch: $(git branch --show-current)
 Error: <paste>
 Tried: <what you attempted>"
 ```

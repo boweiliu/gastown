@@ -1,9 +1,9 @@
 # Ledger Export Triggers
 
 > **Status**: Design — addresses gt-ayk
-> **Author**: mel (crew)
+> **Author**: mel (team)
 > **Date**: 2026-02-07
-> **Related**: dolt-storage.md (Three Data Planes), WISP-COMPACTION-POLICY.md (Level 0-1),
+> **Related**: dolt-storage.md (Three Data Planes), EPHEMERAL-COMPACTION-POLICY.md (Level 0-1),
 > PRIMING.md (Identity and CV Model, Skill Derivation)
 
 ---
@@ -11,7 +11,7 @@
 ## Problem Statement
 
 The dolt-storage architecture defines three data planes (Operational, Ledger, Design)
-and references a fidelity model with Levels 0-3. The wisp compaction design handles
+and references a fidelity model with Levels 0-3. The ephemeral compaction design handles
 Level 0 (ephemeral) to Level 1 (promoted/permanent operational) transitions. What's
 missing is the trigger specification for when work moves from the **Operational plane
 (Level 1)** to the **Ledger plane (Level 2-3)**.
@@ -23,12 +23,12 @@ No skill derivation happens. No CVs grow. The HOP economy doesn't bootstrap.
 
 | Level | Plane | What | Durability | Visibility |
 |-------|-------|------|------------|------------|
-| 0 | Operational | Ephemeral wisps (heartbeats, patrols) | TTL-based | Local |
+| 0 | Operational | Ephemeral ephemerals (heartbeats, sweeps) | TTL-based | Local |
 | 1 | Operational | Permanent operational records (open/active beads) | Days-weeks | Local |
 | 2 | Ledger | Compressed completion records | Permanent | Federated |
 | 3 | Ledger | Full fidelity ground truth | Permanent | Federated |
 
-Level 0 -> 1 is handled by wisp compaction policy (promotion on proven value).
+Level 0 -> 1 is handled by ephemeral compaction policy (promotion on proven value).
 **This document defines Level 1 -> 2 and Level 1 -> 3 triggers.**
 
 ---
@@ -87,59 +87,59 @@ agent heartbeats). Think of it as the "git squash" of work records.
 | `created_at` | bead.created_at | When work was imagined |
 | `closed_at` | bead.closed_at | When work completed |
 | `duration_days` | computed | closed_at - created_at |
-| `parent` | bead.parent | Convoy/epic linkage |
-| `rig` | context | Which rig this belongs to |
+| `parent` | bead.parent | Batch/epic linkage |
+| `project` | context | Which project this belongs to |
 | `commit_refs` | git log | Associated git commits (if any) |
 | `files_touched` | git diff | File paths changed (for skill derivation) |
 | `lines_changed` | git diff | +/- line counts |
 
 **What gets discarded**: Status change history, intermediate comments (unless
-flagged for Level 3), agent assignment churn, heartbeat/patrol associations.
+flagged for Level 3), agent assignment churn, heartbeat/sweep associations.
 
-**Exclusions**: Wisps (`wisp: true`) are never exported to Level 2. They either
-get deleted by TTL or promoted to Level 1 (permanent operational). Promoted wisps
+**Exclusions**: Ephemerals (`ephemeral: true`) are never exported to Level 2. They either
+get deleted by TTL or promoted to Level 1 (permanent operational). Promoted ephemerals
 can then trigger Level 2 export on closure like any other bead.
 
-### Trigger 2: Convoy Completion
+### Trigger 2: Batch Completion
 
-**When**: All beads in a convoy reach `closed` status.
+**When**: All beads in a batch reach `closed` status.
 
-**What gets exported**: A convoy-level summary record in addition to the
+**What gets exported**: A batch-level summary record in addition to the
 individual bead records (which export via Trigger 1).
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `convoy_id` | convoy bead id | The coordination unit |
-| `title` | convoy title | What was coordinated |
+| `batch_id` | batch bead id | The coordination unit |
+| `title` | batch title | What was coordinated |
 | `bead_count` | count of children | Scale of effort |
 | `agents_involved` | unique assignees | Who participated |
-| `rigs_involved` | unique rig contexts | Cross-rig breadth |
-| `created_at` | convoy created | When coordination began |
+| `rigs_involved` | unique project contexts | Cross-project breadth |
+| `created_at` | batch created | When coordination began |
 | `completed_at` | last child closed | When all work landed |
 | `duration_days` | computed | Total elapsed time |
 
-**Why separate from Trigger 1**: Convoy records capture coordination patterns —
-multi-agent work, cross-rig breadth, parallelism. These are distinct skill
+**Why separate from Trigger 1**: Batch records capture coordination patterns —
+multi-agent work, cross-project breadth, parallelism. These are distinct skill
 signals that individual bead records don't capture.
 
-### Trigger 3: Refinery Merge
+### Trigger 3: Merger Merge
 
-**When**: The Refinery successfully merges a polecat's work to main.
+**When**: The Merger successfully merges a worker's work to main.
 
 **What gets exported**: An enriched version of the bead closure record with
 validation metadata.
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `merge_id` | refinery record | Merge queue entry |
+| `merge_id` | merger record | Merge queue entry |
 | `bead_id` | associated bead | Links to bead record |
-| `branch` | polecat branch | Source of work |
-| `merged_by` | refinery agent | Validator identity |
+| `branch` | worker branch | Source of work |
+| `merged_by` | merger agent | Validator identity |
 | `merge_result` | pass/fail/conflict | Outcome |
 | `test_results` | CI output | If tests ran |
 | `conflict_resolution` | merge strategy | How conflicts were handled |
 
-**Why this matters for HOP**: Refinery merge is external validation. A bead can
+**Why this matters for HOP**: Merger merge is external validation. A bead can
 be self-closed by the assignee, but a merge proves the work was code-reviewed
 (even if automated). This is a stronger skill signal.
 
@@ -209,7 +209,7 @@ to design storage systems" needs the reasoning, not just the outcome.
 - Bead duration exceeds 3x the rolling average for its type
 - Bead's commit diff touches more than M files (wide-impact change)
 
-**Configurable thresholds** (in rig export config):
+**Configurable thresholds** (in project export config):
 ```json
 {
   "level3_heuristics": {
@@ -237,22 +237,22 @@ to design storage systems" needs the reasoning, not just the outcome.
 do something. Novel problem resolution proves an agent can *figure out* something
 new. The latter is a fundamentally different and more valuable skill signal.
 
-### Trigger 7: Cross-Rig Coordination
+### Trigger 7: Cross-Project Coordination
 
-**When**: A bead or convoy involves work across multiple rigs (detected via
-convoy membership, cross-rig references, or worktree usage).
+**When**: A bead or batch involves work across multiple projects (detected via
+batch membership, cross-project references, or worktree usage).
 
 **What gets exported**: All Level 2 fields plus:
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `rigs_involved` | bead refs | Which rigs were touched |
-| `worktrees_used` | gt worktree | Cross-rig work sessions |
+| `rigs_involved` | bead refs | Which projects were touched |
+| `worktrees_used` | gt worktree | Cross-project work sessions |
 | `coordination_pattern` | analysis | Serial vs parallel, delegation vs direct |
 | `mail_thread` | gt mail | Inter-agent communication for this work |
-| `convoy_structure` | bead graph | How work was decomposed |
+| `Batch_structure` | bead graph | How work was decomposed |
 
-**Why this matters for HOP**: Cross-rig work demonstrates architectural
+**Why this matters for HOP**: Cross-project work demonstrates architectural
 understanding — knowing where code lives, how systems interact, when to delegate
 vs do directly. This is the "breadth" dimension of skill vectors.
 
@@ -284,37 +284,37 @@ potentially Trigger 5-8 (if Level 3 criteria are met).
 
 ```
 bead closes → Level 2 export (always)
-            → Level 3 export (if design/novel/cross-rig/flagged)
+            → Level 3 export (if design/novel/cross-project/flagged)
 ```
 
-### Boundary 2: Convoy Landing
+### Boundary 2: Batch Landing
 
-All beads in a convoy close. Fires Trigger 2 (convoy summary) after all
+All beads in a batch close. Fires Trigger 2 (batch summary) after all
 individual Trigger 1 exports. This is the natural "project completion" boundary.
 
 ```
-last convoy bead closes → all Trigger 1 exports (if not already done)
-                        → Trigger 2 convoy summary
-                        → Trigger 7 (if multi-rig)
+last batch bead closes → all Trigger 1 exports (if not already done)
+                        → Trigger 2 batch summary
+                        → Trigger 7 (if multi-project)
 ```
 
 ### Boundary 3: Merge Validation
 
-Refinery merges code. Fires Trigger 3. Often follows shortly after Trigger 1
+Merger merges code. Fires Trigger 3. Often follows shortly after Trigger 1
 (bead closes, then code merges), so these should be linked in the ledger.
 
 ```
-refinery merge → Trigger 3 (enriches existing Level 2 record)
+merger merge → Trigger 3 (enriches existing Level 2 record)
 ```
 
-### Boundary 4: Session Handoff
+### Boundary 4: Session Transfer
 
-An agent cycles via `gt handoff`. Not a direct export trigger, but a
+An agent cycles via `gt transfer`. Not a direct export trigger, but a
 **checkpoint opportunity**: any pending exports from prior triggers should
 flush before the session ends.
 
 ```
-gt handoff → flush pending exports
+gt transfer → flush pending exports
            → Trigger 4 if period boundary crossed
 ```
 
@@ -342,10 +342,10 @@ These derive from metadata alone — no full content needed:
 | Signal | Derived From | Skill Category |
 |--------|-------------|----------------|
 | Language proficiency | `files_touched` extensions | Technical/Language |
-| Domain expertise | `labels`, `rig` context | Domain |
+| Domain expertise | `labels`, `project` context | Domain |
 | Completion velocity | `duration_days` | Efficiency |
 | Work volume | count of Level 2 records | Capacity |
-| Breadth | unique rigs, unique label sets | Versatility |
+| Breadth | unique projects, unique label sets | Versatility |
 | Reliability | closed/reopened ratio | Quality |
 
 ### Skill Signals from Level 3 (Full Fidelity)
@@ -358,7 +358,7 @@ These require reasoning content — Level 2 metadata alone is insufficient:
 | Debugging methodology | Problem resolution comments | Problem-solving |
 | Communication quality | Comment clarity, thread coherence | Collaboration |
 | Tradeoff analysis | Design doc "alternatives considered" | Decision-making |
-| System-level thinking | Cross-rig coordination patterns | Architecture |
+| System-level thinking | Cross-project coordination patterns | Architecture |
 | Novel pattern recognition | How non-routine problems were approached | Innovation |
 | Teaching/mentoring | Explanatory comments, doc quality | Leadership |
 
@@ -392,11 +392,11 @@ CREATE TABLE ledger_completions (
     owner VARCHAR(255),
     assignee VARCHAR(255),
     labels JSON,
-    rig VARCHAR(64),
+    project VARCHAR(64),
     created_at TIMESTAMP,
     closed_at TIMESTAMP,
     duration_days FLOAT,
-    parent VARCHAR(64),              -- convoy linkage
+    parent VARCHAR(64),              -- batch linkage
     commit_refs JSON,                -- associated git commits
     files_touched JSON,              -- file paths (for skill derivation)
     lines_changed JSON,              -- {added: N, removed: M}
@@ -405,9 +405,9 @@ CREATE TABLE ledger_completions (
     export_trigger VARCHAR(32)       -- which trigger caused export
 );
 
--- Level 2: Convoy summary records
-CREATE TABLE ledger_convoys (
-    convoy_id VARCHAR(64) PRIMARY KEY,
+-- Level 2: Batch summary records
+CREATE TABLE ledger_batchs (
+    batch_id VARCHAR(64) PRIMARY KEY,
     title TEXT,
     bead_count INT,
     agents_involved JSON,
@@ -440,7 +440,7 @@ CREATE TABLE ledger_ground_truth (
     design_doc_content TEXT,
     commit_diffs JSON,                -- code change summaries
     trigger_reasons JSON,             -- why Level 3 was triggered
-    coordination_pattern VARCHAR(64), -- for cross-rig work
+    coordination_pattern VARCHAR(64), -- for cross-project work
     mail_thread JSON,                 -- inter-agent comms
     exported_at TIMESTAMP,
     FOREIGN KEY (bead_id) REFERENCES ledger_completions(id)
@@ -452,7 +452,7 @@ CREATE TABLE ledger_rollups (
     period VARCHAR(32),
     period_start TIMESTAMP,
     period_end TIMESTAMP,
-    rig VARCHAR(64),
+    project VARCHAR(64),
     beads_closed INT,
     beads_opened INT,
     agents_active JSON,
@@ -501,7 +501,7 @@ CREATE TABLE export_queue (
 
 ## Configuration
 
-Per-rig export config in `.beads/config/ledger-export.json`:
+Per-project export config in `.beads/config/ledger-export.json`:
 
 ```json
 {
@@ -534,32 +534,32 @@ Per-rig export config in `.beads/config/ledger-export.json`:
 }
 ```
 
-Override precedence: rig config > town defaults > hardcoded defaults.
+Override precedence: project config > workspace defaults > hardcoded defaults.
 
 ---
 
 ## Integration Points
 
-### With Wisp Compaction (WISP-COMPACTION-POLICY.md)
+### With Ephemeral Compaction (EPHEMERAL-COMPACTION-POLICY.md)
 
-Wisp compaction handles Level 0 -> Level 1 promotion. Once a wisp is promoted
+Ephemeral compaction handles Level 0 -> Level 1 promotion. Once a ephemeral is promoted
 (becomes a permanent operational bead), it enters the normal Level 1 -> 2/3
 export pipeline on closure. The two systems are complementary:
 
 ```
-Level 0 (ephemeral) ──[wisp TTL/promotion]──> Level 1 (operational)
+Level 0 (ephemeral) ──[ephemeral TTL/promotion]──> Level 1 (operational)
 Level 1 (operational) ──[this design]──> Level 2/3 (ledger)
 ```
 
-### With Refinery
+### With Merger
 
-Refinery merge events fire Trigger 3. Implementation: the Refinery's merge
+Merger merge events fire Trigger 3. Implementation: the Merger's merge
 completion hook calls `bd ledger export <bead-id> --trigger merge`.
 
-### With `gt handoff`
+### With `gt transfer`
 
-Handoff flushes pending exports. Implementation: add export flush to the
-handoff checklist (after git push, before session end).
+Transfer flushes pending exports. Implementation: add export flush to the
+transfer checklist (after git push, before session end).
 
 ### With HOP Skill Derivation (Future)
 
@@ -569,7 +569,7 @@ Ledger tables are the input to HOP skill queries. Example:
 -- "What Go work has agent X done?"
 SELECT lc.title, lc.files_touched, lc.duration_days
 FROM ledger_completions lc
-WHERE lc.assignee = 'gastown/crew/mel'
+WHERE lc.assignee = 'gastown/team/mel'
   AND JSON_CONTAINS(lc.files_touched, '"*.go"')
 ORDER BY lc.closed_at DESC;
 
@@ -593,10 +593,10 @@ WHERE JSON_CONTAINS(lc.labels, '"architecture"')
 - `bd ledger export <id>` command for manual trigger
 - `bd ledger status` command to check export state
 
-### Phase 2: Convoy + Merge (Triggers 2-3)
+### Phase 2: Batch + Merge (Triggers 2-3)
 
-- Convoy completion detection and summary export
-- Refinery merge hook integration
+- Batch completion detection and summary export
+- Merger merge hook integration
 - Link merge records to completion records
 
 ### Phase 3: Level 3 Heuristics (Triggers 5-8)
@@ -612,7 +612,7 @@ WHERE JSON_CONTAINS(lc.labels, '"architecture"')
 - Periodic rollup generation
 - Anomaly detection heuristics
 - Dolt-in-git integration for federated ledger access
-- Cross-town skill queries
+- Cross-workspace skill queries
 
 ---
 
@@ -635,6 +635,6 @@ WHERE JSON_CONTAINS(lc.labels, '"architecture"')
 
 4. **Privacy/redaction**: Should certain beads be excluded from the
    federated ledger? (e.g., beads with `label: private` or in private
-   rigs). Recommendation: yes, add an `exclude_from_federation` flag
+   projects). Recommendation: yes, add an `exclude_from_federation` flag
    that keeps the record in the local ledger but omits it from
    dolt-in-git export.

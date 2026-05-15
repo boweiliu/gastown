@@ -1,4 +1,4 @@
-# Cursor runtime plan — Beads tasks (handoff)
+# Cursor runtime plan — Beads tasks (transfer)
 
 These issues track **Cursor runtime parity**, **user-facing documentation clarity** (preset `cursor` vs CLI `cursor-agent` / `agent`), and **`.cursor/` onboarding**. Issue IDs vary by database.
 

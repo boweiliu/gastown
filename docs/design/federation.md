@@ -15,8 +15,8 @@ coordinate across organizations, and track distributed projects.
 
 ```
 Level 1: Entity    - Person or organization (flat namespace)
-Level 2: Chain     - Workspace/town per entity
-Level 3: Work Unit - Issues, tasks, molecules on chains
+Level 2: Chain     - Workspace/workspace per entity
+Level 3: Work Unit - Issues, tasks, workflows on chains
 ```
 
 ### URI Scheme
@@ -24,8 +24,8 @@ Level 3: Work Unit - Issues, tasks, molecules on chains
 Full work unit reference (HOP protocol):
 
 ```
-hop://entity/chain/rig/issue-id
-hop://steve@example.com/main-town/greenplace/gp-xyz
+hop://entity/chain/project/issue-id
+hop://steve@example.com/main-workspace/greenplace/gp-xyz
 ```
 
 Cross-repo reference (same platform):
@@ -39,8 +39,8 @@ Within a workspace, short forms are preferred:
 
 ```
 gp-xyz             # Local (prefix routes via routes.jsonl)
-greenplace/gp-xyz  # Different rig, same chain
-./gp-xyz           # Explicit current-rig ref
+greenplace/gp-xyz  # Different project, same chain
+./gp-xyz           # Explicit current-project ref
 ```
 
 See `~/gt/docs/hop/GRAPH-ARCHITECTURE.md` for full URI specification.
@@ -60,16 +60,16 @@ complete BD_ACTOR format convention.
 
 ```bash
 # Set per agent session
-GIT_AUTHOR_NAME="greenplace/crew/joe"
+GIT_AUTHOR_NAME="greenplace/team/joe"
 GIT_AUTHOR_EMAIL="steve@example.com"  # Workspace owner
 ```
 
-Result: `abc123 Fix bug (greenplace/crew/joe <steve@example.com>)`
+Result: `abc123 Fix bug (greenplace/team/joe <steve@example.com>)`
 
 ### Beads Operations
 
 ```bash
-BD_ACTOR="greenplace/crew/joe"  # Set in agent environment
+BD_ACTOR="greenplace/team/joe"  # Set in agent environment
 bd create --title="Task"        # Actor auto-populated
 ```
 
@@ -80,15 +80,15 @@ All events include actor:
 ```json
 {
   "ts": "2025-01-15T10:30:00Z",
-  "type": "sling",
-  "actor": "greenplace/crew/joe",
-  "payload": { "bead": "gp-xyz", "target": "greenplace/polecats/Toast" }
+  "type": "dispatch",
+  "actor": "greenplace/team/joe",
+  "payload": { "bead": "gp-xyz", "target": "greenplace/workers/Toast" }
 }
 ```
 
 ## Discovery (not yet implemented)
 
-Workspace metadata lives in `~/gt/.town.json` (owner, name, public_name).
+Workspace metadata lives in `~/gt/.workspace.json` (owner, name, public_name).
 Planned commands: `gt remote add/list` for remote registration,
 `bd show hop://...` and `bd list --remote=...` for cross-workspace queries.
 
@@ -96,7 +96,7 @@ Planned commands: `gt remote add/list` for remote registration,
 
 - [x] Agent identity in git commits
 - [x] BD_ACTOR default in beads create
-- [x] Workspace metadata file (.town.json)
+- [x] Workspace metadata file (.workspace.json)
 - [x] Cross-workspace URI scheme (hop://, beads://, local forms)
 - [x] Dolt remotes configured (DoltHub endpoints)
 - [x] Local remotesapi enabled (port 8000)
@@ -109,22 +109,22 @@ Planned commands: `gt remote add/list` for remote registration,
 
 ### Current Setup
 
-Town-level Dolt databases have remotes configured pointing to DoltHub:
+Workspace-level Dolt databases have remotes configured pointing to DoltHub:
 
 ```bash
-# Check configured remotes for town database
-cd ~/gt/.dolt-data/town && dolt remote -v
-# origin https://doltremoteapi.dolthub.com/steveyegge/gastown-town {}
-# local  http://localhost:8000/town {}
+# Check configured remotes for workspace database
+cd ~/gt/.dolt-data/workspace && dolt remote -v
+# origin https://doltremoteapi.dolthub.com/steveyegge/gastown-workspace {}
+# local  http://localhost:8000/workspace {}
 ```
 
 ### Configured Remotes
 
 | Database | Remote Name | URL | Purpose |
 |----------|-------------|-----|---------|
-| town | origin | `steveyegge/gastown-town` | DoltHub public federation |
-| town | local | `http://localhost:8000/town` | Local development/testing |
-| gastown | origin | `steveyegge/gastown-rig` | DoltHub public federation |
+| workspace | origin | `steveyegge/gastown-workspace` | DoltHub public federation |
+| workspace | local | `http://localhost:8000/workspace` | Local development/testing |
+| gastown | origin | `steveyegge/gastown-project` | DoltHub public federation |
 | beads | origin | `steveyegge/gastown-beads` | DoltHub public federation |
 
 ### Federation Endpoint Options
@@ -138,7 +138,7 @@ Like GitHub for Dolt - public, hosted, zero infrastructure:
 dolt login
 
 # Push to remote
-cd ~/gt/.dolt-data/town
+cd ~/gt/.dolt-data/workspace
 dolt push origin main
 ```
 
@@ -159,11 +159,11 @@ For private federation within an organization:
 - Deploy DoltLab instance
 - Configure remote: `dolt remote add corp https://doltlab.corp.example.com/org/repo`
 
-**4. Direct Town-to-Town (Advanced)**
+**4. Direct Workspace-to-Workspace (Advanced)**
 
 Two Gas Town instances federating directly:
-- Town A runs remotesapi on accessible endpoint
-- Town B adds Town A as remote: `dolt remote add town-a http://town-a.example.com:8000/town`
+- Workspace A runs remotesapi on accessible endpoint
+- Workspace B adds Workspace A as remote: `dolt remote add workspace-a http://workspace-a.example.com:8000/workspace`
 
 ### Enabling Full Federation
 
@@ -178,11 +178,11 @@ To push/pull from configured remotes:
 
 2. **Create DoltHub Repository:**
    - Visit https://www.dolthub.com
-   - Create repository matching remote name (e.g., `steveyegge/gastown-town`)
+   - Create repository matching remote name (e.g., `steveyegge/gastown-workspace`)
 
 3. **Initial Push:**
    ```bash
-   cd ~/gt/.dolt-data/town
+   cd ~/gt/.dolt-data/workspace
    dolt push -u origin main
    ```
 

@@ -27,10 +27,10 @@ These roles manage the Gas Town system itself:
 
 | Role | Description | Lifecycle |
 |------|-------------|-----------|
-| **Mayor** | Global coordinator at mayor/ | Singleton, persistent |
-| **Deacon** | Background supervisor daemon ([watchdog chain](design/watchdog-chain.md)) | Singleton, persistent |
-| **Witness** | Per-rig polecat lifecycle manager | One per rig, persistent |
-| **Refinery** | Per-rig merge queue processor | One per rig, persistent |
+| **Coordinator** | Global coordinator at coordinator/ | Singleton, persistent |
+| **Supervisor** | Background supervisor daemon ([watchdog chain](design/watchdog-chain.md)) | Singleton, persistent |
+| **Watcher** | Per-project worker lifecycle manager | One per project, persistent |
+| **Merger** | Per-project merge queue processor | One per project, persistent |
 
 ### Worker Roles
 
@@ -38,110 +38,110 @@ These roles do actual project work:
 
 | Role | Description | Lifecycle |
 |------|-------------|-----------|
-| **Polecat** | Worker with persistent identity, ephemeral sessions | Witness-managed ([details](concepts/polecat-lifecycle.md)) |
-| **Crew** | Persistent worker with own clone | Long-lived, user-managed |
-| **Dog** | Deacon helper for infrastructure tasks | Persistent identity, Deacon-managed |
+| **Worker** | Worker with persistent identity, ephemeral sessions | Watcher-managed ([details](concepts/worker-lifecycle.md)) |
+| **Team** | Persistent worker with own clone | Long-lived, user-managed |
+| **Helper** | Supervisor helper for infrastructure tasks | Persistent identity, Supervisor-managed |
 
-## Convoys: Tracking Work
+## Batches: Tracking Work
 
-A **convoy** (🚚) is how you track batched work in Gas Town. When you kick off work -
-even a single issue - create a convoy to track it.
+A **batch** (🚚) is how you track batched work in Gas Town. When you kick off work -
+even a single issue - create a batch to track it.
 
 ```bash
-# Create a convoy tracking some issues
-gt convoy create "Feature X" gt-abc gt-def --notify overseer
+# Create a batch tracking some issues
+gt batch create "Feature X" gt-abc gt-def --notify overseer
 
 # Check progress
-gt convoy status hq-cv-abc
+gt batch status hq-cv-abc
 
-# Dashboard of active convoys
-gt convoy list
+# Dashboard of active batches
+gt batch list
 ```
 
-**Why convoys matter:**
+**Why batches matter:**
 - Single view of "what's in flight"
-- Cross-rig tracking (convoy in hq-*, issues in gt-*, bd-*)
+- Cross-project tracking (batch in hq-*, issues in gt-*, bd-*)
 - Auto-notification when work lands
-- Historical record of completed work (`gt convoy list --all`)
+- Historical record of completed work (`gt batch list --all`)
 
-The "swarm" is the set of workers currently assigned to a convoy's issues.
-When issues close, the convoy lands. See [Convoys](concepts/convoy.md) for details.
+The "swarm" is the set of workers currently assigned to a batch's issues.
+When issues close, the batch lands. See [Batches](concepts/batch.md) for details.
 
-## Crew vs Polecats
+## Team vs Workers
 
 Both do project work, but with key differences:
 
-| Aspect | Crew | Polecat |
+| Aspect | Team | Worker |
 |--------|------|---------|
-| **Lifecycle** | Persistent (user controls) | Transient (Witness controls) |
-| **Monitoring** | None | Witness watches, nudges, recycles |
-| **Work assignment** | Human-directed or self-assigned | Slung via `gt sling` |
-| **Git state** | Pushes to main directly | Works on branch, Refinery merges |
+| **Lifecycle** | Persistent (user controls) | Transient (Watcher controls) |
+| **Monitoring** | None | Watcher watches, messages, recycles |
+| **Work assignment** | Human-directed or self-assigned | dispatched via `gt dispatch` |
+| **Git state** | Pushes to main directly | Works on branch, Merger merges |
 | **Cleanup** | Manual | Automatic on completion |
-| **Identity** | `<rig>/crew/<name>` | `<rig>/polecats/<name>` |
+| **Identity** | `<project>/team/<name>` | `<project>/workers/<name>` |
 
-**When to use Crew**:
+**When to use Team**:
 - Exploratory work
 - Long-running projects
 - Work requiring human judgment
 - Tasks where you want direct control
 
-**When to use Polecats**:
+**When to use Workers**:
 - Discrete, well-defined tasks
-- Batch work (tracked via convoys)
+- Batch work (tracked via batches)
 - Parallelizable work
 - Work that benefits from supervision
 
-## Dogs vs Crew
+## Helpers vs Team
 
-**Dogs are NOT workers**. This is a common misconception.
+**Helpers are NOT workers**. This is a common misconception.
 
-| Aspect | Dogs | Crew |
+| Aspect | Helpers | Team |
 |--------|------|------|
-| **Owner** | Deacon | Human |
+| **Owner** | Supervisor | Human |
 | **Purpose** | Infrastructure tasks | Project work |
 | **Scope** | Narrow, focused utilities | General purpose |
 | **Lifecycle** | Very short (single task) | Long-lived |
-| **Example** | Boot (triages Deacon health) | Joe (fixes bugs, adds features) |
+| **Example** | Boot (triages Supervisor health) | Joe (fixes bugs, adds features) |
 
-Dogs are the Deacon's helpers for system-level tasks:
-- **Boot**: Triages Deacon health on daemon tick
-- Future dogs might handle: log rotation, health checks, etc.
+Helpers are the Supervisor's helpers for system-level tasks:
+- **Boot**: Triages Supervisor health on daemon tick
+- Future helpers might handle: log rotation, health checks, etc.
 
-If you need to do work in another rig, use **worktrees**, not dogs.
+If you need to do work in another project, use **worktrees**, not helpers.
 
-## Cross-Rig Work Patterns
+## Cross-Project Work Patterns
 
-When a crew member needs to work on another rig:
+When a team member needs to work on another project:
 
 ### Option 1: Worktrees (Preferred)
 
-Create a worktree in the target rig:
+Create a worktree in the target project:
 
 ```bash
-# gastown/crew/joe needs to fix a beads bug
+# gastown/team/joe needs to fix a beads bug
 gt worktree beads
-# Creates ~/gt/beads/crew/gastown-joe/
-# Identity preserved: BD_ACTOR = gastown/crew/joe
+# Creates ~/gt/beads/team/gastown-joe/
+# Identity preserved: BD_ACTOR = gastown/team/joe
 ```
 
 Directory structure:
 ```
-~/gt/beads/crew/gastown-joe/     # joe from gastown working on beads
-~/gt/gastown/crew/beads-wolf/    # wolf from beads working on gastown
+~/gt/beads/team/gastown-joe/     # joe from gastown working on beads
+~/gt/gastown/team/beads-wolf/    # wolf from beads working on gastown
 ```
 
 ### Option 2: Dispatch to Local Workers
 
-For work that should be owned by the target rig:
+For work that should be owned by the target project:
 
 ```bash
-# Create issue in target rig
+# Create issue in target project
 bd create --prefix beads "Fix authentication bug"
 
-# Create convoy and sling to target rig
-gt convoy create "Auth fix" bd-xyz
-gt sling bd-xyz beads
+# Create batch and dispatch to target project
+gt batch create "Auth fix" bd-xyz
+gt dispatch bd-xyz beads
 ```
 
 ### When to Use Which
@@ -150,15 +150,15 @@ gt sling bd-xyz beads
 |----------|----------|
 | You need to fix something quick | Worktree |
 | Work should appear in your CV | Worktree |
-| Work should be done by target rig team | Dispatch |
-| Infrastructure/system task | Let Deacon handle it |
+| Work should be done by target project team | Dispatch |
+| Infrastructure/system task | Let Supervisor handle it |
 
 ## Directory Structure
 
-The town root (`~/gt/`) contains infrastructure directories (`mayor/`, `deacon/`)
-and per-project rigs. Each rig holds a bare repo (`.repo.git/`), a canonical beads
-database (`mayor/rig/.beads/`), and agent directories (`witness/`, `refinery/`,
-`crew/`, `polecats/`).
+The workspace root (`~/gt/`) contains infrastructure directories (`coordinator/`, `supervisor/`)
+and per-project projects. Each project holds a bare repo (`.repo.git/`), a canonical beads
+database (`coordinator/project/.beads/`), and agent directories (`watcher/`, `merger/`,
+`team/`, `workers/`).
 
 > For the full directory tree, see [architecture.md](design/architecture.md).
 
@@ -167,15 +167,15 @@ database (`mayor/rig/.beads/`), and agent directories (`witness/`, `refinery/`,
 All work is attributed to the actor who performed it:
 
 ```
-Git commits:      Author: gastown/crew/joe <owner@example.com>
-Beads issues:     created_by: gastown/crew/joe
-Events:           actor: gastown/crew/joe
+Git commits:      Author: gastown/team/joe <owner@example.com>
+Beads issues:     created_by: gastown/team/joe
+Events:           actor: gastown/team/joe
 ```
 
-Identity is preserved even when working cross-rig:
-- `gastown/crew/joe` working in `~/gt/beads/crew/gastown-joe/`
-- Commits still attributed to `gastown/crew/joe`
-- Work appears on joe's CV, not beads rig's workers
+Identity is preserved even when working cross-project:
+- `gastown/team/joe` working in `~/gt/beads/team/gastown-joe/`
+- Commits still attributed to `gastown/team/joe`
+- Work appears on joe's CV, not beads project's workers
 
 ## The Propulsion Principle
 
@@ -197,8 +197,8 @@ capability-based routing.
 
 ## Common Mistakes
 
-1. **Using dogs for user work**: Dogs are Deacon infrastructure. Use crew or polecats.
-2. **Confusing crew with polecats**: Crew is persistent and human-managed. Polecats are transient and Witness-managed.
+1. **Using helpers for user work**: Helpers are Supervisor infrastructure. Use team or workers.
+2. **Confusing team with workers**: Team is persistent and human-managed. Workers are transient and Watcher-managed.
 3. **Working in wrong directory**: Gas Town uses cwd for identity detection. Stay in your home directory.
-4. **Waiting for confirmation when work is hooked**: The hook IS your assignment. Execute immediately.
-5. **Creating worktrees when dispatch is better**: If work should be owned by the target rig, dispatch it instead.
+4. **Waiting for confirmation when work is assigned**: The hook IS your assignment. Execute immediately.
+5. **Creating worktrees when dispatch is better**: If work should be owned by the target project, dispatch it instead.

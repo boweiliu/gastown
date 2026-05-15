@@ -10,9 +10,9 @@
 
 Gas Town uses [Dolt](https://github.com/dolthub/dolt), an open-source
 SQL database with Git-like versioning (Apache 2.0). One Dolt SQL server
-per town serves all databases via MySQL protocol on port 3307. There is
+per workspace serves all databases via MySQL protocol on port 3307. There is
 no embedded mode and no SQLite. JSONL is used only for disaster-recovery
-backups (the JSONL Dog exports scrubbed snapshots every 15 minutes to a
+backups (the JSONL Helper exports scrubbed snapshots every 15 minutes to a
 git-backed archive), not as a primary storage format.
 
 The `gt daemon` manages the server lifecycle (auto-start, health checks
@@ -21,12 +21,12 @@ every 30s, crash restart with exponential backoff).
 ## Server Architecture
 
 ```
-Dolt SQL Server (one per town, port 3307)
-├── hq/       town-level beads  (hq-* prefix)
-├── gastown/  rig beads         (gt-* prefix)
-├── beads/    rig beads         (bd-* prefix)
-├── wyvern/   rig beads         (wy-* prefix)
-└── sky/      rig beads         (sky-* prefix)
+Dolt SQL Server (one per workspace, port 3307)
+├── hq/       workspace-level beads  (hq-* prefix)
+├── gastown/  project beads         (gt-* prefix)
+├── beads/    project beads         (bd-* prefix)
+├── wyvern/   project beads         (wy-* prefix)
+└── sky/      project beads         (sky-* prefix)
 ```
 
 **Data directory**: `~/gt/.dolt-data/` — each subdirectory is a database
@@ -47,10 +47,10 @@ translates its variables to bd's equivalents when spawning agents.
 **Remote Dolt servers**: If Dolt runs on a different machine (e.g., over
 Tailscale), set `GT_DOLT_HOST` in the environment. gt propagates this as
 `BEADS_DOLT_SERVER_HOST` to all bd subprocesses, overriding bd's hardcoded
-`127.0.0.1` default. Without this, every new rig/worktree/polecat silently
+`127.0.0.1` default. Without this, every new project/worktree/worker silently
 connects to localhost and fails.
 
-Per-workspace override: set `dolt.host` in a rig's `.beads/config.yaml`.
+Per-workspace override: set `dolt.host` in a project's `.beads/config.yaml`.
 This takes priority over the env var for that specific workspace.
 
 ## Commands
@@ -65,7 +65,7 @@ gt dolt stop           # Stop server
 gt dolt status         # Health check, list databases
 gt dolt logs           # View server logs
 gt dolt sql            # Open SQL shell
-gt dolt init-rig <X>   # Create a new rig database
+gt dolt init-project <X>   # Create a new project database
 gt dolt list           # List all databases
 ```
 
@@ -74,7 +74,7 @@ pointing to `gt dolt start`.
 
 ## Write Concurrency: All-on-Main
 
-All agents — polecats, crew, witness, refinery, deacon — write directly
+All agents — workers, team, watcher, merger, supervisor — write directly
 to `main`. Concurrency is managed through transaction discipline: every
 write wraps `BEGIN` / `DOLT_COMMIT` / `COMMIT` atomically.
 
@@ -87,7 +87,7 @@ bd update <bead> --status=in_progress
 ```
 
 This eliminates the former branch-per-worker strategy (BD_BRANCH,
-per-polecat Dolt branches, merge-at-done). All writes are immediately
+per-worker Dolt branches, merge-at-done). All writes are immediately
 visible to all agents — no cross-agent visibility gaps.
 
 Multi-statement `bd` commands batch their writes inside a single
@@ -110,12 +110,12 @@ CREATE TABLE issues (
     assignee VARCHAR(255),
     owner VARCHAR(255) DEFAULT '',
     sender VARCHAR(255) DEFAULT '',          -- messaging
-    mol_type VARCHAR(32) DEFAULT '',         -- molecule type
+    mol_type VARCHAR(32) DEFAULT '',         -- workflow type
     work_type VARCHAR(32) DEFAULT 'mutex',   -- mutex vs open_competition
-    hook_bead VARCHAR(255) DEFAULT '',       -- agent hook
+    assignment_bead VARCHAR(255) DEFAULT '',       -- agent hook
     role_bead VARCHAR(255) DEFAULT '',       -- agent role
     agent_state VARCHAR(32) DEFAULT '',      -- agent lifecycle
-    wisp_type VARCHAR(32) DEFAULT '',        -- TTL-based compaction class
+    ephemeral_type VARCHAR(32) DEFAULT '',        -- TTL-based compaction class
     metadata JSON DEFAULT (JSON_OBJECT()),   -- extensible metadata
     created_at DATETIME, updated_at DATETIME, closed_at DATETIME
     -- ... plus ~20 more columns (see schema.go)
@@ -157,8 +157,8 @@ CREATE TABLE compaction_snapshots (id, issue_id, compaction_level, snapshot_json
 CREATE TABLE repo_mtimes         (repo_path PRIMARY KEY, mtime_ns, last_checked);
 ```
 
-**Wisps** (ephemeral patrol data) reuse the same `issues` table with
-`wisp_type` set. They are Dolt-ignored (`dolt_ignore` table) so wisp
+**Ephemerals** (ephemeral sweep data) reuse the same `issues` table with
+`ephemeral_type` set. They are Dolt-ignored (`dolt_ignore` table) so ephemeral
 mutations don't generate Dolt commits — only structural changes to the
 ignore config itself are committed.
 
@@ -197,10 +197,10 @@ Beads data falls into three planes with different characteristics:
 | **Design** | Epics, RFCs, specs — ideas not yet claimed | Conversational | Until crystallized | DoltHub commons (shared) | **Planned** |
 
 The operational plane lives entirely in the local Dolt server. The ledger
-plane is currently served by the JSONL Dog, which exports scrubbed snapshots
+plane is currently served by the JSONL Helper, which exports scrubbed snapshots
 to a git-backed archive every 15 minutes — this is the durable record that
 survives disasters (proven in Clown Show #13). The design plane will
-federate via DoltHub as part of the Wasteland commons (planned, not yet
+federate via DoltHub as part of the Archive commons (planned, not yet
 in active development).
 
 ## Data Lifecycle: Think Git, Not SQL (CRITICAL)
@@ -241,22 +241,22 @@ CREATE → LIVE → CLOSE → DECAY → COMPACT → FLATTEN
 
 | Stage | Owner | Frequency | Mechanism |
 |-------|-------|-----------|-----------|
-| CREATE | Any agent | Continuous | `bd create`, `bd mol wisp create` |
-| CLOSE | Agent or patrol | Per-task | `bd close`, `gt done` |
-| DECAY | Reaper Dog | Daily | `DELETE FROM wisps WHERE status='closed' AND age > 7d` |
-| COMPACT | Compactor Dog | Daily | `DOLT_RESET --soft` + `DOLT_COMMIT` (safe on running server) |
-| FLATTEN | Compactor Dog | Daily | Same as COMPACT — no downtime, no maintenance window |
+| CREATE | Any agent | Continuous | `bd create`, `bd workflow ephemeral create` |
+| CLOSE | Agent or sweep | Per-task | `bd close`, `gt done` |
+| DECAY | Reaper Helper | Daily | `DELETE FROM ephemerals WHERE status='closed' AND age > 7d` |
+| COMPACT | Compactor Helper | Daily | `DOLT_RESET --soft` + `DOLT_COMMIT` (safe on running server) |
+| FLATTEN | Compactor Helper | Daily | Same as COMPACT — no downtime, no maintenance window |
 
-All six stages are implemented in code. DECAY runs in the Reaper Dog
-(wisp_reaper.go), COMPACT/FLATTEN run in the Compactor Dog (compactor_dog.go).
+All six stages are implemented in code. DECAY runs in the Reaper Helper
+(ephemeral_reaper.go), COMPACT/FLATTEN run in the Compactor Helper (compactor_helper.go).
 All lifecycle tickers are enabled by default via `EnsureLifecycleDefaults()`
 (lifecycle_defaults.go), which auto-populates daemon.json with sensible
-defaults on `gt init` or `gt up`. Explicitly disabled patrols are preserved.
+defaults on `gt init` or `gt up`. Explicitly disabled sweeps are preserved.
 
 ### Two Data Streams
 
 ```
-EPHEMERAL (wisps, patrol data)          PERMANENT (issues, molecules, agents)
+EPHEMERAL (ephemerals, sweep data)          PERMANENT (issues, workflows, agents)
   CREATE                                  CREATE
   → work                                  → work
   → CLOSE (>24h)                          → CLOSE
@@ -265,19 +265,19 @@ EPHEMERAL (wisps, patrol data)          PERMANENT (issues, molecules, agents)
   → gc unreferenced chunks (Compactor)    → COMPACT/FLATTEN daily (no downtime)
 ```
 
-**Ephemeral data** (wisps, wisp_events, wisp_labels, wisp_deps) is
-high-volume patrol exhaust. Valuable in real-time, worthless after 24h.
-The Reaper Dog DELETES the rows. The Compactor Dog flattens the commits
+**Ephemeral data** (ephemerals, ephemeral_events, ephemeral_labels, ephemeral_deps) is
+high-volume sweep exhaust. Valuable in real-time, worthless after 24h.
+The Reaper Helper DELETES the rows. The Compactor Helper flattens the commits
 that wrote them out of history. Without both, storage grows without bound.
 
-**Permanent data** (issues, molecules, agents, dependencies, labels) is
+**Permanent data** (issues, workflows, agents, dependencies, labels) is
 the ledger. Even permanent data benefits from history compaction — a bead
 that was created, updated 5 times, and closed generates 7 commits that
 can be rebased into 1. The data survives; the intermediate history doesn't.
 
 ### History Compaction Operations
 
-**Daily compaction** (Compactor Dog or Dolt scheduled event):
+**Daily compaction** (Compactor Helper or Dolt scheduled event):
 
 All compaction operations are safe on a running server — no downtime
 needed. Can also be wired as a Dolt scheduled event (MySQL-style cron):
@@ -318,7 +318,7 @@ live server. Based on Jason Fulghum's rebase implementation.
 
 **Concurrent write hazard**: DOLT_REBASE is NOT safe with concurrent writes
 (Tim Sehn, 2026-02-28). If agents commit to the database during rebase, Dolt
-detects the graph change and errors. The Compactor Dog retries once on such
+detects the graph change and errors. The Compactor Helper retries once on such
 errors. Flatten mode (DOLT_RESET --soft) is unaffected — concurrent writes
 are safe there because the merge base shifts but the diff is just the txn.
 
@@ -399,25 +399,25 @@ Reference: https://www.dolthub.com/blog/2023-10-02-scheduled-events/
 - Events can call stored procedures
 - Minimum interval: 30 seconds (Dolt enforces this floor)
 
-**Can scheduled events replace the Compactor Dog?**
+**Can scheduled events replace the Compactor Helper?**
 
-**No.** The Compactor Dog's 10-step flatten algorithm requires safety features
+**No.** The Compactor Helper's 10-step flatten algorithm requires safety features
 that SQL events cannot provide:
 - Threshold checking (only compact when commit count exceeds N)
 - Integrity verification (row count comparison pre/post)
 - Concurrency abort (detects if main HEAD moved during compaction)
-- Error escalation (notifies Mayor on failure)
-- Cross-database iteration (single patrol handles all DBs)
+- Error escalation (notifies Coordinator on failure)
+- Cross-database iteration (single sweep handles all DBs)
 - Daemon-level logging and observability
 
 A stored procedure could implement the raw flatten SQL, but lacks escalation,
 observability, and integration with the daemon lifecycle.
 
 **What scheduled events CAN do:**
-- Supplement the Compactor Dog with explicit `dolt_gc()` scheduling
+- Supplement the Compactor Helper with explicit `dolt_gc()` scheduling
 - But auto-gc is already ON by default since Dolt 1.75.0, making this redundant
 
-**Recommendation:** Keep the Compactor Dog for flatten. Auto-gc handles chunk
+**Recommendation:** Keep the Compactor Helper for flatten. Auto-gc handles chunk
 reclamation. Scheduled events add no value beyond what we already have.
 
 ### Pollution Prevention
@@ -426,41 +426,41 @@ Pollution enters Dolt via four vectors:
 
 1. **Commit graph growth**: Every mutation = a commit. Rebase compacts.
 2. **Mail pollution**: Agents overuse `gt mail send` for routine comms.
-   Use `gt nudge` (ephemeral, zero Dolt cost) instead. See mail-protocol.md.
+   Use `gt message` (ephemeral, zero Dolt cost) instead. See mail-protocol.md.
 3. **Test artifacts**: Test code creating issues on production server.
    Firewall in store.go refuses test-prefixed CREATE DATABASE on port 3307.
 4. **Zombie processes**: Test dolt-server processes that outlive tests.
-   Doctor Dog kills these. 45 zombies (7GB RAM) found and killed 2026-02-27.
+   Doctor Helper kills these. 45 zombies (7GB RAM) found and killed 2026-02-27.
 
 Prevention is layered:
-- **Prompting**: Agents prefer `gt nudge` over `gt mail send` (zero commits)
+- **Prompting**: Agents prefer `gt message` over `gt mail send` (zero commits)
 - **Firewall** (store.go): refuses test-prefixed CREATE DATABASE on port 3307
-- **Reaper Dog**: DELETEs closed wisps, auto-closes stale issues
-- **Compactor Dog**: flattens old commits to compress history, runs gc after
-- **Doctor Dog**: kills zombie servers, detects orphan DBs, monitors health
-- **JSONL Dog**: scrubs exports, rejects pollution, spike-detects before commit
+- **Reaper Helper**: DELETEs closed ephemerals, auto-closes stale issues
+- **Compactor Helper**: flattens old commits to compress history, runs gc after
+- **Doctor Helper**: kills zombie servers, detects orphan DBs, monitors health
+- **JSONL Helper**: scrubs exports, rejects pollution, spike-detects before commit
 
-All Dogs are enabled by default via `EnsureLifecycleDefaults()` in
-lifecycle_defaults.go. The daemon auto-populates missing patrol entries
+All Helpers are enabled by default via `EnsureLifecycleDefaults()` in
+lifecycle_defaults.go. The daemon auto-populates missing sweep entries
 in daemon.json on startup (`gt init` / `gt up`). To disable a specific
-Dog, set `"enabled": false` in its daemon.json section — the auto-populate
+Helper, set `"enabled": false` in its daemon.json section — the auto-populate
 logic preserves explicitly configured entries.
 
 ### Communication Hygiene (Reducing Commit Volume)
 
-Every `gt mail send` creates a bead + Dolt commit. Every `gt nudge`
+Every `gt mail send` creates a bead + Dolt commit. Every `gt message`
 creates nothing. The rule:
 
-**Default to `gt nudge`. Only use `gt mail send` when the message MUST
+**Default to `gt message`. Only use `gt mail send` when the message MUST
 survive the recipient's session death.**
 
-| Role | Mail budget | Nudge for everything else |
+| Role | Mail budget | Message for everything else |
 |------|-------------|--------------------------|
-| Polecat | 0-1 per session (HELP only) | Status, questions, updates |
-| Witness | Protocol messages only | Health checks, polecat pokes |
-| Refinery | Protocol messages only | Status to Witness |
-| Deacon | Escalations only | Timer callbacks, health pokes |
-| Dogs | Zero (never mail) | DOG_DONE via nudge to Deacon |
+| Worker | 0-1 per session (HELP only) | Status, questions, updates |
+| Watcher | Protocol messages only | Health checks, worker pokes |
+| Merger | Protocol messages only | Status to Watcher |
+| Supervisor | Escalations only | Timer callbacks, health pokes |
+| Helpers | Zero (never mail) | helper_DONE via message to Supervisor |
 
 ## Standalone Beads Note
 
@@ -498,9 +498,9 @@ rebuild is acceptable.
 
 ### Sync Procedure
 
-`gt dolt sync` parks all rigs (stops witnesses/refineries), stops the Dolt
+`gt dolt sync` parks all projects (stops watchers/mergers), stops the Dolt
 server, runs `dolt push` for each database with a configured remote, then
-restarts the server and unparks rigs. The parking prevents witnesses from
+restarts the server and unparks projects. The parking prevents watchers from
 detecting the server outage and restarting it mid-push.
 
 ### Force Push
@@ -521,7 +521,7 @@ remote with local state. Subsequent pushes should work without `--force`.
 
 DoltHub's native protocol (`https://doltremoteapi.dolthub.com/...`) avoids
 the git-remote-cache entirely and is much faster. DoltHub-based federation
-is planned as part of the Wasteland commons — this would replace
+is planned as part of the Archive commons — this would replace
 git-protocol remotes for the design and ledger planes. Migration would
 require DoltHub accounts and reconfiguring remotes with
 `dolt remote set-url`. Not currently in active development.
@@ -529,17 +529,17 @@ require DoltHub accounts and reconfiguring remotes with
 ## File Layout
 
 ```
-~/gt/                            Town root
+~/gt/                            Workspace root
 ├── .dolt-data/                  Centralized Dolt data directory
-│   ├── hq/                      Town beads (hq-*)
-│   ├── gastown/                 Gastown rig (gt-*)
-│   ├── beads/                   Beads rig (bd-*)
-│   ├── wyvern/                  Wyvern rig (wy-*)
-│   └── sky/                     Sky rig (sky-*)
+│   ├── hq/                      Workspace beads (hq-*)
+│   ├── gastown/                 gastown project (gt-*)
+│   ├── beads/                   Beads project (bd-*)
+│   ├── wyvern/                  Wyvern project (wy-*)
+│   └── sky/                     Sky project (sky-*)
 ├── daemon/
 │   ├── dolt.pid                 Server PID (daemon-managed)
 │   ├── dolt.log                 Server log
 │   └── dolt-state.json          Server state
-└── mayor/
+└── coordinator/
     └── daemon.json              Daemon config (dolt_server section)
 ```

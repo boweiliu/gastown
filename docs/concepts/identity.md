@@ -24,18 +24,18 @@ This is set automatically when agents are spawned and used for all attribution.
 
 | Role Type | Format | Example |
 |-----------|--------|---------|
-| **Mayor** | `mayor` | `mayor` |
-| **Deacon** | `deacon` | `deacon` |
-| **Witness** | `{rig}/witness` | `gastown/witness` |
-| **Refinery** | `{rig}/refinery` | `gastown/refinery` |
-| **Crew** | `{rig}/crew/{name}` | `gastown/crew/joe` |
-| **Polecat** | `{rig}/polecats/{name}` | `gastown/polecats/toast` |
+| **Coordinator** | `coordinator` | `coordinator` |
+| **Supervisor** | `supervisor` | `supervisor` |
+| **Watcher** | `{project}/watcher` | `gastown/watcher` |
+| **Merger** | `{project}/merger` | `gastown/merger` |
+| **Team** | `{project}/team/{name}` | `gastown/team/joe` |
+| **Worker** | `{project}/workers/{name}` | `gastown/workers/toast` |
 
 ### Why Slashes?
 
 The slash format mirrors filesystem paths and enables:
-- Hierarchical parsing (extract rig, role, name)
-- Consistent mail addressing (`gt mail send gastown/witness`)
+- Hierarchical parsing (extract project, role, name)
+- Consistent mail addressing (`gt mail send gastown/watcher`)
 - Path-like routing in beads operations
 - Visual clarity about agent location
 
@@ -46,17 +46,17 @@ Gas Town uses three fields for complete provenance:
 ### Git Commits
 
 ```bash
-GIT_AUTHOR_NAME="gastown/crew/joe"      # Who did the work (agent)
+GIT_AUTHOR_NAME="gastown/team/joe"      # Who did the work (agent)
 GIT_AUTHOR_EMAIL="steve@example.com"    # Who owns the work (overseer)
 ```
 
 Result in git log:
 ```
-abc123 Fix bug (gastown/crew/joe <steve@example.com>)
+abc123 Fix bug (gastown/team/joe <steve@example.com>)
 ```
 
 **Interpretation**:
-- The agent `gastown/crew/joe` authored the change
+- The agent `gastown/team/joe` authored the change
 - The work belongs to the workspace owner (`steve@example.com`)
 - Both are preserved in git history forever
 
@@ -65,8 +65,8 @@ abc123 Fix bug (gastown/crew/joe <steve@example.com>)
 ```json
 {
   "id": "gt-xyz",
-  "created_by": "gastown/crew/joe",
-  "updated_by": "gastown/witness"
+  "created_by": "gastown/team/joe",
+  "updated_by": "gastown/watcher"
 }
 ```
 
@@ -80,9 +80,9 @@ All events include actor attribution:
 ```json
 {
   "ts": "2025-01-15T10:30:00Z",
-  "type": "sling",
-  "actor": "gastown/crew/joe",
-  "payload": { "bead": "gt-xyz", "target": "gastown/polecats/toast" }
+  "type": "dispatch",
+  "actor": "gastown/team/joe",
+  "payload": { "bead": "gt-xyz", "target": "gastown/workers/toast" }
 }
 ```
 
@@ -91,29 +91,29 @@ All events include actor attribution:
 Gas Town uses a centralized `config.AgentEnv()` function to set environment
 variables consistently across all agent spawn paths (managers, daemon, boot).
 
-### Example: Polecat Environment
+### Example: Worker Environment
 
 ```bash
-# Set automatically for polecat 'toast' in rig 'gastown'
-export GT_ROLE="polecat"
+# Set automatically for worker 'toast' in project 'gastown'
+export GT_ROLE="worker"
 export GT_RIG="gastown"
-export GT_POLECAT="toast"
-export BD_ACTOR="gastown/polecats/toast"
-export GIT_AUTHOR_NAME="gastown/polecats/toast"
+export GT_worker="toast"
+export BD_ACTOR="gastown/workers/toast"
+export GIT_AUTHOR_NAME="gastown/workers/toast"
 export GT_ROOT="/home/user/gt"
 export BEADS_DIR="/home/user/gt/gastown/.beads"
 export BEADS_AGENT_NAME="gastown/toast"
 ```
 
-### Example: Crew Environment
+### Example: Team Environment
 
 ```bash
-# Set automatically for crew member 'joe' in rig 'gastown'
-export GT_ROLE="crew"
+# Set automatically for team member 'joe' in project 'gastown'
+export GT_ROLE="team"
 export GT_RIG="gastown"
-export GT_CREW="joe"
-export BD_ACTOR="gastown/crew/joe"
-export GIT_AUTHOR_NAME="gastown/crew/joe"
+export GT_team="joe"
+export BD_ACTOR="gastown/team/joe"
+export GIT_AUTHOR_NAME="gastown/team/joe"
 export GT_ROOT="/home/user/gt"
 export BEADS_DIR="/home/user/gt/gastown/.beads"
 export BEADS_AGENT_NAME="gastown/joe"
@@ -124,8 +124,8 @@ export BEADS_AGENT_NAME="gastown/joe"
 For local testing or debugging:
 
 ```bash
-export BD_ACTOR="gastown/crew/debug"
-bd create --title="Test issue"  # Will show created_by: gastown/crew/debug
+export BD_ACTOR="gastown/team/debug"
+bd create --title="Test issue"  # Will show created_by: gastown/team/debug
 ```
 
 See [reference.md](reference.md#environment-variables) for the complete
@@ -137,19 +137,19 @@ The format supports programmatic parsing:
 
 ```go
 // identityToBDActor converts daemon identity to BD_ACTOR format
-// Town level: mayor, deacon
-// Rig level: {rig}/witness, {rig}/refinery
-// Workers: {rig}/crew/{name}, {rig}/polecats/{name}
+// Workspace level: coordinator, supervisor
+// Project level: {project}/watcher, {project}/merger
+// Workers: {project}/team/{name}, {project}/workers/{name}
 ```
 
 | Input | Parsed Components |
 |-------|-------------------|
-| `mayor` | role=mayor |
-| `deacon` | role=deacon |
-| `gastown/witness` | rig=gastown, role=witness |
-| `gastown/refinery` | rig=gastown, role=refinery |
-| `gastown/crew/joe` | rig=gastown, role=crew, name=joe |
-| `gastown/polecats/toast` | rig=gastown, role=polecat, name=toast |
+| `coordinator` | role=coordinator |
+| `supervisor` | role=supervisor |
+| `gastown/watcher` | project=gastown, role=watcher |
+| `gastown/merger` | project=gastown, role=merger |
+| `gastown/team/joe` | project=gastown, role=team, name=joe |
+| `gastown/workers/toast` | project=gastown, role=worker, name=toast |
 
 ## Audit Queries
 
@@ -157,16 +157,16 @@ Attribution enables powerful audit queries:
 
 ```bash
 # All work by an agent
-bd audit --actor=gastown/crew/joe
+bd audit --actor=gastown/team/joe
 
-# All work in a rig
+# All work in a project
 bd audit --actor=gastown/*
 
-# All polecat work
-bd audit --actor=*/polecats/*
+# All worker work
+bd audit --actor=*/workers/*
 
 # Git history by agent
-git log --author="gastown/crew/joe"
+git log --author="gastown/team/joe"
 ```
 
 ## Design Principles
@@ -185,27 +185,27 @@ The global identifier is your **email** - it's already in every git commit. No s
 
 ```
 steve@example.com                ← global identity (from git author)
-├── Town A (home)                ← workspace
-│   ├── gastown/crew/joe         ← agent executor
-│   └── gastown/polecats/toast   ← agent executor
-└── Town B (work)                ← workspace
-    └── acme/polecats/nux        ← agent executor
+├── Workspace A (home)                ← workspace
+│   ├── gastown/team/joe         ← agent executor
+│   └── gastown/workers/toast   ← agent executor
+└── Workspace B (work)                ← workspace
+    └── acme/workers/nux        ← agent executor
 ```
 
 ### Agent vs Owner
 
 | Field | Scope | Purpose |
 |-------|-------|---------|
-| `BD_ACTOR` | Local (town) | Agent attribution for debugging |
+| `BD_ACTOR` | Local (workspace) | Agent attribution for debugging |
 | `GIT_AUTHOR_EMAIL` | Global | Human identity for CV |
 | `created_by` | Local | Who created the bead |
 | `owner` | Global | Who owns the work |
 
-**Agents execute. Humans own.** The polecat name in `completed-by: gastown/polecats/toast` is executor attribution. The CV credits the human owner (`steve@example.com`).
+**Agents execute. Humans own.** The worker name in `completed-by: gastown/workers/toast` is executor attribution. The CV credits the human owner (`steve@example.com`).
 
-### Polecats Have Persistent Identities
+### Workers Have Persistent Identities
 
-Polecats have **persistent identities but ephemeral sessions**. Like employees who
+Workers have **persistent identities but ephemeral sessions**. Like employees who
 clock in/out: each work session is fresh (new tmux, new worktree), but the identity
 persists across sessions.
 
@@ -213,12 +213,12 @@ persists across sessions.
 - **Session (ephemeral)**: Claude instance, context window
 - **Sandbox (ephemeral)**: Git worktree, branch
 
-Work credits the polecat identity, enabling:
-- Performance tracking per polecat
-- Capability-based routing (send Go work to polecats with Go track records)
-- Model comparison (A/B test different models via different polecats)
+Work credits the worker identity, enabling:
+- Performance tracking per worker
+- Capability-based routing (send Go work to workers with Go track records)
+- Model comparison (A/B test different models via different workers)
 
-See [polecat-lifecycle.md](polecat-lifecycle.md#polecat-identity) for details.
+See [worker-lifecycle.md](worker-lifecycle.md#worker-identity) for details.
 
 ### Skills Are Derived
 
@@ -235,14 +235,14 @@ bd list --owner=steve@example.com
 # - commit patterns → activity types
 ```
 
-### Multi-Town Aggregation
+### Multi-Workspace Aggregation
 
-A human with multiple towns has one CV:
+A human with multiple workspaces has one CV:
 
 ```bash
 # Future: federated CV query
 bd cv steve@example.com
-# Discovers all towns, aggregates work, derives skills
+# Discovers all workspaces, aggregates work, derives skills
 ```
 
 See `~/gt/docs/hop/decisions/008-identity-model.md` for architectural rationale.
@@ -256,7 +256,7 @@ See `~/gt/docs/hop/decisions/008-identity-model.md` for architectural rationale.
 git log --since="90 days ago" -- path/to/sensitive/file.go
 
 # All changes by a specific agent
-bd audit --actor=gastown/polecats/toast --since=2025-01-01
+bd audit --actor=gastown/workers/toast --since=2025-01-01
 ```
 
 ### Performance Tracking
@@ -266,7 +266,7 @@ bd audit --actor=gastown/polecats/toast --since=2025-01-01
 bd stats --group-by=actor
 
 # Average time to completion
-bd stats --actor=gastown/polecats/* --metric=cycle-time
+bd stats --actor=gastown/workers/* --metric=cycle-time
 ```
 
 ### Model Comparison
@@ -275,12 +275,12 @@ When agents use different underlying models, attribution enables A/B comparison:
 
 ```bash
 # Tag agents by model
-# gastown/polecats/claude-1 uses Claude
-# gastown/polecats/gpt-1 uses GPT-4
+# gastown/workers/claude-1 uses Claude
+# gastown/workers/gpt-1 uses GPT-4
 
 # Compare quality signals
-bd stats --actor=gastown/polecats/claude-* --metric=revision-count
-bd stats --actor=gastown/polecats/gpt-* --metric=revision-count
+bd stats --actor=gastown/workers/claude-* --metric=revision-count
+bd stats --actor=gastown/workers/gpt-* --metric=revision-count
 ```
 
 Lower revision counts suggest higher first-pass quality.

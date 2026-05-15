@@ -8,9 +8,9 @@
 
 This survey examines seven major multi-agent orchestration frameworks and compares their role/task models to Gas City's declarative approach. The frameworks span a spectrum from minimal (OpenAI Swarm) to enterprise-grade (Microsoft Agent Framework), each with distinct philosophies on how agents are defined, coordinated, and equipped with tools.
 
-Gas Town's key differentiator is its **process-model architecture** — persistent, named roles (Mayor, Witness, Polecat, etc.) with fixed responsibilities that communicate via hooks and beads, backed by Git and Dolt for crash-surviving state. This is closer to an operating system's process model than to the LLM-conversation-as-control-plane pattern used by most frameworks.
+Gas Town's key differentiator is its **process-model architecture** — persistent, named roles (Coordinator, Watcher, Worker, etc.) with fixed responsibilities that communicate via hooks and beads, backed by Git and Dolt for crash-surviving state. This is closer to an operating system's process model than to the LLM-conversation-as-control-plane pattern used by most frameworks.
 
-Gas City is the planned declarative layer on top of Gas Town — a role format and formula engine that would make Gas Town's patterns portable and user-definable. It doesn't exist yet as a standalone product (this is what w-gc-001 and w-gc-003 aim to build).
+Gas City is the planned declarative layer on top of Gas Town — a role format and template engine that would make Gas Town's patterns portable and user-definable. It doesn't exist yet as a standalone product (this is what w-gc-001 and w-gc-003 aim to build).
 
 ---
 
@@ -24,23 +24,23 @@ Before comparing external frameworks, it's important to understand Gas Town's ar
 
 ### Role Hierarchy (Four Layers)
 
-Gas Town defines operational roles across a layered hierarchy. Roles are implemented as **Go template files** at `internal/templates/roles/*.md.tmpl` and injected into Claude Code sessions via the `gt prime` command. The `GT_ROLE` environment variable determines which role template gets rendered. Role detection also works by examining the current working directory path (e.g., `<rig>/witness/rig/` triggers the Witness role).
+Gas Town defines operational roles across a layered hierarchy. Roles are implemented as **Go template files** at `internal/templates/roles/*.md.tmpl` and injected into Claude Code sessions via the `gt prime` command. The `GT_ROLE` environment variable determines which role template gets rendered. Role detection also works by examining the current working directory path (e.g., `<project>/watcher/project/` triggers the Watcher role).
 
 **Infrastructure Layer:**
 - **Boot**: Handles initial context injection during startup — has its own template (`boot.md.tmpl`)
-- **Deacon**: Central health supervisor at `~/gt/deacon/` — a "daemon beacon" running continuous Patrol cycles. Monitors system health, ensures worker activity, triggers recovery. Notorious early on for bugs (Yegge warned about it "spree-killing all the other workers while on patrol" before v0.4.0 fixes)
-- **Dogs**: Deacon helper agents for infrastructure tasks (ephemeral, NOT for user work)
+- **Supervisor**: Central health supervisor at `~/gt/supervisor/` — a "daemon beacon" running continuous Sweep cycles. Monitors system health, ensures worker activity, triggers recovery. Notorious early on for bugs (Yegge warned about it "spree-killing all the other workers while on sweep" before v0.4.0 fixes)
+- **Helpers**: Supervisor helper agents for infrastructure tasks (ephemeral, NOT for user work)
 
 **Global Coordination Layer:**
-- **Mayor**: Town-level coordinator at `~/gt/mayor/` — the human's primary AI concierge. Initiates Convoys, distributes work, coordinates across all Rigs. The Mayor CAN and SHOULD edit code when it is the fastest path. "Gas Town is a steam engine and the Mayor is the main drive shaft."
+- **Coordinator**: Workspace-level coordinator at `~/gt/coordinator/` — the human's primary AI concierge. Initiates Batches, distributes work, coordinates across all Projects. The Coordinator CAN and SHOULD edit code when it is the fastest path. "Gas Town is a steam engine and the Coordinator is the main drive shaft."
 
-**Per-Rig Management Layer:**
-- **Witness**: Per-rig patrol agent — oversees Polecats and Refinery, monitors progress, detects stuck agents, triggers recovery
-- **Refinery**: Per-rig merge queue processor — handles quality control, merge conflict resolution, branch cleanup
+**Per-Project Management Layer:**
+- **Watcher**: Per-project sweep agent — oversees Workers and Merger, monitors progress, detects stuck agents, triggers recovery
+- **Merger**: Per-project merge queue processor — handles quality control, merge conflict resolution, branch cleanup
 
 **Worker Layer:**
-- **Polecats**: Ephemeral workers spawning for single tasks, then terminated. Each gets its own **git worktree** (lightweight, sharing the bare repo) for complete isolation.
-- **Crew**: Persistent helper agents for extended work — long-lived, user-managed, with their own full **clones** (not worktrees). Ideal for ongoing work relationships.
+- **Workers**: Ephemeral workers spawning for single tasks, then terminated. Each gets its own **git worktree** (lightweight, sharing the bare repo) for complete isolation.
+- **Team**: Persistent helper agents for extended work — long-lived, user-managed, with their own full **clones** (not worktrees). Ideal for ongoing work relationships.
 
 ### Agent Identity (Three Persistent Elements)
 
@@ -49,19 +49,19 @@ Each agent has:
 2. **Agent Bead**: Persistent identity that survives session restarts — forms the foundation of the CV/reputation ledger
 3. **Hook**: Bead-backed queue where work attaches
 
-This separation of identity from session is a key differentiator — sessions are ephemeral, but the agent's identity and work state persist in Dolt. Every completion is recorded, every handoff logged, every closed bead becomes part of a permanent capability ledger.
+This separation of identity from session is a key differentiator — sessions are ephemeral, but the agent's identity and work state persist in Dolt. Every completion is recorded, every transfer logged, every closed bead becomes part of a permanent capability ledger.
 
 ### How Priming Works
 
 When a session starts, `gt prime` executes a multi-step context injection:
-1. Checks for slung work on the agent's hook
+1. Checks for dispatched work on the agent's hook
 2. Detects autonomous mode and adjusts behavior
-3. Outputs molecule context if working on a molecule step
+3. Outputs workflow context if working on a workflow step
 4. Outputs previous session checkpoint for crash recovery
 5. Runs `bd prime` to output beads workflow context
 6. Runs `gt mail check --inject` to inject pending mail
 
-### GUPP: Gas Town Universal Propulsion Principle
+### Auto-Execute Rule: Gas Town Universal Propulsion Principle
 
 The scheduling axiom: **"If there is work on your hook, YOU MUST RUN IT."**
 
@@ -75,28 +75,28 @@ This ensures:
 
 Every worker has a dedicated **hook** — a pinned bead where work is attached. The flow:
 
-1. Work is assigned via `gt sling <bead-id> <rig>`
-2. The work (a molecule) lands on the target agent's hook
-3. GUPP activates: the agent detects work and executes immediately
-4. On completion, the hook is cleared and the next molecule jumps to front
+1. Work is assigned via `gt dispatch <bead-id> <project>`
+2. The work (a workflow) lands on the target agent's hook
+3. Auto-Execute Rule activates: the agent detects work and executes immediately
+4. On completion, the hook is cleared and the next workflow jumps to front
 
 Communication primitives around hooks:
 - **Mail**: Asynchronous persisted messaging for inter-agent coordination
-- **Nudge**: Direct session injection via tmux (`gt nudge`)
-- **Peek**: Status check without interruption (`gt peek`)
+- **Message**: Direct session injection via tmux (`gt message`)
+- **Peek**: Status check without interruption (`gt inspect`)
 
-### The Molecule/Formula Stack (Workflow Primitives)
+### The Workflow/Template Stack (Workflow Primitives)
 
 Layered workflow abstraction from template to execution:
 
 | Level | Name | CLI Command | Description |
 |---|---|---|---|
-| Source | **Formula** | — | TOML source files at `internal/formula/formulas/` — defines loops, gates, composition |
-| Compiled | **Protomolecule** | `bd cook` | Compiled, git-frozen workflow template ready for deployment |
-| Active | **Molecule (Mol)** | `bd mol pour` | Running workflow instance tracked in beads, crash-surviving |
-| Ephemeral | **Wisp** | — | Lightweight workflow existing only in memory during patrol cycles |
+| Source | **Template** | — | TOML source files at `internal/template/templates/` — defines loops, gates, composition |
+| Compiled | **WorkflowTemplate** | `bd cook` | Compiled, git-frozen workflow template ready for deployment |
+| Active | **Workflow (Mol)** | `bd workflow pour` | Running workflow instance tracked in beads, crash-surviving |
+| Ephemeral | **Ephemeral** | — | Lightweight workflow existing only in memory during sweep cycles |
 
-Example: `internal/formula/formulas/release.formula.toml` defines a "Standard release process" with steps: bump-version → run-tests → build → create-tag → publish.
+Example: `internal/template/templates/release.template.toml` defines a "Standard release process" with steps: bump-version → run-tests → build → create-tag → publish.
 
 ### Gates (Async Coordination)
 
@@ -117,41 +117,41 @@ Bead IDs use the format `prefix-XXXXX` (e.g., `gt-abc12`, `hq-x7k2m`), with hash
 - **Issue beads**: Work items with IDs, descriptions, status, assignees, dependencies, and blockers
 - **Agent beads**: Identity beads tracking agent state and hooks — foundation of the reputation ledger
 - **Hook beads**: Special pinned beads serving as an agent's work queue
-- **Convoy beads**: Collections wrapping work items into trackable delivery units
+- **Batch beads**: Collections wrapping work items into trackable delivery units
 
 **Higher-level aggregations:**
 - **Epics**: Hierarchical collections organizing beads into trees (e.g., `bd-a3f8e9.1`, `bd-a3f8e9.2`)
-- **Convoys**: Delivery units tracking composed goals like releases
-- **Patrols**: Recurring workflows for queue cleanup and health checks
+- **Batches**: Delivery units tracking composed goals like releases
+- **Sweeps**: Recurring workflows for queue cleanup and health checks
 
 ### Escalation Hierarchy
 
-- **Tier 1** (Deacon): Infrastructure failures and daemon issues
-- **Tier 2** (Mayor): Cross-rig coordination and resource conflicts
+- **Tier 1** (Supervisor): Infrastructure failures and daemon issues
+- **Tier 2** (Coordinator): Cross-project coordination and resource conflicts
 - **Tier 3** (Overseer/Human): Design decisions and human judgment
 
 ### Workspace Structure
 
 ```
 ~/gt/
-├── deacon/          # Infrastructure agent
-├── mayor/           # Town coordinator
-├── <rig-name>/      # Per-project directory
-│   ├── witness/     # Polecat supervisor
-│   ├── refinery/    # Merge processor
-│   ├── crew/        # Persistent helpers
-│   ├── polecats/    # Ephemeral workers
-│   └── rig/         # Git repository
+├── supervisor/          # Infrastructure agent
+├── coordinator/           # Workspace coordinator
+├── <project-name>/      # Per-project directory
+│   ├── watcher/     # Worker supervisor
+│   ├── merger/    # Merge processor
+│   ├── team/        # Persistent helpers
+│   ├── workers/    # Ephemeral workers
+│   └── project/         # Git repository
 └── routes.jsonl     # Prefix routing config
 ```
 
 ### Current State (v0.6.0, March 2026)
 
-Gas Town is early-stage (released Jan 2026) but rapidly evolving — 1500+ GitHub issues, 450+ contributors. v0.6.0 added convoy ownership, checkpoint-based crash recovery, an agent factory with data-driven preset registry, Gemini and Copilot CLI integrations, non-destructive nudge delivery, and submodule support. Community ecosystem is growing: a Kubernetes operator (gastown-operator), a web GUI (gastown-gui), and a Rust port of beads.
+Gas Town is early-stage (released Jan 2026) but rapidly evolving — 1500+ GitHub issues, 450+ contributors. v0.6.0 added batch ownership, checkpoint-based crash recovery, an agent factory with data-driven preset registry, Gemini and Copilot CLI integrations, non-destructive message delivery, and submodule support. Community ecosystem is growing: a Kubernetes operator (gastown-operator), a web GUI (gastown-gui), and a Rust port of beads.
 
-The **Wasteland** federation layer just landed (PR #1552, March 2026) — linking thousands of Gas Towns into a trust-scored labor marketplace via Dolt and DoltHub. This is the system we're using right now to track this very task.
+The **Archive** federation layer just landed (PR #1552, March 2026) — linking thousands of Gas Towns into a trust-scored labor marketplace via Dolt and DoltHub. This is the system we're using right now to track this very task.
 
-**Gas City** — the declarative role format and formula engine layer — is the planned next step. Currently, roles are defined as Go templates; Gas City would make them portable, user-definable, and composable via a structured schema. This survey directly informs that design.
+**Gas City** — the declarative role format and template engine layer — is the planned next step. Currently, roles are defined as Go templates; Gas City would make them portable, user-definable, and composable via a structured schema. This survey directly informs that design.
 
 ---
 
@@ -218,11 +218,11 @@ result = await team.run(task="Review and fix auth.py")
 
 **Coordination:**
 - Process types: **Sequential** (ordered pipeline), **Hierarchical** (manager agent delegates).
-- **Flows** (new in v1.x): Event-driven architecture using `@start()` and `@listen()` decorators for granular control. Complements the autonomous Crews pattern.
+- **Flows** (new in v1.x): Event-driven architecture using `@start()` and `@listen()` decorators for granular control. Complements the autonomous Teams pattern.
 
 **Minimal Example:**
 ```python
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Team, Process
 
 researcher = Agent(
     role="Senior Research Analyst",
@@ -235,8 +235,8 @@ task = Task(
     expected_output="A 3-paragraph summary with key comparisons",
     agent=researcher
 )
-crew = Crew(agents=[researcher], tasks=[task], process=Process.sequential)
-result = crew.kickoff()
+team = Team(agents=[researcher], tasks=[task], process=Process.sequential)
+result = team.kickoff()
 ```
 
 **Flows Example:**
@@ -318,22 +318,22 @@ app = graph.compile()
 **Repo:** [github.com/openai/openai-agents-python](https://openai.github.io/openai-agents-python/)
 
 **Role Model:**
-- Agents defined with `name`, `instructions` (system prompt), and `tools`/`handoffs`.
+- Agents defined with `name`, `instructions` (system prompt), and `tools`/`transfers`.
 - Originally Swarm (~300 LOC, educational) → evolved into the Agents SDK with production features.
 
 **Task Model:**
 - No explicit task object. You call `Runner.run(agent, "your request")` and the agent handles it.
-- Handoffs to other agents are represented as tools to the LLM (e.g., `transfer_to_refund_agent`).
-- The Runner handles executing agents, handoffs, and tool calls.
+- Transfers to other agents are represented as tools to the LLM (e.g., `transfer_to_refund_agent`).
+- The Runner handles executing agents, transfers, and tool calls.
 
 **Coordination:**
-- **Handoffs** are the core primitive — listed in the agent's `handoffs` param.
+- **Transfers** are the core primitive — listed in the agent's `transfers` param.
 - No central orchestrator, planner, or DAG. Just agents handing off to each other.
 - Agents SDK adds: guardrails, human-in-the-loop, tracing with dashboard viewer, session management.
 
 **Minimal Example:**
 ```python
-from agents import Agent, handoff, Runner
+from agents import Agent, transfer, Runner
 
 billing_agent = Agent(name="Billing agent",
     instructions="You handle billing inquiries.")
@@ -341,7 +341,7 @@ refund_agent = Agent(name="Refund agent",
     instructions="You process refund requests.")
 triage_agent = Agent(name="Triage agent",
     instructions="Route customer requests to the right agent.",
-    handoffs=[billing_agent, handoff(refund_agent)])
+    transfers=[billing_agent, transfer(refund_agent)])
 
 result = await Runner.run(triage_agent, "I want a refund")
 print(f"Handled by: {result.last_agent.name}")  # "Refund agent"
@@ -349,9 +349,9 @@ print(f"Handled by: {result.last_agent.name}")  # "Refund agent"
 
 **Tools:** Plain Python functions attached to agents. Auto-converted to JSON schemas.
 
-**Key Strength:** Extreme simplicity and transparency. Minimal abstraction. The Agents SDK adds production-grade tracing and guardrails while keeping the handoff model.
+**Key Strength:** Extreme simplicity and transparency. Minimal abstraction. The Agents SDK adds production-grade tracing and guardrails while keeping the transfer model.
 
-**Key Limitation:** No complex routing, branching, or cycles beyond what handoffs express. Best for linear or tree-shaped workflows.
+**Key Limitation:** No complex routing, branching, or cycles beyond what transfers express. Best for linear or tree-shaped workflows.
 
 ### 5. Claude Agent SDK (Anthropic)
 
@@ -466,16 +466,16 @@ class GitPlugin:
 
 | Dimension | Gas Town | CrewAI | LangGraph | AutoGen/MAF | OpenAI Agents SDK | Claude Agent SDK | Google ADK |
 |---|---|---|---|---|---|---|---|
-| **Role definition** | Named operational roles (Mayor, Witness, Polecat) with Role Beads + Agent Beads | role/goal/backstory triad | Graph nodes (functions) | Agent classes + system prompts | instructions + handoffs | instructions + tools (MCP) | instructions + tools + sub_agents |
-| **Task definition** | Beads (atomic work items with ID, status, assignee) + Molecules (multi-step workflows) | `Task` class with description + expected_output | Graph topology IS the task (invoke with initial state) | Implicit (message to team) | Implicit (message to Runner) | Implicit (prompt to agent loop) | Implicit (message to root agent) |
-| **Role persistence** | Persistent (identity survives restarts via Agent Bead + GUPP) | Per-kickoff | Checkpoint-based | Per-session | Per-session | Per-session | Session-managed |
-| **Coordination** | Hook + GUPP (pull-based) + molecules (workflow graphs) | Sequential / Hierarchical / Flows | Explicit graph edges | GroupChat + strategies / Graph workflows | Agent handoffs | Agent loop + delegation | Hierarchical + Sequential/Loop/Parallel |
-| **Communication** | Hooks (bead-backed queues) + mail (async) + nudge/peek (direct) | Task context chaining | Typed state + reducers | Async messages / GroupChat | Conversation + handoff returns | Conversation turns | Message passing |
-| **Workflow definition** | Formulas (TOML) → Protomolecules → Molecules + Gates | Tasks with expected_output | Graph edges (code) | GroupChat config | Routines (instructions) | Agent loop | SequentialAgent / LoopAgent |
+| **Role definition** | Named operational roles (Coordinator, Watcher, Worker) with Role Beads + Agent Beads | role/goal/backstory triad | Graph nodes (functions) | Agent classes + system prompts | instructions + transfers | instructions + tools (MCP) | instructions + tools + sub_agents |
+| **Task definition** | Beads (atomic work items with ID, status, assignee) + Workflows (multi-step workflows) | `Task` class with description + expected_output | Graph topology IS the task (invoke with initial state) | Implicit (message to team) | Implicit (message to Runner) | Implicit (prompt to agent loop) | Implicit (message to root agent) |
+| **Role persistence** | Persistent (identity survives restarts via Agent Bead + Auto-Execute Rule) | Per-kickoff | Checkpoint-based | Per-session | Per-session | Per-session | Session-managed |
+| **Coordination** | Hook + Auto-Execute Rule (pull-based) + workflows (workflow graphs) | Sequential / Hierarchical / Flows | Explicit graph edges | GroupChat + strategies / Graph workflows | Agent transfers | Agent loop + delegation | Hierarchical + Sequential/Loop/Parallel |
+| **Communication** | Hooks (bead-backed queues) + mail (async) + message/peek (direct) | Task context chaining | Typed state + reducers | Async messages / GroupChat | Conversation + transfer returns | Conversation turns | Message passing |
+| **Workflow definition** | Templates (TOML) → ProtoWorkflows → Workflows + Gates | Tasks with expected_output | Graph edges (code) | GroupChat config | Routines (instructions) | Agent loop | SequentialAgent / LoopAgent |
 | **Tool model** | Claude Code native tools per role | Agent/task-level tool lists | bind_tools() + ToolNode | FunctionTool on agents | Python functions | MCP servers (in-process) | Functions + partner integrations |
-| **Parallelism** | 20-30 parallel polecats (OS processes, Git worktrees) | async_execution flag, kickoff_for_each | Parallel branches in graph | Async messaging, distributed runtime | Single-threaded handoffs | Single agent loop | ParallelAgent pattern |
-| **State management** | Beads (Dolt database, cell-level merge) + bead state machine (open→working→done) | Crew memory (short/long/entity) | Checkpointed typed state | Message history | Conversation context | Conversation context | Session state + persistence |
-| **Human-in-the-loop** | Tier 3 escalation + `human` gate + Mayor oversight | human_input flag on tasks | interrupt_before/after on nodes | UserProxyAgent | Agents SDK guardrails | Built-in safety patterns | Built-in support |
+| **Parallelism** | 20-30 parallel workers (OS processes, Git worktrees) | async_execution flag, kickoff_for_each | Parallel branches in graph | Async messaging, distributed runtime | Single-threaded transfers | Single agent loop | ParallelAgent pattern |
+| **State management** | Beads (Dolt database, cell-level merge) + bead state machine (open→working→done) | Team memory (short/long/entity) | Checkpointed typed state | Message history | Conversation context | Conversation context | Session state + persistence |
+| **Human-in-the-loop** | Tier 3 escalation + `human` gate + Coordinator oversight | human_input flag on tasks | interrupt_before/after on nodes | UserProxyAgent | Agents SDK guardrails | Built-in safety patterns | Built-in support |
 | **Maturity** | Early (Jan 2026, 450+ contributors) | Stable (v1.10.1) | Stable (v1.0) | Transitioning (→ MAF RC) | Production-ready | Active development | Growing (Feb 2026 update) |
 
 ---
@@ -485,17 +485,17 @@ class GitPlugin:
 ### 1. No Declarative Role Schema (Yet)
 Gas Town has named operational roles with Role Beads containing priming instructions, but roles are currently defined as **Go template files** (`internal/templates/roles/*.md.tmpl`) compiled into the `gt` binary. This means adding or modifying roles requires changing Go source code and recompiling. CrewAI's role/goal/backstory triad and Google ADK's instructions/tools/sub_agents format are both user-facing, documented, and easy to extend at runtime. **This is exactly what w-gc-001 aims to solve** — extracting role definitions into a structured, parseable format (YAML/TOML) that users can customize without touching Go code.
 
-### 2. Formulas Are TOML-Only, Not Yet a Full DSL
-Gas Town's Formula → Protomolecule → Molecule pipeline is a powerful workflow abstraction, but formulas are currently TOML files with an ad-hoc structure. Compare to LangGraph's typed Python graph definitions or Microsoft Agent Framework's graph-based workflow API — both offer IDE support, type checking, and programmatic composition. The formula engine (w-gc-003) could benefit from a more structured DSL or schema.
+### 2. Templates Are TOML-Only, Not Yet a Full DSL
+Gas Town's Template → WorkflowTemplate → Workflow pipeline is a powerful workflow abstraction, but templates are currently TOML files with an ad-hoc structure. Compare to LangGraph's typed Python graph definitions or Microsoft Agent Framework's graph-based workflow API — both offer IDE support, type checking, and programmatic composition. The template engine (w-gc-003) could benefit from a more structured DSL or schema.
 
 ### 3. No Standardized Tool Schema
 Frameworks like Claude Agent SDK (MCP), Microsoft Agent Framework (plugins/kernel functions), and Google ADK (partner integrations) have well-defined tool interfaces. Gas Town agents use Claude Code's native tools, but there's no Gas Town-specific tool abstraction, registry, or per-role tool scoping.
 
 ### 4. Observability & Tracing
-OpenAI Agents SDK and Microsoft Agent Framework both include built-in tracing (OpenTelemetry, dashboard viewers). LangGraph has LangSmith integration. Gas Town has deacon/witness patrols, peek/nudge, and bead state transitions — these are functional but organic. There's no structured trace format, no query-able span data, no timeline visualization.
+OpenAI Agents SDK and Microsoft Agent Framework both include built-in tracing (OpenTelemetry, dashboard viewers). LangGraph has LangSmith integration. Gas Town has supervisor/watcher sweeps, peek/message, and bead state transitions — these are functional but organic. There's no structured trace format, no query-able span data, no timeline visualization.
 
 ### 5. Dynamic Routing Is Gate-Based, Not Graph-Based
-Gas Town has gates (gh:run, gh:pr, timer, human, mail) for async coordination, which is good. But compare to LangGraph's conditional edges where a function inspects state and routes to different nodes — Gas Town's molecules don't currently support arbitrary conditional branching based on agent output. The GUPP principle ("execute immediately") optimizes for throughput over routing flexibility.
+Gas Town has gates (gh:run, gh:pr, timer, human, mail) for async coordination, which is good. But compare to LangGraph's conditional edges where a function inspects state and routes to different nodes — Gas Town's workflows don't currently support arbitrary conditional branching based on agent output. The Auto-Execute Rule principle ("execute immediately") optimizes for throughput over routing flexibility.
 
 ### 6. Evolving Cross-Framework Portability
 Gas Town was originally Claude Code-only, but v0.6.0 added Gemini and Copilot CLI integrations. However, the role template system (`gt prime` injecting Go templates via CLAUDE.md conventions) is still deeply tied to Claude Code's priming model. Every other framework surveyed is model-agnostic in its core abstractions. If Gas City aims to be a portable protocol, the role format should abstract over the LLM runtime, with adapter layers for Claude Code, Gemini, etc.
@@ -507,12 +507,12 @@ Gas Town was originally Claude Code-only, but v0.6.0 added Gemini and Copilot CL
 ### 1. CrewAI's Role/Goal/Backstory Triad → Gas City Role Format
 The triad is simple, intuitive, and proven at scale (v1.10, 30k+ stars). Gas Town already has Role Beads with priming instructions — the next step is to formalize this into a schema. A Gas City role definition could combine CrewAI's persona pattern with Gas Town's operational specifics:
 ```yaml
-role: Witness
-goal: Monitor polecat health and detect stuck workers
-backstory: You oversee all active polecats in this rig...
-layer: rig-management          # Gas Town hierarchy layer
-tools: [patrol, health-check, escalate]
-hooks: [polecat-completion, merge-ready]
+role: Watcher
+goal: Monitor worker health and detect stuck workers
+backstory: You oversee all active workers in this project...
+layer: project-management          # Gas Town hierarchy layer
+tools: [sweep, health-check, escalate]
+hooks: [worker-completion, merge-ready]
 gates: [human, timer]
 constraints: [read-only-unless-escalating]
 escalation_tier: 2
@@ -520,54 +520,54 @@ escalation_tier: 2
 This maps Gas Town's existing patterns into a portable, user-definable format.
 
 ### 2. LangGraph's Checkpoint + Time-Travel → Bead Versioning
-Gas Town already has Git-backed beads, which is philosophically similar to LangGraph's checkpointing. LangGraph v1.0 makes **time-travel debugging** a first-class feature (replay from any checkpoint, inspect state at any node). Gas Town could expose this explicitly: "show me the state of bead mp-001 at commit X" or "replay this polecat's molecule from the last gate." The Git history is already there — it just needs a query layer.
+Gas Town already has Git-backed beads, which is philosophically similar to LangGraph's checkpointing. LangGraph v1.0 makes **time-travel debugging** a first-class feature (replay from any checkpoint, inspect state at any node). Gas Town could expose this explicitly: "show me the state of bead mp-001 at commit X" or "replay this worker's workflow from the last gate." The Git history is already there — it just needs a query layer.
 
-### 3. OpenAI Agents SDK's Typed Handoff → Formalizing SLING → HOOK → GUPP
-Gas Town's sling/hook/GUPP flow is functionally similar to the Agents SDK's handoff pattern, but implemented via file-based hooks rather than in-process returns. The Agents SDK adds **tracing and span data** to handoffs, making the flow observable. Gas Town could add structured handoff events: who slung what to whom, when GUPP activated, what gate was hit.
+### 3. OpenAI Agents SDK's Typed Transfer → Formalizing DISPATCH → ASSIGNMENT → Auto-Execute Rule
+Gas Town's dispatch/hook/Auto-Execute Rule flow is functionally similar to the Agents SDK's transfer pattern, but implemented via file-based hooks rather than in-process returns. The Agents SDK adds **tracing and span data** to transfers, making the flow observable. Gas Town could add structured transfer events: who dispatched what to whom, when Auto-Execute Rule activated, what gate was hit.
 
-### 4. Google ADK's Agent Hierarchy → Gas City's Town/Rig/Worker Model
-Google ADK's tree-like agent hierarchy (agents with `sub_agents`) closely mirrors Gas Town's Town → Rig → Worker structure. ADK's built-in patterns are directly analogous:
-- `SequentialAgent` → Refinery merge queue (sequential processing)
-- `LoopAgent` → Deacon patrol cycles (recurring workflows)
-- `ParallelAgent` → Polecat swarm (parallel execution)
+### 4. Google ADK's Agent Hierarchy → Gas City's Workspace/Project/Worker Model
+Google ADK's tree-like agent hierarchy (agents with `sub_agents`) closely mirrors Gas Town's Workspace → Project → Worker structure. ADK's built-in patterns are directly analogous:
+- `SequentialAgent` → Merger merge queue (sequential processing)
+- `LoopAgent` → Supervisor sweep cycles (recurring workflows)
+- `ParallelAgent` → Worker swarm (parallel execution)
 
-These could inform how Gas City's formula engine (w-gc-003) composes agent behaviors declaratively.
+These could inform how Gas City's template engine (w-gc-003) composes agent behaviors declaratively.
 
 ### 5. Microsoft Agent Framework's Plugin Model → Gas City Tool Scoping
 The Kernel + Plugin pattern (functions grouped into named plugins, selectively available to agents) could inform role-based tool scoping. Gas Town currently gives all agents Claude Code's full tool set. With plugins:
 ```yaml
-role: Refinery
+role: Merger
 plugins: [git-merge, conflict-resolution, test-runner]
 # Does NOT get: file-create, web-search, etc.
 ```
 This maps to the principle of least privilege — agents only get the tools their role requires.
 
 ### 6. CrewAI Flows → Typed Hook Events
-CrewAI's new Flows feature (event-driven, granular control) is philosophically aligned with Gas Town's hook + mail system. The key addition is **event typing** — Flows define explicit event types and handlers with schemas. Gas Town's hooks currently accept molecules (workflow instances) but the hook-trigger mechanism could be formalized:
+CrewAI's new Flows feature (event-driven, granular control) is philosophically aligned with Gas Town's hook + mail system. The key addition is **event typing** — Flows define explicit event types and handlers with schemas. Gas Town's hooks currently accept workflows (workflow instances) but the hook-trigger mechanism could be formalized:
 ```toml
 [hook.events]
-polecat_complete = { schema = "bead_id, branch, test_result" }
+worker_complete = { schema = "bead_id, branch, test_result" }
 merge_conflict = { schema = "bead_id, conflicting_files" }
 escalation = { schema = "tier, source_agent, reason" }
 ```
 
-### 7. LangGraph's Conditional Edges → Formula Branching
-LangGraph's conditional routing (a function inspects state and returns the next node) could enhance Gas Town's molecule system. Currently, molecules are linear with gates for async waits. Adding conditional branching:
+### 7. LangGraph's Conditional Edges → Template Branching
+LangGraph's conditional routing (a function inspects state and returns the next node) could enhance Gas Town's workflow system. Currently, workflows are linear with gates for async waits. Adding conditional branching:
 ```toml
-[molecule.steps]
-run_tests = { next_on_pass = "merge", next_on_fail = "notify_witness" }
+[workflow.steps]
+run_tests = { next_on_pass = "merge", next_on_fail = "notify_watcher" }
 ```
-This would make formulas more expressive without abandoning GUPP's pull-based execution model.
+This would make templates more expressive without abandoning Auto-Execute Rule's pull-based execution model.
 
 ### 8. Gas Town's Unique Patterns (What Others Should Borrow)
 It's worth noting what Gas Town does that no other framework matches:
-- **GUPP** — pull-based, crash-surviving execution. No other framework has a comparable "work persists and auto-resumes" primitive.
-- **Git-worktree isolation** — each polecat in its own worktree. Most frameworks share state; Gas Town gives each worker its own filesystem.
+- **Auto-Execute Rule** — pull-based, crash-surviving execution. No other framework has a comparable "work persists and auto-resumes" primitive.
+- **Git-worktree isolation** — each worker in its own worktree. Most frameworks share state; Gas Town gives each worker its own filesystem.
 - **Separation of identity from session** — Agent Beads survive session crashes. Other frameworks lose agent state when sessions end. Every completion becomes part of a permanent capability ledger.
 - **Dolt cell-level merge** — concurrent updates from multiple agents are resolved at the column level, not the line level. This is why 20-30 parallel agents can write to the same beads database without constant conflicts. No other framework has this.
-- **Formula → Protomolecule → Molecule pipeline** — compiled, versioned workflow definitions (`bd cook` → `bd mol pour`). Closest analog is LangGraph's compiled graphs, but Gas Town's are Git-frozen and crash-surviving.
-- **Escalation tiers** — structured escalation from Deacon (Tier 1) → Mayor (Tier 2) → Human (Tier 3) is more nuanced than most frameworks' binary human-in-the-loop.
-- **The Wasteland** — no other agent framework has a concept of federating multiple users' agent workspaces into a trust-scored labor marketplace.
+- **Template → WorkflowTemplate → Workflow pipeline** — compiled, versioned workflow definitions (`bd cook` → `bd workflow pour`). Closest analog is LangGraph's compiled graphs, but Gas Town's are Git-frozen and crash-surviving.
+- **Escalation tiers** — structured escalation from Supervisor (Tier 1) → Coordinator (Tier 2) → Human (Tier 3) is more nuanced than most frameworks' binary human-in-the-loop.
+- **The Archive** — no other agent framework has a concept of federating multiple users' agent workspaces into a trust-scored labor marketplace.
 
 ---
 
@@ -575,15 +575,15 @@ It's worth noting what Gas Town does that no other framework matches:
 
 1. **Design the Gas City role format as YAML with Gas Town operational fields** (feeds directly into w-gc-001). Borrow CrewAI's role/goal/backstory for persona, but add Gas Town-specific fields: layer, hooks, gates, escalation_tier, tools/plugins. The Role Bead should be generated from this YAML.
 
-2. **Formalize hook events with schemas** — Gas Town's hooks are powerful but untyped. Add event schemas so that slung work, completions, escalations, and gate triggers all have defined structures. This makes the system debuggable and composable.
+2. **Formalize hook events with schemas** — Gas Town's hooks are powerful but untyped. Add event schemas so that dispatched work, completions, escalations, and gate triggers all have defined structures. This makes the system debuggable and composable.
 
-3. **Add structured observability** — a structured log of handoff events (who slung what to whom, GUPP activation, gate hits, escalation triggers) would bring Gas Town closer to what OpenAI Agents SDK and LangGraph Platform offer. Doesn't need to be OpenTelemetry — even a queryable JSONL event log per rig would be valuable.
+3. **Add structured observability** — a structured log of transfer events (who dispatched what to whom, Auto-Execute Rule activation, gate hits, escalation triggers) would bring Gas Town closer to what OpenAI Agents SDK and LangGraph Platform offer. Doesn't need to be OpenTelemetry — even a queryable JSONL event log per project would be valuable.
 
 4. **Consider MCP for the tool layer** — Claude Agent SDK's MCP-based tools are standards-aligned and would let Gas City define role-specific tool sets that work across LLM backends. This addresses the Claude Code coupling gap.
 
-5. **Add conditional branching to formulas** — borrow LangGraph's conditional edges pattern for the formula engine (w-gc-003). Molecules should support "if test passes, merge; if test fails, notify witness" without requiring a new molecule.
+5. **Add conditional branching to templates** — borrow LangGraph's conditional edges pattern for the template engine (w-gc-003). Workflows should support "if test passes, merge; if test fails, notify watcher" without requiring a new workflow.
 
-6. **Don't converge on conversation-as-control-plane** — Gas Town's process-model approach (persistent named roles, parallel OS processes, Git-worktree isolation, hook-based communication, GUPP) is genuinely differentiated. Every other framework routes via LLM conversation or in-process function calls. Gas Town routes via Git state and file-based hooks. This is a feature, not a limitation — it's what enables 20-30 parallel agents and crash recovery. The goal should be to formalize these patterns, not to replace them with what everyone else is doing.
+6. **Don't converge on conversation-as-control-plane** — Gas Town's process-model approach (persistent named roles, parallel OS processes, Git-worktree isolation, hook-based communication, Auto-Execute Rule) is genuinely differentiated. Every other framework routes via LLM conversation or in-process function calls. Gas Town routes via Git state and file-based hooks. This is a feature, not a limitation — it's what enables 20-30 parallel agents and crash recovery. The goal should be to formalize these patterns, not to replace them with what everyone else is doing.
 
 ---
 
@@ -591,15 +591,15 @@ It's worth noting what Gas Town does that no other framework matches:
 
 This survey reveals a fundamental architectural split in the multi-agent space. Every external framework surveyed — AutoGen, CrewAI, LangGraph, OpenAI Agents SDK, Claude Agent SDK, Google ADK, Microsoft Agent Framework — uses **conversation as the control plane**. Agents coordinate by sending messages to each other through LLM inference. Whether it's CrewAI's task chaining, LangGraph's state-passing graph, or AutoGen's GroupChat, the LLM is always in the loop for routing and coordination decisions.
 
-Gas Town is the only framework that uses a **process model**. Agents coordinate via external state in Dolt, with hooks, beads, and GUPP providing the scheduling and persistence primitives. The LLM does the *work* (writing code, reviewing, merging), but it does not do the *routing*. Routing is deterministic: sling puts work on a hook, GUPP activates, the agent executes. This is why Gas Town scales to 20-30 parallel agents while conversation-based frameworks struggle beyond 3-5 — every additional agent in a conversation multiplies token cost and routing complexity, while every additional polecat in Gas Town is just another independent process with its own worktree.
+Gas Town is the only framework that uses a **process model**. Agents coordinate via external state in Dolt, with hooks, beads, and Auto-Execute Rule providing the scheduling and persistence primitives. The LLM does the *work* (writing code, reviewing, merging), but it does not do the *routing*. Routing is deterministic: dispatch puts work on a hook, Auto-Execute Rule activates, the agent executes. This is why Gas Town scales to 20-30 parallel agents while conversation-based frameworks struggle beyond 3-5 — every additional agent in a conversation multiplies token cost and routing complexity, while every additional worker in Gas Town is just another independent process with its own worktree.
 
-**The strategic implication for Gas City is clear: don't converge.** Gas City's declarative role format should formalize Gas Town's process-model patterns — operational roles with hooks, gates, escalation tiers, and GUPP semantics — not adopt the persona/graph/conversation paradigms from other frameworks. What Gas City should borrow is the *ergonomics* (CrewAI's intuitive role definition, LangGraph's typed state, Microsoft's plugin model), not the *architecture*.
+**The strategic implication for Gas City is clear: don't converge.** Gas City's declarative role format should formalize Gas Town's process-model patterns — operational roles with hooks, gates, escalation tiers, and Auto-Execute Rule semantics — not adopt the persona/graph/conversation paradigms from other frameworks. What Gas City should borrow is the *ergonomics* (CrewAI's intuitive role definition, LangGraph's typed state, Microsoft's plugin model), not the *architecture*.
 
 Specifically:
 - **From CrewAI**: the role/goal/backstory schema pattern — simple, intuitive, proven — as the user-facing layer of a Gas City role definition. But extend it with Gas Town operational fields (layer, hooks, gates, escalation_tier).
-- **From LangGraph**: conditional branching for formulas, and the idea of making time-travel debugging a first-class feature over the existing Git/Dolt history.
+- **From LangGraph**: conditional branching for templates, and the idea of making time-travel debugging a first-class feature over the existing Git/Dolt history.
 - **From Microsoft Agent Framework**: the plugin model for role-scoped tool assignment, enabling least-privilege tool access per role.
-- **From the field generally**: structured observability. Gas Town's organic monitoring (deacon patrols, witness nudges) works, but a queryable event log would make the system debuggable at scale.
+- **From the field generally**: structured observability. Gas Town's organic monitoring (supervisor sweeps, watcher messages) works, but a queryable event log would make the system debuggable at scale.
 
 The fact that Gas Town's architecture is unique is both its biggest risk and its biggest advantage. The risk is ecosystem isolation — every other framework's tooling, tutorials, and community knowledge assumes conversation-as-control-plane. The advantage is that Gas Town solves a problem no one else is solving: reliable coordination of many parallel, crash-prone, context-limited AI sessions working on real code at production scale.
 
@@ -630,16 +630,16 @@ The fact that Gas Town's architecture is unique is both its biggest risk and its
 - [Beads GitHub](https://github.com/steveyegge/beads) — the `bd` binary, Dolt-backed work tracking
 - [Gas Town docs](https://docs.gastownhall.ai/)
 - [Gas Town glossary](https://github.com/steveyegge/gastown/blob/main/docs/glossary.md)
-- [Welcome to Gas Town (Yegge)](https://steve-yegge.medium.com/welcome-to-gas-town-4f25ee16dd04)
-- [Welcome to the Wasteland (Yegge, March 2026)](https://steve-yegge.medium.com/welcome-to-the-wasteland-a-thousand-gas-towns-a5eb9bc8dc1f)
-- [Gas Town Emergency User Manual (Yegge)](https://steve-yegge.medium.com/gas-town-emergency-user-manual-cf0e4556d74b)
-- [A Day in Gas Town (DoltHub)](https://www.dolthub.com/blog/2026-01-15-a-day-in-gas-town/)
+- [Welcome to Gas Town (Yegge)](https://steve-yegge.medium.com/welcome-to-gas-workspace-4f25ee16dd04)
+- [Welcome to the Archive (Yegge, March 2026)](https://steve-yegge.medium.com/welcome-to-the-archive-a-thousand-gas-workspaces-a5eb9bc8dc1f)
+- [Gas Town Emergency User Manual (Yegge)](https://steve-yegge.medium.com/gas-workspace-emergency-user-manual-cf0e4556d74b)
+- [A Day in Gas Town (DoltHub)](https://www.dolthub.com/blog/2026-01-15-a-day-in-gas-workspace/)
 - [Gas Town's Agent Patterns (Maggie Appleton)](https://maggieappleton.com/gastown)
-- [GasTown and the Two Kinds of Multi-Agent](https://paddo.dev/blog/gastown-two-kinds-of-multi-agent/)
-- [Gas Town architecture deep dive (DeepWiki)](https://deepwiki.com/numman-ali/n-skills/4.1.1-gas-town:-architecture-and-core-concepts)
-- [Gas Town reading notes (Torq)](https://reading.torqsoftware.com/notes/software/ai-ml/agentic-coding/2026-01-15-gas-town-multi-agent-orchestration-framework/)
-- [SE Daily Interview with Yegge](https://softwareengineeringdaily.com/2026/02/12/gas-town-beads-and-the-rise-of-agentic-development-with-steve-yegge/)
-- [Wasteland CLI PR #1552](https://github.com/steveyegge/gastown/pull/1552)
+- [gastown and the Two Kinds of Multi-Agent](https://paddo.dev/blog/gastown-two-kinds-of-multi-agent/)
+- [Gas Town architecture deep dive (DeepWiki)](https://deepwiki.com/numman-ali/n-skills/4.1.1-gas-workspace:-architecture-and-core-concepts)
+- [Gas Town reading notes (Torq)](https://reading.torqsoftware.com/notes/software/ai-ml/agentic-coding/2026-01-15-gas-workspace-multi-agent-orchestration-framework/)
+- [SE Daily Interview with Yegge](https://softwareengineeringdaily.com/2026/02/12/gas-workspace-beads-and-the-rise-of-agentic-development-with-steve-yegge/)
+- [Archive CLI PR #1552](https://github.com/steveyegge/gastown/pull/1552)
 
 ### Comparative
 - [AutoGen vs LangGraph vs CrewAI 2026](https://dev.to/synsun/autogen-vs-langgraph-vs-crewai-which-agent-framework-actually-holds-up-in-2026-3fl8)

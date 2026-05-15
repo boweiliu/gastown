@@ -9,13 +9,13 @@ Mail uses `type=message` beads with routing handled by `gt mail`.
 
 ## Message Types
 
-### POLECAT_DONE
+### worker_done
 
-**Route**: Polecat → Witness
+**Route**: Worker → Watcher
 
 **Purpose**: Signal work completion, trigger cleanup flow.
 
-**Subject format**: `POLECAT_DONE <polecat-name>`
+**Subject format**: `worker_done <worker-name>`
 
 **Body format**:
 ```
@@ -27,89 +27,89 @@ Branch: <branch>
 
 **Trigger**: `gt done` command generates this automatically.
 
-**Handler**: Witness creates a cleanup wisp for the polecat.
+**Handler**: Watcher creates a cleanup ephemeral for the worker.
 
 ### MERGE_READY
 
-**Route**: Witness → Refinery
+**Route**: Watcher → Merger
 
 **Purpose**: Signal a branch is ready for merge queue processing.
 
-**Subject format**: `MERGE_READY <polecat-name>`
+**Subject format**: `MERGE_READY <worker-name>`
 
 **Body format**:
 ```
 Branch: <branch>
 Issue: <issue-id>
-Polecat: <polecat-name>
+Worker: <worker-name>
 Verified: clean git state, issue closed
 ```
 
-**Trigger**: Witness sends after verifying polecat work is complete.
+**Trigger**: Watcher sends after verifying worker work is complete.
 
-**Handler**: Refinery adds to merge queue, processes when ready.
+**Handler**: Merger adds to merge queue, processes when ready.
 
 ### MERGED
 
-**Route**: Refinery → Witness
+**Route**: Merger → Watcher
 
-**Purpose**: Confirm branch was merged successfully, safe to nuke polecat.
+**Purpose**: Confirm branch was merged successfully, safe to nuke worker.
 
-**Subject format**: `MERGED <polecat-name>`
+**Subject format**: `MERGED <worker-name>`
 
 **Body format**:
 ```
 Branch: <branch>
 Issue: <issue-id>
-Polecat: <polecat-name>
-Rig: <rig>
+Worker: <worker-name>
+Project: <project>
 Target: <target-branch>
 Merged-At: <timestamp>
 Merge-Commit: <sha>
 ```
 
-**Trigger**: Refinery sends after successful merge to main.
+**Trigger**: Merger sends after successful merge to main.
 
-**Handler**: Witness completes cleanup wisp, nukes polecat worktree.
+**Handler**: Watcher completes cleanup ephemeral, nukes worker worktree.
 
 ### MERGE_FAILED
 
-**Route**: Refinery → Witness
+**Route**: Merger → Watcher
 
 **Purpose**: Notify that merge attempt failed (tests, build, or other non-conflict error).
 
-**Subject format**: `MERGE_FAILED <polecat-name>`
+**Subject format**: `MERGE_FAILED <worker-name>`
 
 **Body format**:
 ```
 Branch: <branch>
 Issue: <issue-id>
-Polecat: <polecat-name>
-Rig: <rig>
+Worker: <worker-name>
+Project: <project>
 Target: <target-branch>
 Failed-At: <timestamp>
 Failure-Type: <tests|build|push|other>
 Error: <error-message>
 ```
 
-**Trigger**: Refinery sends when merge fails for non-conflict reasons.
+**Trigger**: Merger sends when merge fails for non-conflict reasons.
 
-**Handler**: Witness notifies polecat, assigns work back for rework.
+**Handler**: Watcher notifies worker, assigns work back for rework.
 
 ### REWORK_REQUEST
 
-**Route**: Refinery → Witness
+**Route**: Merger → Watcher
 
-**Purpose**: Request polecat to rebase branch due to merge conflicts.
+**Purpose**: Request worker to rebase branch due to merge conflicts.
 
-**Subject format**: `REWORK_REQUEST <polecat-name>`
+**Subject format**: `REWORK_REQUEST <worker-name>`
 
 **Body format**:
 ```
 Branch: <branch>
 Issue: <issue-id>
-Polecat: <polecat-name>
-Rig: <rig>
+Worker: <worker-name>
+Project: <project>
 Target: <target-branch>
 Requested-At: <timestamp>
 Conflict-Files: <file1>, <file2>, ...
@@ -121,69 +121,69 @@ Please rebase your changes onto <target-branch>:
   # Resolve any conflicts
   git push -f
 
-The Refinery will retry the merge after rebase is complete.
+The Merger will retry the merge after rebase is complete.
 ```
 
-**Trigger**: Refinery sends when merge has conflicts with target branch.
+**Trigger**: Merger sends when merge has conflicts with target branch.
 
-**Handler**: Witness notifies polecat with rebase instructions.
+**Handler**: Watcher notifies worker with rebase instructions.
 
 ### RECOVERED_BEAD
 
-**Route**: Witness → Deacon
+**Route**: Watcher → Supervisor
 
-**Purpose**: Notify Deacon that a dead polecat's abandoned work has been recovered
+**Purpose**: Notify Supervisor that a dead worker's abandoned work has been recovered
 and needs re-dispatch.
 
 **Subject format**: `RECOVERED_BEAD <bead-id>`
 
 **Body format**:
 ```
-Recovered abandoned bead from dead polecat.
+Recovered abandoned bead from dead worker.
 
 Bead: <bead-id>
-Polecat: <rig>/<polecat-name>
-Previous Status: <hooked|in_progress>
+Worker: <project>/<worker-name>
+Previous Status: <assigned|in_progress>
 
 The bead has been reset to open with no assignee.
-Please re-dispatch to an available polecat.
+Please re-dispatch to an available worker.
 ```
 
-**Trigger**: Witness detects a zombie polecat with work still hooked/in_progress.
+**Trigger**: Watcher detects a zombie worker with work still assigned/in_progress.
 The bead is reset to open status and this mail is sent for re-dispatch.
 
-**Handler**: Deacon runs `gt deacon redispatch <bead-id>` which:
+**Handler**: Supervisor runs `gt supervisor redispatch <bead-id>` which:
 - Rate-limits re-dispatches (5-minute cooldown per bead)
-- Tracks failure count (after 3 failures, escalates to Mayor)
-- Auto-detects target rig from bead prefix
-- Slings the bead to an available polecat via `gt sling`
+- Tracks failure count (after 3 failures, escalates to Coordinator)
+- Auto-detects target project from bead prefix
+- Dispatches the bead to an available worker via `gt dispatch`
 
 ### RECOVERY_NEEDED
 
-**Route**: Witness → Deacon
+**Route**: Watcher → Supervisor
 
-**Purpose**: Escalate a dirty polecat that has unpushed/uncommitted work needing
+**Purpose**: Escalate a dirty worker that has unpushed/uncommitted work needing
 manual recovery before cleanup.
 
-**Subject format**: `RECOVERY_NEEDED <rig>/<polecat-name>`
+**Subject format**: `RECOVERY_NEEDED <project>/<worker-name>`
 
 **Body format**:
 ```
-Polecat: <rig>/<polecat-name>
+Worker: <project>/<worker-name>
 Cleanup Status: <has_uncommitted|has_stash|has_unpushed>
 Branch: <branch>
 Issue: <issue-id>
 Detected: <timestamp>
 ```
 
-**Trigger**: Witness detects zombie polecat with dirty git state.
+**Trigger**: Watcher detects zombie worker with dirty git state.
 
-**Handler**: Deacon coordinates recovery (push branch, save work) before
-authorizing cleanup. Only escalates to Mayor if Deacon cannot resolve.
+**Handler**: Supervisor coordinates recovery (push branch, save work) before
+authorizing cleanup. Only escalates to Coordinator if Supervisor cannot resolve.
 
 ### HELP
 
-**Route**: Any → escalation target (usually Mayor)
+**Route**: Any → escalation target (usually Coordinator)
 
 **Purpose**: Request intervention for stuck/blocked work.
 
@@ -201,17 +201,17 @@ Tried: <what was attempted>
 
 **Handler**: Escalation target assesses and intervenes.
 
-### HANDOFF
+### TRANSFER
 
 **Route**: Agent → self (or successor)
 
 **Purpose**: Session continuity across context limits/restarts.
 
-**Subject format**: `🤝 HANDOFF: <brief-context>`
+**Subject format**: `🤝 TRANSFER: <brief-context>`
 
 **Body format**:
 ```
-attached_molecule: <molecule-id>   # if work in progress
+attached_workflow: <workflow-id>   # if work in progress
 attached_at: <timestamp>
 
 ## Context
@@ -224,9 +224,9 @@ attached_at: <timestamp>
 <what successor should do>
 ```
 
-**Trigger**: `gt handoff` command, or manual send before session end.
+**Trigger**: `gt transfer` command, or manual send before session end.
 
-**Handler**: Next session reads handoff, continues from context.
+**Handler**: Next session reads transfer, continues from context.
 
 ## Format Conventions
 
@@ -238,10 +238,10 @@ attached_at: <timestamp>
 
 Examples:
 ```
-POLECAT_DONE nux
+worker_done nux
 MERGE_READY greenplace/nux
-HELP: Polecat stuck on test failures
-🤝 HANDOFF: Schema work in progress
+HELP: Worker stuck on test failures
+🤝 TRANSFER: Schema work in progress
 ```
 
 ### Body Structure
@@ -252,25 +252,25 @@ HELP: Polecat stuck on test failures
 
 ### Addresses
 
-Format: `<rig>/<role>` or `<rig>/<type>/<name>`
+Format: `<project>/<role>` or `<project>/<type>/<name>`
 
 Examples:
 ```
-greenplace/witness       # Witness for greenplace rig
-beads/refinery           # Refinery for beads rig
-greenplace/polecats/nux  # Specific polecat
-mayor/                # Town-level Mayor
-deacon/               # Town-level Deacon
+greenplace/watcher       # Watcher for greenplace project
+beads/merger           # Merger for beads project
+greenplace/workers/nux  # Specific worker
+coordinator/                # Workspace-level Coordinator
+supervisor/               # Workspace-level Supervisor
 ```
 
 ## Protocol Flows
 
-### Polecat Completion Flow
+### Worker Completion Flow
 
 ```
-Polecat                    Witness                    Refinery
+Worker                    Watcher                    Merger
    │                          │                          │
-   │ POLECAT_DONE             │                          │
+   │ worker_done             │                          │
    │─────────────────────────>│                          │
    │                          │                          │
    │                    (verify clean)                   │
@@ -283,14 +283,14 @@ Polecat                    Witness                    Refinery
    │                          │ MERGED (success)         │
    │                          │<─────────────────────────│
    │                          │                          │
-   │                    (nuke polecat)                   │
+   │                    (nuke worker)                   │
    │                          │                          │
 ```
 
 ### Merge Failure Flow
 
 ```
-                           Witness                    Refinery
+                           Watcher                    Merger
                               │                          │
                               │                    (merge fails)
                               │                          │
@@ -300,13 +300,13 @@ Polecat                    Witness                    Refinery
    │ (failure notification)   │                          │
    │<─────────────────────────│                          │
    │                          │                          │
-Polecat (rework needed)
+Worker (rework needed)
 ```
 
 ### Rebase Required Flow
 
 ```
-                           Witness                    Refinery
+                           Watcher                    Merger
                               │                          │
                               │                    (conflict detected)
                               │                          │
@@ -316,7 +316,7 @@ Polecat (rework needed)
    │ (rebase instructions)    │                          │
    │<─────────────────────────│                          │
    │                          │                          │
-Polecat                       │                          │
+Worker                       │                          │
    │                          │                          │
    │ (rebases, gt done)       │                          │
    │─────────────────────────>│ MERGE_READY              │
@@ -327,12 +327,12 @@ Polecat                       │                          │
 ### Abandoned Work Recovery Flow
 
 ```
-Dead Polecat               Witness                    Deacon
+Dead Worker               Watcher                    Supervisor
      │                        │                          │
      │ (session dies)         │                          │
      │                        │                          │
      │                  (detects zombie)                 │
-     │                  (bead status=hooked)             │
+     │                  (bead status=assigned)             │
      │                        │                          │
      │                  resetAbandonedBead()             │
      │                  bd update --status=open          │
@@ -340,93 +340,93 @@ Dead Polecat               Witness                    Deacon
      │                        │ RECOVERED_BEAD           │
      │                        │─────────────────────────>│
      │                        │                          │
-     │                        │                    gt deacon redispatch
-     │                        │                    gt sling <bead> <rig>
+     │                        │                    gt supervisor redispatch
+     │                        │                    gt dispatch <bead> <project>
      │                        │                          │
-     │                        │                          ├──> New Polecat
+     │                        │                          ├──> New Worker
      │                        │                          │    (re-dispatched)
 ```
 
 ### Second-Order Monitoring
 
 ```
-Witness-1 ──┐
+Watcher-1 ──┐
             │ (check agent bead last_activity)
-Witness-2 ──┼────────────────> Deacon agent bead
+Watcher-2 ──┼────────────────> Supervisor agent bead
             │
-Witness-N ──┘
+Watcher-N ──┘
                                  │
                           (if stale >5min)
                                  │
             ─────────────────────┘
-            ALERT to Mayor (mail only on failure)
+            ALERT to Coordinator (mail only on failure)
 ```
 
-## Communication Hygiene: Mail vs Nudge
+## Communication Hygiene: Mail vs Message
 
 Agents overuse mail for routine communication, generating permanent beads and
 Dolt commits for messages that should be ephemeral. Every `gt mail send` creates
-a wisp bead in Dolt -- a permanent record with its own commit in the git-like
+a ephemeral bead in Dolt -- a permanent record with its own commit in the git-like
 history. This is a critical pollution source.
 
 ### The Two Channels
 
-**`gt nudge` (ephemeral, preferred for routine comms)**
+**`gt message` (ephemeral, preferred for routine comms)**
 - Sends a message directly to an agent's tmux session
 - No beads created. No Dolt commits. Zero storage cost.
 - Message appears as a `<system-reminder>` in the agent's context
 - Suitable for: health checks, status requests, simple instructions, "wake up" signals
-- Limitation: if the target session is dead, the nudge is lost
+- Limitation: if the target session is dead, the message is lost
 
 **`gt mail send` (persistent, for structured protocol messages only)**
-- Creates a bead (wisp) in the Dolt database
+- Creates a bead (ephemeral) in the Dolt database
 - Generates at least one Dolt commit (the write)
 - Persists across session restarts -- survives agent death
-- Suitable for: HANDOFF context, MERGE_READY/MERGED protocol, escalations, HELP
+- Suitable for: TRANSFER context, MERGE_READY/MERGED protocol, escalations, HELP
   requests, anything that MUST survive session death
 
 ### The Rule
 
-**Default to `gt nudge`. Only use `gt mail send` when the message MUST survive
+**Default to `gt message`. Only use `gt mail send` when the message MUST survive
 the recipient's session death.**
 
 The litmus test: "If the recipient's session dies and restarts, do they need this
-message?" If yes -> mail. If no -> nudge.
+message?" If yes -> mail. If no -> message.
 
 ### Role-Specific Guidance
 
-| Role | Mail Budget | When to Mail | When to Nudge |
+| Role | Mail Budget | When to Mail | When to Message |
 |------|-------------|-------------|---------------|
-| **Polecat** | 0-1 per session | HELP/ESCALATE only (gt escalate preferred) | Everything else |
-| **Witness** | Protocol msgs only | MERGE_READY, RECOVERED_BEAD, RECOVERY_NEEDED, escalations to Mayor | Polecat health checks, status pings, nudge-and-observe |
-| **Refinery** | Protocol msgs only | MERGED, MERGE_FAILED, REWORK_REQUEST | Status updates to Witness |
-| **Deacon** | Escalations only | Escalations to Mayor, HANDOFF to self | TIMER callbacks, HEALTH_CHECK, lifecycle pokes |
-| **Dogs** | Zero | Never (results go to event beads or logs) | Report completion to Deacon via nudge |
-| **Mayor** | Strategic only | Cross-rig coordination, HANDOFF to self | Instructions to Deacon/Witness |
+| **Worker** | 0-1 per session | HELP/ESCALATE only (gt escalate preferred) | Everything else |
+| **Watcher** | Protocol msgs only | MERGE_READY, RECOVERED_BEAD, RECOVERY_NEEDED, escalations to Coordinator | Worker health checks, status pings, message-and-observe |
+| **Merger** | Protocol msgs only | MERGED, MERGE_FAILED, REWORK_REQUEST | Status updates to Watcher |
+| **Supervisor** | Escalations only | Escalations to Coordinator, TRANSFER to self | TIMER callbacks, HEALTH_CHECK, lifecycle pokes |
+| **Helpers** | Zero | Never (results go to event beads or logs) | Report completion to Supervisor via message |
+| **Coordinator** | Strategic only | Cross-project coordination, TRANSFER to self | Instructions to Supervisor/Watcher |
 
 ### Why This Matters (The Commit Graph)
 
 Dolt is git under the hood. Every mail creates a Dolt commit. Over a day of
 normal operations:
-- 4 agents x 15 patrol cycles x 2 mails per cycle = 120 commits just for routine chatter
+- 4 agents x 15 sweep cycles x 2 mails per cycle = 120 commits just for routine chatter
 - These commits live in the git history forever, even after mail rows are deleted
 - Rebase can remove them, but prevention is always cheaper than cleanup
 
 ### Anti-Patterns
 
-**DOG_DONE as mail** -- Dogs should not mail their completion status. Use
-`gt nudge deacon/ "DOG_DONE: plugin-name success"` instead.
+**helper_DONE as mail** -- Helpers should not mail their completion status. Use
+`gt message supervisor/ "helper_DONE: plugin-name success"` instead.
 
-**Duplicate escalations** -- Witnesses sending 2+ mails about the same issue
+**Duplicate escalations** -- Watchers sending 2+ mails about the same issue
 minutes apart. Check inbox before sending: if you already sent about this topic,
 don't send again.
 
-**HANDOFF for routine cycles** -- Patrol agents (Witness, Deacon) doing routine
-handoffs should use minimal mail. If there's nothing extraordinary, just cycle --
+**TRANSFER for routine cycles** -- Sweep agents (Watcher, Supervisor) doing routine
+transfers should use minimal mail. If there's nothing extraordinary, just cycle --
 the next session discovers state from beads, not from mail.
 
-**Health check responses via mail** -- When Deacon sends a health check nudge, do
-NOT respond with mail. The Deacon tracks health via session status, not mail
+**Health check responses via mail** -- When Supervisor sends a health check message, do
+NOT respond with mail. The Supervisor tracks health via session status, not mail
 responses.
 
 ## Implementation
@@ -438,9 +438,9 @@ responses.
 gt mail send <addr> -s "Subject" -m "Body"
 
 # With structured body
-gt mail send greenplace/witness -s "MERGE_READY nux" -m "Branch: feature-xyz
+gt mail send greenplace/watcher -s "MERGE_READY nux" -m "Branch: feature-xyz
 Issue: gp-abc
-Polecat: nux
+Worker: nux
 Verified: clean"
 ```
 
@@ -457,9 +457,9 @@ gt mail read <msg-id>
 gt mail ack <msg-id>
 ```
 
-### In Patrol Formulas
+### In Sweep Templates
 
-Formulas should:
+Templates should:
 1. Check inbox at start of each cycle
 2. Parse subject prefix to route handling
 3. Extract structured data from body
@@ -472,7 +472,7 @@ New message types follow the pattern:
 1. Define subject prefix (TYPE: or TYPE_SUBTYPE)
 2. Document body format (key-value pairs + freeform)
 3. Specify route (sender → receiver)
-4. Implement handlers in relevant patrol formulas
+4. Implement handlers in relevant sweep templates
 
 The protocol is intentionally simple - structured enough for parsing,
 flexible enough for human debugging.
@@ -481,7 +481,7 @@ flexible enough for human debugging.
 
 Beyond direct agent-to-agent mail, the messaging system supports three bead-backed
 primitives for group and broadcast communication. All use the `hq-` prefix
-(town-level entities that span rigs).
+(workspace-level entities that span projects).
 
 ### Groups (`gt:group`)
 
@@ -490,15 +490,15 @@ delivers to all members.
 
 **Bead ID format:** `hq-group-<name>`
 
-**Member types:** direct addresses (`gastown/crew/max`), wildcard patterns
-(`*/witness`, `gastown/crew/*`), special patterns (`@town`, `@crew`,
-`@witnesses`), or nested group names.
+**Member types:** direct addresses (`gastown/team/max`), wildcard patterns
+(`*/watcher`, `gastown/team/*`), special patterns (`@workspace`, `@team`,
+`@watchers`), or nested group names.
 
 ### Queues (`gt:queue`)
 
 Work queues where each message goes to exactly one claimant (unlike groups).
 
-**Bead ID format:** `hq-q-<name>` (town-level) or `gt-q-<name>` (rig-level)
+**Bead ID format:** `hq-q-<name>` (workspace-level) or `gt-q-<name>` (project-level)
 
 Fields: `status` (active/paused/closed), `max_concurrency`, `processing_order`
 (fifo/priority), plus count fields (available, processing, completed, failed).
@@ -544,7 +544,7 @@ When sending mail, addresses are resolved in this order:
 
 1. **Explicit prefix** -- `group:`, `queue:`, or `channel:` uses that type directly
 2. **Contains `/`** -- Treat as agent address or pattern (direct delivery)
-3. **Starts with `@`** -- Special pattern (`@town`, `@crew`, etc.) or group
+3. **Starts with `@`** -- Special pattern (`@workspace`, `@team`, etc.) or group
 4. **Name lookup** -- Search group -> queue -> channel by name
 
 If a name matches multiple types, the resolver returns an error requiring an
@@ -554,12 +554,12 @@ explicit prefix.
 
 Channels support count-based (`--retain-count=N`) and time-based
 (`--retain-hours=N`) retention. Retention is enforced on-write (after posting)
-and on-patrol (Deacon runs `PruneAllChannels()` with a 10% buffer to avoid
+and on-sweep (Supervisor runs `PruneAllChannels()` with a 10% buffer to avoid
 thrashing).
 
 ## Related Documents
 
 - `docs/agent-as-bead.md` - Agent identity and slots
-- `.beads/formulas/mol-witness-patrol.formula.toml` - Witness handling
+- `.beads/templates/wf-watcher-sweep.template.toml` - Watcher handling
 - `internal/mail/` - Mail routing implementation
-- `internal/protocol/` - Protocol handlers for Witness-Refinery communication
+- `internal/protocol/` - Protocol handlers for Watcher-Merger communication

@@ -44,7 +44,7 @@ POST /lifecycle
 {
   "event": "started" | "ready" | "busy" | "idle" | "stopping" | "stopped",
   "run_id": "uuid",
-  "session_id": "gt-crew-max",
+  "session_id": "gt-team-max",
   "timestamp": "2026-03-01T15:00:00Z",
   "metadata": {}           // event-specific (e.g., exit_code for "stopped")
 }
@@ -75,9 +75,9 @@ POST /prompt
   "run_id": "uuid",
   "content": "Review PR #2068...",
   "priority": "normal" | "urgent" | "system",
-  "source": "nudge" | "mail" | "sling" | "prime",
+  "source": "message" | "mail" | "dispatch" | "prime",
   "metadata": {
-    "from": "gastown/crew/tom",
+    "from": "gastown/team/tom",
     "bead_id": "gt-abc12"
   }
 }
@@ -91,12 +91,12 @@ Response:
 ```
 
 Replaces: `NudgeSession()` (8-step tmux send-keys protocol), 512-byte chunking,
-ESC+readline dance, debounce timers, nudge queue JSON files, `UserPromptSubmit`
+ESC+readline dance, debounce timers, message queue JSON files, `UserPromptSubmit`
 hook drain, large-prompt temp file workaround.
 
 **Priority semantics:**
 - `system`: injected at turn boundary (replaces `<system-reminder>` blocks)
-- `urgent`: interrupts current work (replaces immediate nudge)
+- `urgent`: interrupts current work (replaces immediate message)
 - `normal`: delivered when idle (replaces wait-idle + queue fallback)
 
 ### 3. Context Injection (Priming)
@@ -108,18 +108,18 @@ POST /context
 {
   "run_id": "uuid",
   "sections": [
-    {"type": "role", "content": "You are a polecat worker..."},
+    {"type": "role", "content": "You are a worker worker..."},
     {"type": "work", "content": "AUTONOMOUS WORK MODE: gt-abc12..."},
     {"type": "mail", "content": "2 unread messages..."},
     {"type": "checkpoint", "content": "Previous session state..."},
-    {"type": "directive", "content": "Execute your hooked work."}
+    {"type": "directive", "content": "Execute your assigned work."}
   ],
   "mode": "full" | "compact" | "resume"
 }
 ```
 
 Replaces: `gt prime` pipeline (10-section output), `SessionStart` hook,
-`PreCompact` hook, beacon injection, startup nudge fallback for non-hook agents,
+`PreCompact` hook, beacon injection, startup message fallback for non-hook agents,
 role template rendering to stdout.
 
 ### 4. Tool Authorization
@@ -133,8 +133,8 @@ POST /authorize
   "tool": "Bash",
   "input": {"command": "git push --force"},
   "context": {
-    "role": "polecat",
-    "rig": "gastown",
+    "role": "worker",
+    "project": "gastown",
     "bead_id": "gt-abc12"
   }
 }
@@ -147,10 +147,10 @@ Response:
 ```
 
 Replaces: `PreToolUse` hook with exit code 2, PR-workflow guard, dangerous-command
-guard, patrol-formula guard, per-agent `--dangerously-*` flags.
+guard, sweep-template guard, per-agent `--dangerously-*` flags.
 
 **Permission model:**
-- Per-role permission sets (polecat: full, witness: read-only, crew: configurable)
+- Per-role permission sets (worker: full, watcher: read-only, team: configurable)
 - Guard rules as data, not shell scripts
 - Fail-closed: if GT is unreachable, block the tool call
 
@@ -201,8 +201,8 @@ GT assigns identity; the runtime authenticates.
 POST /identity
 {
   "run_id": "uuid",
-  "role": "polecat",
-  "rig": "gastown",
+  "role": "worker",
+  "project": "gastown",
   "agent_name": "alpha",
   "session_id": "gt-gastown-alpha",
   "credentials": {
@@ -211,8 +211,8 @@ POST /identity
     "expires_at": "2026-03-02T00:00:00Z"
   },
   "env": {
-    "GT_ROLE": "gastown/polecats/alpha",
-    "BD_ACTOR": "gastown/polecats/alpha",
+    "GT_ROLE": "gastown/workers/alpha",
+    "BD_ACTOR": "gastown/workers/alpha",
     "GT_ROOT": "/Users/stevey/gt"
   }
 }
@@ -250,7 +250,7 @@ tree walking), `GetSessionActivity()` (tmux activity timestamp), heartbeat files
 `TouchSessionHeartbeat()`, zombie detection heuristics, spawn storm detection.
 
 **Context window pressure** is a new signal — the runtime knows how full its context
-is. GT can use this to trigger compaction/handoff before the agent degrades.
+is. GT can use this to trigger compaction/transfer before the agent degrades.
 
 ## Transport
 
@@ -293,7 +293,7 @@ This lets us validate the API design before building a full GT-native runtime.
    with status callbacks?
 2. Should tool authorization be per-call (latency cost) or per-session with a
    pre-negotiated capability set?
-3. How does compaction/handoff work? Does GT tell the runtime "compact now" or does
+3. How does compaction/transfer work? Does GT tell the runtime "compact now" or does
    the runtime report context pressure and GT decides?
 4. Should the runtime expose its conversation history, or is the telemetry stream
    sufficient for GT's needs?
