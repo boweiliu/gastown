@@ -69,7 +69,8 @@ func init() {
 }
 
 var nudgeCmd = &cobra.Command{
-	Use:         "nudge <target> [message]",
+	Use:         "message <target> [message]",
+	Aliases:     []string{"nudge"},
 	GroupID:     GroupComm,
 	Annotations: map[string]string{AnnotationPolecatSafe: "true"},
 	Short:       "Send a synchronous message to any Gas Town worker",

@@ -20,8 +20,8 @@ import (
 )
 
 var hookCmd = &cobra.Command{
-	Use:         "hook [bead-id] [target]",
-	Aliases:     []string{"work"},
+	Use:         "assignment [bead-id] [target]",
+	Aliases:     []string{"hook", "work"},
 	GroupID:     GroupWork,
 	Annotations: map[string]string{AnnotationPolecatSafe: "true"},
 	Short:       "Show or attach work on a hook",

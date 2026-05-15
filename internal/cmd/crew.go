@@ -27,7 +27,8 @@ var (
 )
 
 var crewCmd = &cobra.Command{
-	Use:     "crew",
+	Use:     "team",
+	Aliases: []string{"crew"},
 	GroupID: GroupWorkspace,
 	Short:   "Manage crew workers (persistent workspaces for humans)",
 	RunE:    requireSubcommand,

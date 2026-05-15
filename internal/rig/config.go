@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/steveyegge/gastown/internal/beads"
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 // ConfigSource identifies which layer a config value came from.
@@ -60,7 +60,7 @@ func (r *Rig) GetConfigWithSource(key string) ConfigResult {
 	townRoot := filepath.Dir(r.Path)
 
 	// Layer 1: Wisp (transient, local)
-	wispCfg := wisp.NewConfig(townRoot, r.Name)
+	wispCfg := ephemeral.NewConfig(townRoot, r.Name)
 	if wispCfg.IsBlocked(key) {
 		return ConfigResult{Value: nil, Source: SourceBlocked}
 	}
@@ -127,7 +127,7 @@ func (r *Rig) GetIntConfig(key string) int {
 	}
 
 	// Check wisp layer for blocked
-	wispCfg := wisp.NewConfig(townRoot, r.Name)
+	wispCfg := ephemeral.NewConfig(townRoot, r.Name)
 	if wispCfg.IsBlocked(key) {
 		return 0 // Blocked returns zero
 	}

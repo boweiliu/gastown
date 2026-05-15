@@ -23,7 +23,8 @@ import (
 )
 
 var slingCmd = &cobra.Command{
-	Use:         "sling <bead-or-formula> [target]",
+	Use:         "dispatch <bead-or-formula> [target]",
+	Aliases:     []string{"sling"},
 	GroupID:     GroupWork,
 	Annotations: map[string]string{AnnotationPolecatSafe: "true"},
 	Short:       "Assign work to an agent (THE unified work dispatch command)",

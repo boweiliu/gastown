@@ -170,7 +170,8 @@ func validateConvoyStatusTransition(currentStatus, targetStatus string) error {
 }
 
 var convoyCmd = &cobra.Command{
-	Use:         "convoy",
+	Use:         "batch",
+	Aliases:     []string{"convoy"},
 	GroupID:     GroupWork,
 	Annotations: map[string]string{AnnotationPolecatSafe: "true"},
 	Short:       "Track batches of work across rigs",

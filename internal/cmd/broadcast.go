@@ -25,9 +25,10 @@ func init() {
 }
 
 var broadcastCmd = &cobra.Command{
-	Use:     "broadcast <message>",
+	Use:     "announce <message>",
+	Aliases: []string{"broadcast"},
 	GroupID: GroupComm,
-	Short:   "Send a nudge message to all workers",
+	Short:   "Send a message to all workers",
 	Long: `Broadcasts a message to all active workers (polecats and crew).
 
 By default, only workers (polecats and crew) receive the message.

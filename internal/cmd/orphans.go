@@ -22,7 +22,8 @@ import (
 )
 
 var orphansCmd = &cobra.Command{
-	Use:     "orphans",
+	Use:     "lost-work",
+	Aliases: []string{"orphans"},
 	GroupID: GroupWork,
 	Short:   "Find lost polecat work",
 	Long: `Find orphaned commits and unmerged polecat branches.

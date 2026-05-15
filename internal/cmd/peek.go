@@ -20,9 +20,10 @@ func init() {
 }
 
 var peekCmd = &cobra.Command{
-	Use:     "peek <rig/polecat> [count]",
+	Use:     "inspect <rig/worker> [count]",
+	Aliases: []string{"peek"},
 	GroupID: GroupComm,
-	Short:   "View recent output from a polecat or crew session",
+	Short:   "View recent output from a worker or team session",
 	Long: `Capture and display recent terminal output from an agent session.
 
 This is the ergonomic alias for 'gt session capture'. Use it to check

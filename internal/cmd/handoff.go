@@ -28,7 +28,8 @@ import (
 )
 
 var handoffCmd = &cobra.Command{
-	Use:         "handoff [bead-or-role]",
+	Use:         "transfer [bead-or-role]",
+	Aliases:     []string{"handoff"},
 	GroupID:     GroupWork,
 	Annotations: map[string]string{AnnotationPolecatSafe: "true"},
 	Short:       "Hand off to a fresh session, work continues from hook",

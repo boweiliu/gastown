@@ -46,22 +46,22 @@ var beadsExemptCommands = map[string]bool{
 	"version":    true,
 	"help":       true,
 	"completion": true,
-	"crew":       true,
-	"polecat":    true,
-	"witness":    true,
-	"refinery":   true,
+	"team":       true, // was: crew
+	"worker":     true, // was: polecat
+	"watcher":    true, // was: witness
+	"merger":     true, // was: refinery
 	"status":     true,
 	"mail":       true,
-	"hook":       true,
+	"assignment": true, // was: hook
 	"prime":      true,
-	"nudge":      true,
-	"seance":     true,
+	"message":    true, // was: nudge
+	"recall":     true, // was: seance
 	"doctor":     true,
 	"dolt":       true,
-	"handoff":    true,
+	"transfer":   true, // was: handoff
 	"costs":      true,
 	"feed":       true,
-	"rig":        true,
+	"project":    true, // was: rig
 	"config":     true,
 	"install":    true,
 	"tap":        true,

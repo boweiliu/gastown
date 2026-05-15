@@ -20,9 +20,10 @@ var (
 )
 
 var wlCmd = &cobra.Command{
-	Use:     "wl",
+	Use:     "archive",
+	Aliases: []string{"wl"},
 	GroupID: GroupWork,
-	Short:   "Wasteland federation commands",
+	Short:   "Archive federation commands",
 	RunE:    requireSubcommand,
 	Long: `Manage Wasteland federation — join communities, post work, earn reputation.
 

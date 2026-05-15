@@ -20,10 +20,10 @@ import (
 )
 
 var mayorCmd = &cobra.Command{
-	Use:     "mayor",
-	Aliases: []string{"may"},
+	Use:     "coordinator",
+	Aliases: []string{"mayor", "may"},
 	GroupID: GroupAgents,
-	Short:   "Manage the Mayor (Chief of Staff for cross-rig coordination)",
+	Short:   "Manage the Coordinator (Chief of Staff for cross-rig coordination)",
 	RunE:    requireSubcommand,
 	Long: `Manage the Mayor - the Overseer's Chief of Staff.
 

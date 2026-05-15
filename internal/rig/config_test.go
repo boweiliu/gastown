@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/steveyegge/gastown/internal/wisp"
+	"github.com/steveyegge/gastown/internal/ephemeral"
 )
 
 func TestGetConfig_SystemDefaults(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGetConfig_WispOverride(t *testing.T) {
 	}
 
 	// Create wisp config with override
-	wispCfg := wisp.NewConfig(tmpDir, "testrig")
+	wispCfg := ephemeral.NewConfig(tmpDir, "testrig")
 	if err := wispCfg.Set("status", "parked"); err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestGetConfig_WispBlocked(t *testing.T) {
 	}
 
 	// Block auto_restart at wisp layer
-	wispCfg := wisp.NewConfig(tmpDir, "testrig")
+	wispCfg := ephemeral.NewConfig(tmpDir, "testrig")
 	if err := wispCfg.Block("auto_restart"); err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestGetIntConfig_Stacking(t *testing.T) {
 	}
 
 	// Set wisp adjustment
-	wispCfg := wisp.NewConfig(tmpDir, "testrig")
+	wispCfg := ephemeral.NewConfig(tmpDir, "testrig")
 	if err := wispCfg.Set("priority_adjustment", 5); err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestGetBoolConfig_StringConversion(t *testing.T) {
 	}
 
 	// Set string "true" in wisp
-	wispCfg := wisp.NewConfig(tmpDir, "testrig")
+	wispCfg := ephemeral.NewConfig(tmpDir, "testrig")
 	if err := wispCfg.Set("custom_bool", "true"); err != nil {
 		t.Fatal(err)
 	}

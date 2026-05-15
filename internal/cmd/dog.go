@@ -43,10 +43,10 @@ var (
 )
 
 var dogCmd = &cobra.Command{
-	Use:     "dog",
-	Aliases: []string{"dogs"},
+	Use:     "helper",
+	Aliases: []string{"dog", "dogs", "helpers"},
 	GroupID: GroupAgents,
-	Short:   "Manage dogs (cross-rig infrastructure workers)",
+	Short:   "Manage helpers (cross-rig infrastructure workers)",
 	Long: `Manage dogs - reusable workers for infrastructure and cleanup.
 
 CATS VS DOGS:

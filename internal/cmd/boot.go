@@ -25,9 +25,10 @@ var (
 )
 
 var bootCmd = &cobra.Command{
-	Use:     "boot",
+	Use:     "watchdog",
+	Aliases: []string{"boot"},
 	GroupID: GroupAgents,
-	Short:   "Manage Boot (Deacon watchdog)",
+	Short:   "Manage Watchdog (Supervisor watchdog)",
 	Long: `Manage Boot - the daemon's watchdog for Deacon triage.
 
 Boot is a special dog that runs fresh on each daemon tick. It observes

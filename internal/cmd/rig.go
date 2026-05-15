@@ -35,9 +35,10 @@ import (
 )
 
 var rigCmd = &cobra.Command{
-	Use:     "rig",
+	Use:     "project",
+	Aliases: []string{"rig"},
 	GroupID: GroupWorkspace,
-	Short:   "Manage rigs in the workspace",
+	Short:   "Manage projects in the workspace",
 	RunE:    requireSubcommand,
 	Long: `Manage rigs (project containers) in the Gas Town workspace.
 

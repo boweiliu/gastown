@@ -30,10 +30,10 @@ func getDeaconSessionName() string {
 }
 
 var deaconCmd = &cobra.Command{
-	Use:     "deacon",
-	Aliases: []string{"dea"},
+	Use:     "supervisor",
+	Aliases: []string{"deacon", "dea"},
 	GroupID: GroupAgents,
-	Short:   "Manage the Deacon (town-level watchdog)",
+	Short:   "Manage the Supervisor (town-level watchdog)",
 	RunE:    requireSubcommand,
 	Long: `Manage the Deacon - the town-level watchdog for Gas Town.
 

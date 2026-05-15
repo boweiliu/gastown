@@ -19,10 +19,11 @@ var mountainForce bool
 var mountainJSON bool
 
 var mountainCmd = &cobra.Command{
-	Use:   "mountain <epic-id>",
+	Use:     "launch <epic-id>",
+	Aliases: []string{"mountain"},
 	GroupID: GroupWork,
 	Annotations: map[string]string{AnnotationPolecatSafe: "true"},
-	Short: "Activate Mountain-Eater: stage, label, and launch an epic",
+	Short:   "Launch an epic: stage, label, and dispatch",
 	Long: `Activate the Mountain-Eater on an epic for autonomous grinding.
 
 A mountain is a convoy with the 'mountain' label. This command:
