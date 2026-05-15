@@ -332,7 +332,7 @@ func (h *SetupAPIHandler) handleCheckWorkspace(w http.ResponseWriter, r *http.Re
 	}
 
 	// Check if mayor/ directory exists (indicates a Gas Town HQ)
-	mayorDir := filepath.Join(path, "mayor")
+	mayorDir := filepath.Join(path, "coordinator")
 	if _, err := os.Stat(mayorDir); os.IsNotExist(err) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(CheckWorkspaceResponse{

@@ -29,7 +29,7 @@ func RequireTownEnv(t *testing.T) string {
 		t.Skip("skipping: not in a Gas Town workspace")
 	}
 
-	if _, err := os.Stat(filepath.Join(root, "mayor", "rigs.json")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(root, "coordinator", "rigs.json")); os.IsNotExist(err) {
 		t.Skip("skipping: mayor/rigs.json not found — not a fully initialized town")
 	}
 

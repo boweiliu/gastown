@@ -75,7 +75,7 @@ func runTapPolecatStop(cmd *cobra.Command, args []string) error {
 	}
 
 	// Reconstruct polecat worktree path
-	polecatDir := filepath.Join(townRoot, rigName, "polecats", polecatName)
+	polecatDir := filepath.Join(townRoot, rigName, "workers", polecatName)
 	// Try the nested clone layout first (polecats/<name>/<rig>/)
 	cloneDir := filepath.Join(polecatDir, rigName)
 	if _, err := os.Stat(filepath.Join(cloneDir, ".git")); err != nil {

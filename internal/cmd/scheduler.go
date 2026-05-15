@@ -454,7 +454,7 @@ func beadsSearchDirs(townRoot string) []string {
 			dirs = append(dirs, rigDir)
 			seen[rigDir] = true
 		}
-		mayorRigDir := filepath.Join(rigDir, "mayor", "rig")
+		mayorRigDir := filepath.Join(rigDir, "coordinator", "rig")
 		mayorBeadsDir := filepath.Join(mayorRigDir, ".beads")
 		if _, err := os.Stat(mayorBeadsDir); err == nil && !seen[mayorRigDir] {
 			dirs = append(dirs, mayorRigDir)

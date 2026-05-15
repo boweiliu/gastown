@@ -52,7 +52,7 @@ func (c *StalledPolecatCheck) Run(ctx *CheckContext) *CheckResult {
 	// Iterate over all rigs (or single rig if specified)
 	rigsToCheck := c.findRigs(ctx)
 	for _, rigName := range rigsToCheck {
-		polecatsDir := filepath.Join(ctx.TownRoot, rigName, "polecats")
+		polecatsDir := filepath.Join(ctx.TownRoot, rigName, "workers")
 		entries, err := os.ReadDir(polecatsDir)
 		if err != nil {
 			continue
@@ -165,7 +165,7 @@ func (c *StalledPolecatCheck) findRigs(ctx *CheckContext) []string {
 		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") || entry.Name() == "mayor" {
 			continue
 		}
-		polecatsDir := filepath.Join(ctx.TownRoot, entry.Name(), "polecats")
+		polecatsDir := filepath.Join(ctx.TownRoot, entry.Name(), "workers")
 		if info, err := os.Stat(polecatsDir); err == nil && info.IsDir() {
 			rigs = append(rigs, entry.Name())
 		}
@@ -177,13 +177,13 @@ func (c *StalledPolecatCheck) findRigs(ctx *CheckContext) []string {
 // Handles both new (polecats/<name>/<rigname>/) and old (polecats/<name>/) structures.
 func (c *StalledPolecatCheck) resolveClonePath(townRoot, rigName, polecatName string) string {
 	// New structure: polecats/<name>/<rigname>/
-	newPath := filepath.Join(townRoot, rigName, "polecats", polecatName, rigName)
+	newPath := filepath.Join(townRoot, rigName, "workers", polecatName, rigName)
 	if info, err := os.Stat(newPath); err == nil && info.IsDir() {
 		return newPath
 	}
 
 	// Old structure: polecats/<name>/
-	oldPath := filepath.Join(townRoot, rigName, "polecats", polecatName)
+	oldPath := filepath.Join(townRoot, rigName, "workers", polecatName)
 	if info, err := os.Stat(filepath.Join(oldPath, ".git")); err == nil && !info.IsDir() {
 		return oldPath
 	}

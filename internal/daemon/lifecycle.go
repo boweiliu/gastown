@@ -443,17 +443,17 @@ func (d *Daemon) getWorkDir(config *beads.RoleConfig, parsed *ParsedIdentity) st
 	case constants.RoleWitness:
 		return filepath.Join(d.config.TownRoot, parsed.RigName)
 	case constants.RoleRefinery:
-		return filepath.Join(d.config.TownRoot, parsed.RigName, "refinery", "rig")
+		return filepath.Join(d.config.TownRoot, parsed.RigName, "merger", "rig")
 	case constants.RoleCrew:
 		return filepath.Join(d.config.TownRoot, parsed.RigName, "crew", parsed.AgentName)
 	case constants.RolePolecat:
 		// New structure: polecats/<name>/<rigname>/ (for LLM ergonomics)
 		// Old structure: polecats/<name>/ (for backward compat)
-		newPath := filepath.Join(d.config.TownRoot, parsed.RigName, "polecats", parsed.AgentName, parsed.RigName)
+		newPath := filepath.Join(d.config.TownRoot, parsed.RigName, "workers", parsed.AgentName, parsed.RigName)
 		if _, err := os.Stat(newPath); err == nil {
 			return newPath
 		}
-		return filepath.Join(d.config.TownRoot, parsed.RigName, "polecats", parsed.AgentName)
+		return filepath.Join(d.config.TownRoot, parsed.RigName, "workers", parsed.AgentName)
 	default:
 		return ""
 	}

@@ -359,7 +359,7 @@ func cleanStaleHookedBeads(cmd *cobra.Command, b *beads.Beads, agentID, targetBe
 // "rig/crew/name" → "rig/name", "rig/polecats/name" → "rig/name".
 func mailNormalizedAgentID(agentID string) string {
 	parts := strings.Split(agentID, "/")
-	if len(parts) == 3 && (parts[1] == "crew" || parts[1] == "polecats") {
+	if len(parts) == 3 && (parts[1] == "crew" || constants.IsWorkersDir(parts[1])) {
 		return parts[0] + "/" + parts[2]
 	}
 	return agentID

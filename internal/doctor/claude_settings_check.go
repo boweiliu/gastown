@@ -215,7 +215,7 @@ func (c *ClaudeSettingsCheck) findSettingsFiles(townRoot string) []staleSettings
 	}
 
 	// Town-level: mayor - check for stale settings.local.json (should be settings.json)
-	mayorStaleLocal := filepath.Join(townRoot, "mayor", ".claude", "settings.local.json")
+	mayorStaleLocal := filepath.Join(townRoot, "coordinator", ".claude", "settings.local.json")
 	if fileExists(mayorStaleLocal) {
 		files = append(files, staleSettingsInfo{
 			path:          mayorStaleLocal,
@@ -226,8 +226,8 @@ func (c *ClaudeSettingsCheck) findSettingsFiles(townRoot string) []staleSettings
 		})
 	}
 	// Check for correct settings.json
-	mayorSettings := filepath.Join(townRoot, "mayor", ".claude", "settings.json")
-	mayorWorkDir := filepath.Join(townRoot, "mayor")
+	mayorSettings := filepath.Join(townRoot, "coordinator", ".claude", "settings.json")
+	mayorWorkDir := filepath.Join(townRoot, "coordinator")
 	if fileExists(mayorSettings) {
 		files = append(files, staleSettingsInfo{
 			path:        mayorSettings,
@@ -293,7 +293,7 @@ func (c *ClaudeSettingsCheck) findSettingsFiles(townRoot string) []staleSettings
 		}
 
 		// Check for witness settings
-		witnessDir := filepath.Join(rigPath, "witness")
+		witnessDir := filepath.Join(rigPath, "watcher")
 		if dirExists(witnessDir) {
 			// CORRECT: witness/.claude/settings.json (parent directory)
 			witnessCorrectSettings := filepath.Join(witnessDir, ".claude", "settings.json")
@@ -345,7 +345,7 @@ func (c *ClaudeSettingsCheck) findSettingsFiles(townRoot string) []staleSettings
 		}
 
 		// Check for refinery settings
-		refineryDir := filepath.Join(rigPath, "refinery")
+		refineryDir := filepath.Join(rigPath, "merger")
 		if dirExists(refineryDir) {
 			// CORRECT: refinery/.claude/settings.json (parent directory)
 			refineryCorrectSettings := filepath.Join(refineryDir, ".claude", "settings.json")
@@ -453,7 +453,7 @@ func (c *ClaudeSettingsCheck) findSettingsFiles(townRoot string) []staleSettings
 		}
 
 		// Check for polecat settings
-		polecatsDir := filepath.Join(rigPath, "polecats")
+		polecatsDir := filepath.Join(rigPath, "workers")
 		if dirExists(polecatsDir) {
 			// CORRECT: polecats/.claude/settings.json (shared parent directory)
 			polecatCorrectSettings := filepath.Join(polecatsDir, ".claude", "settings.json")
@@ -748,7 +748,7 @@ func (c *ClaudeSettingsCheck) Fix(ctx *CheckContext) error {
 		// Town-root settings pollute ALL agents via directory traversal.
 		// This handles both settings.json and settings.local.json at the town root.
 		if sf.agentType == "mayor" && !strings.Contains(sf.path, "/mayor/") {
-			mayorDir := filepath.Join(ctx.TownRoot, "mayor")
+			mayorDir := filepath.Join(ctx.TownRoot, "coordinator")
 
 			if strings.HasSuffix(claudeDir, ".claude") {
 				// Town-root .claude/settings{.local}.json → recreate at mayor/.claude/

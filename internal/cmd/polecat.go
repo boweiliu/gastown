@@ -1430,7 +1430,7 @@ func nukeCleanupMolecules(workBeadID string, r *rig.Rig) {
 	// .beads/ directory, not the gitignored rig-root .beads/. Without this,
 	// detach/close operations route to the wrong database and the stale
 	// molecule attachment persists on the work bead. (gt--1up)
-	bd := beads.New(filepath.Join(r.Path, "mayor", "rig"))
+	bd := beads.New(filepath.Join(r.Path, "coordinator", "rig"))
 
 	// Fetch the work bead to check for attached molecules
 	issue, err := bd.Show(workBeadID)
@@ -1645,7 +1645,7 @@ func runPolecatPrune(cmd *cobra.Command, args []string) error {
 	if info, statErr := os.Stat(bareRepoPath); statErr == nil && info.IsDir() {
 		repoGit = git.NewGitWithDir(bareRepoPath, "")
 	} else {
-		repoGit = git.NewGit(filepath.Join(r.Path, "mayor", "rig"))
+		repoGit = git.NewGit(filepath.Join(r.Path, "coordinator", "rig"))
 	}
 
 	fmt.Printf("Pruning stale polecat branches in %s...\n", r.Name)

@@ -284,7 +284,7 @@ func (c *CrewWorktreeCheck) Fix(ctx *CheckContext) error {
 	var lastErr error
 	for _, wt := range c.staleWorktrees {
 		// Use git worktree remove to properly clean up
-		mayorRigPath := filepath.Join(ctx.TownRoot, wt.rigName, "mayor", "rig")
+		mayorRigPath := filepath.Join(ctx.TownRoot, wt.rigName, "coordinator", "rig")
 		removeCmd := exec.Command("git", "worktree", "remove", "--force", wt.path)
 		removeCmd.Dir = mayorRigPath
 		if output, err := removeCmd.CombinedOutput(); err != nil {

@@ -195,7 +195,7 @@ func (c *BeadsRedirectTargetCheck) Fix(ctx *CheckContext) error {
 
 		rigRoot := filepath.Join(ctx.TownRoot, parts[0])
 		rigBeads := filepath.Join(rigRoot, ".beads")
-		mayorBeads := filepath.Join(rigRoot, "mayor", "rig", ".beads")
+		mayorBeads := filepath.Join(rigRoot, "coordinator", "rig", ".beads")
 
 		// Check if either canonical location exists and has beads
 		canonicalExists := false
@@ -268,7 +268,7 @@ func recomputeRedirect(townRoot, worktreePath string) error {
 
 	rigRoot := filepath.Join(townRoot, parts[0])
 	rigBeads := filepath.Join(rigRoot, ".beads")
-	mayorBeads := filepath.Join(rigRoot, "mayor", "rig", ".beads")
+	mayorBeads := filepath.Join(rigRoot, "coordinator", "rig", ".beads")
 
 	// Compute depth from worktree to rig root
 	depth := len(parts) - 1

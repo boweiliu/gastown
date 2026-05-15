@@ -106,11 +106,11 @@ func runMqSubmit(cmd *cobra.Command, args []string) error {
 			isPolecat = os.Getenv("GT_POLECAT") != ""
 		}
 		if polecatName := os.Getenv("GT_POLECAT"); polecatName != "" && rigName != "" && isPolecat {
-			polecatClone := filepath.Join(townRoot, rigName, "polecats", polecatName, rigName)
+			polecatClone := filepath.Join(townRoot, rigName, "workers", polecatName, rigName)
 			if _, err := os.Stat(polecatClone); err == nil {
 				cwd = polecatClone
 			} else {
-				polecatClone = filepath.Join(townRoot, rigName, "polecats", polecatName)
+				polecatClone = filepath.Join(townRoot, rigName, "workers", polecatName)
 				if _, err := os.Stat(filepath.Join(polecatClone, ".git")); err == nil {
 					cwd = polecatClone
 				}

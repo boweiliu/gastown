@@ -32,7 +32,7 @@ type beadRespawnState struct {
 }
 
 func beadRespawnStateFile(townRoot string) string {
-	return filepath.Join(townRoot, "witness", "bead-respawn-counts.json")
+	return filepath.Join(townRoot, "watcher", "bead-respawn-counts.json")
 }
 
 func loadBeadRespawnState(townRoot string) *beadRespawnState {

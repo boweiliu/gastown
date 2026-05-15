@@ -121,8 +121,8 @@ func (c *SparseCheckoutCheck) discoverRigPaths(townRoot string) []string {
 // checkRig checks all worktree repos within a single rig for legacy sparse checkout.
 func (c *SparseCheckoutCheck) checkRig(rigPath string) {
 	repoPaths := []string{
-		filepath.Join(rigPath, "mayor", "rig"),
-		filepath.Join(rigPath, "refinery", "rig"),
+		filepath.Join(rigPath, "coordinator", "rig"),
+		filepath.Join(rigPath, "merger", "rig"),
 	}
 
 	// Add crew clones
@@ -136,7 +136,7 @@ func (c *SparseCheckoutCheck) checkRig(rigPath string) {
 	}
 
 	// Add polecat worktrees (nested structure: polecats/<name>/<rigname>/)
-	polecatDir := filepath.Join(rigPath, "polecats")
+	polecatDir := filepath.Join(rigPath, "workers")
 	if entries, err := os.ReadDir(polecatDir); err == nil {
 		rigName := filepath.Base(rigPath)
 		for _, entry := range entries {

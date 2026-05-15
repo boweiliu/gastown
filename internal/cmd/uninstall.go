@@ -161,7 +161,7 @@ func findWorkspaceForUninstall() string {
 	}
 
 	for _, path := range candidates {
-		mayorDir := filepath.Join(path, "mayor")
+		mayorDir := filepath.Join(path, "coordinator")
 		if _, err := os.Stat(mayorDir); err == nil {
 			return path
 		}

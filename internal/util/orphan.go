@@ -134,7 +134,7 @@ func getACPSessionPIDs() map[int]bool {
 	childMap := buildChildMap()
 
 	// Check the primary town root (~/gt)
-	pidPath := filepath.Join(homeDir, "gt", "mayor", "mayor-acp.pid")
+	pidPath := filepath.Join(homeDir, "gt", "coordinator", "mayor-acp.pid")
 	if data, err := os.ReadFile(pidPath); err == nil {
 		if pid, err := strconv.Atoi(strings.TrimSpace(string(data))); err == nil {
 			// Check if process is still alive
@@ -314,7 +314,7 @@ func resolveTownRoot(pid int) string {
 func resolveTownRootFromDir(dir string) string {
 	current := dir
 	for {
-		if _, err := os.Stat(filepath.Join(current, "mayor", "town.json")); err == nil {
+		if _, err := os.Stat(filepath.Join(current, "coordinator", "town.json")); err == nil {
 			return current
 		}
 		parent := filepath.Dir(current)

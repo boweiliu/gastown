@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/lock"
 	"github.com/steveyegge/gastown/internal/mail"
@@ -771,7 +772,7 @@ func runSling(cmd *cobra.Command, args []string) (retErr error) {
 
 		// Extract rig name from assignee (e.g., "gastown/polecats/Toast" -> "gastown")
 		assigneeParts := strings.Split(info.Assignee, "/")
-		if len(assigneeParts) >= 3 && assigneeParts[1] == "polecats" {
+		if len(assigneeParts) >= 3 && constants.IsWorkersDir(assigneeParts[1]) {
 			oldRigName := assigneeParts[0]
 			oldPolecatName := assigneeParts[2]
 

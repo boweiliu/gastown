@@ -31,7 +31,7 @@ func runMQList(cmd *cobra.Command, args []string) error {
 	var gitClient *git.Git
 	if mqListVerify {
 		// Use the refinery's rig worktree to check branches
-		refineryRigPath := filepath.Join(r.Path, "refinery", "rig")
+		refineryRigPath := filepath.Join(r.Path, "merger", "rig")
 		gitClient = git.NewGit(refineryRigPath)
 	}
 

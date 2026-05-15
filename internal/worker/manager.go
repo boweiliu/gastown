@@ -459,7 +459,7 @@ func (m *Manager) repoBase() (*git.Git, error) {
 	}
 
 	// Fall back to mayor/rig (legacy architecture)
-	mayorPath := filepath.Join(m.rig.Path, "mayor", "rig")
+	mayorPath := filepath.Join(m.rig.Path, "coordinator", "rig")
 	if _, err := os.Stat(mayorPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("no repo base found (neither .repo.git nor mayor/rig exists)")
 	}
@@ -469,7 +469,7 @@ func (m *Manager) repoBase() (*git.Git, error) {
 // polecatDir returns the parent directory for a worker.
 // This is polecats/<name>/ - the polecat's home directory.
 func (m *Manager) polecatDir(name string) string {
-	return filepath.Join(m.rig.Path, "polecats", name)
+	return filepath.Join(m.rig.Path, "workers", name)
 }
 
 // pendingPath returns the path of the allocation reservation marker for a name.
@@ -477,7 +477,7 @@ func (m *Manager) polecatDir(name string) string {
 // the polecat directory is created. Prevents concurrent processes from allocating
 // the same name during the window between pool save and directory creation.
 func (m *Manager) pendingPath(name string) string {
-	return filepath.Join(m.rig.Path, "polecats", name+".pending")
+	return filepath.Join(m.rig.Path, "workers", name+".pending")
 }
 
 // clonePath returns the path where the git worktree lives.
@@ -485,13 +485,13 @@ func (m *Manager) pendingPath(name string) string {
 // Falls back to old structure: polecats/<name>/ for backward compatibility.
 func (m *Manager) clonePath(name string) string {
 	// New structure: polecats/<name>/<rigname>/
-	newPath := filepath.Join(m.rig.Path, "polecats", name, m.rig.Name)
+	newPath := filepath.Join(m.rig.Path, "workers", name, m.rig.Name)
 	if info, err := os.Stat(newPath); err == nil && info.IsDir() {
 		return newPath
 	}
 
 	// Old structure: polecats/<name>/ (backward compat)
-	oldPath := filepath.Join(m.rig.Path, "polecats", name)
+	oldPath := filepath.Join(m.rig.Path, "workers", name)
 	if info, err := os.Stat(oldPath); err == nil && info.IsDir() {
 		// Check if this is actually a git worktree (has .git file or dir)
 		gitPath := filepath.Join(oldPath, ".git")
@@ -1238,7 +1238,7 @@ func (m *Manager) RemoveWithOptions(name string, force, nuclear, selfNuke bool) 
 			bareGit := git.NewGitWithDir(bareRepoPath, "")
 			_ = bareGit.WorktreePrune()
 		}
-		mayorRigPath := filepath.Join(m.rig.Path, "mayor", "rig")
+		mayorRigPath := filepath.Join(m.rig.Path, "coordinator", "rig")
 		if info, statErr := os.Stat(mayorRigPath); statErr == nil && info.IsDir() {
 			mayorGit := git.NewGit(mayorRigPath)
 			_ = mayorGit.WorktreePrune()
@@ -1378,7 +1378,7 @@ func (m *Manager) AllocateName() (string, error) {
 	// directory until AddWithOptions removes it after os.MkdirAll succeeds.
 	// Stale markers (process crashed before AddWithOptions) are cleaned up by
 	// cleanupOrphanPolecatState after pendingMaxAge.
-	if err := os.MkdirAll(filepath.Join(m.rig.Path, "polecats"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(m.rig.Path, "workers"), 0755); err != nil {
 		return "", fmt.Errorf("creating polecats dir for reservation marker: %w", err)
 	}
 	if err := os.WriteFile(m.pendingPath(name), []byte(fmt.Sprintf("%d", os.Getpid())), 0644); err != nil {
@@ -1825,7 +1825,7 @@ func (m *Manager) reconcilePoolInternal() {
 	// A .pending file means AllocateName has claimed the name but AddWithOptions
 	// hasn't created the directory yet. Without this, Reconcile would see no
 	// directory and treat the name as available, causing a duplicate allocation.
-	polecatsDir := filepath.Join(m.rig.Path, "polecats")
+	polecatsDir := filepath.Join(m.rig.Path, "workers")
 	if entries, err := os.ReadDir(polecatsDir); err == nil {
 		for _, e := range entries {
 			if !e.IsDir() && strings.HasSuffix(e.Name(), ".pending") {
@@ -1958,7 +1958,7 @@ const pendingMaxAge = 5 * time.Minute
 // - Stale git worktree registrations
 // - Stale .pending reservation markers (gt sling crashed before AddWithOptions)
 func (m *Manager) cleanupOrphanPolecatState() {
-	polecatsDir := filepath.Join(m.rig.Path, "polecats")
+	polecatsDir := filepath.Join(m.rig.Path, "workers")
 
 	entries, err := os.ReadDir(polecatsDir)
 	if err != nil {
@@ -2013,7 +2013,7 @@ func (m *Manager) PoolStatus() (active int, names []string) {
 // List returns all polecats in the rig.
 // Loads polecat state in parallel to avoid sequential bd subprocess overhead.
 func (m *Manager) List() ([]*Polecat, error) {
-	polecatsDir := filepath.Join(m.rig.Path, "polecats")
+	polecatsDir := filepath.Join(m.rig.Path, "workers")
 
 	entries, err := os.ReadDir(polecatsDir)
 	if err != nil {

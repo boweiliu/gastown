@@ -27,7 +27,7 @@ func NewTownConfigExistsCheck() *TownConfigExistsCheck {
 
 // Run checks if mayor/town.json exists.
 func (c *TownConfigExistsCheck) Run(ctx *CheckContext) *CheckResult {
-	configPath := filepath.Join(ctx.TownRoot, "mayor", "town.json")
+	configPath := filepath.Join(ctx.TownRoot, "coordinator", "town.json")
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return &CheckResult{
@@ -70,7 +70,7 @@ type townConfig struct {
 
 // Run validates mayor/town.json contents.
 func (c *TownConfigValidCheck) Run(ctx *CheckContext) *CheckResult {
-	configPath := filepath.Join(ctx.TownRoot, "mayor", "town.json")
+	configPath := filepath.Join(ctx.TownRoot, "coordinator", "town.json")
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -142,7 +142,7 @@ func NewRigsRegistryExistsCheck() *RigsRegistryExistsCheck {
 
 // Run checks if mayor/rigs.json exists.
 func (c *RigsRegistryExistsCheck) Run(ctx *CheckContext) *CheckResult {
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 
 	if _, err := os.Stat(rigsPath); os.IsNotExist(err) {
 		return &CheckResult{
@@ -162,7 +162,7 @@ func (c *RigsRegistryExistsCheck) Run(ctx *CheckContext) *CheckResult {
 
 // Fix creates an empty rigs.json file.
 func (c *RigsRegistryExistsCheck) Fix(ctx *CheckContext) error {
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 
 	emptyRigs := struct {
 		Version int                    `json:"version"`
@@ -207,7 +207,7 @@ type rigsConfig struct {
 
 // Run validates mayor/rigs.json and checks that registered rigs exist.
 func (c *RigsRegistryValidCheck) Run(ctx *CheckContext) *CheckResult {
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
@@ -289,7 +289,7 @@ func (c *RigsRegistryValidCheck) Fix(ctx *CheckContext) error {
 		return nil
 	}
 
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
@@ -333,7 +333,7 @@ func NewMayorExistsCheck() *MayorExistsCheck {
 
 // Run checks if mayor/ directory exists with expected contents.
 func (c *MayorExistsCheck) Run(ctx *CheckContext) *CheckResult {
-	mayorPath := filepath.Join(ctx.TownRoot, "mayor")
+	mayorPath := filepath.Join(ctx.TownRoot, "coordinator")
 
 	info, err := os.Stat(mayorPath)
 	if os.IsNotExist(err) {
@@ -383,6 +383,7 @@ func (c *MayorExistsCheck) Run(ctx *CheckContext) *CheckResult {
 // WorkspaceChecks returns all workspace-level health checks.
 func WorkspaceChecks() []Check {
 	return []Check{
+		NewLegacyDirsCheck(),
 		NewTownConfigExistsCheck(),
 		NewTownConfigValidCheck(),
 		NewRigsRegistryExistsCheck(),

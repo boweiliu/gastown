@@ -74,7 +74,7 @@ func (c *DoltMetadataCheck) Run(ctx *CheckContext) *CheckResult {
 	}
 
 	// Check rig-level beads
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigs := c.loadRigs(rigsPath)
 	for rigName := range rigs {
 		// Resolve the expected DB name: some rigs use their prefix as the
@@ -384,11 +384,11 @@ func (c *DoltServerReachableCheck) findServerModeRigs(townRoot string) map[strin
 	}
 
 	// Check rig-level beads
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigs := loadRigNames(rigsPath)
 	for rigName := range rigs {
 		// Check mayor/rig/.beads first (canonical), then rig/.beads
-		beadsDir := filepath.Join(townRoot, rigName, "mayor", "rig", ".beads")
+		beadsDir := filepath.Join(townRoot, rigName, "coordinator", "rig", ".beads")
 		if _, err := os.Stat(beadsDir); os.IsNotExist(err) {
 			beadsDir = filepath.Join(townRoot, rigName, ".beads")
 		}

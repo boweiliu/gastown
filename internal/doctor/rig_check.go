@@ -18,7 +18,7 @@ import (
 	"github.com/steveyegge/gastown/internal/git"
 )
 
-// RigIsGitRepoCheck verifies the rig has a valid mayor/rig git clone.
+// RigIsGitRepoCheck verifies the rig has a valid coordinator/rig git clone.
 // Note: The rig directory itself is not a git repo - it contains clones.
 type RigIsGitRepoCheck struct {
 	BaseCheck
@@ -29,13 +29,13 @@ func NewRigIsGitRepoCheck() *RigIsGitRepoCheck {
 	return &RigIsGitRepoCheck{
 		BaseCheck: BaseCheck{
 			CheckName:        "rig-is-git-repo",
-			CheckDescription: "Verify rig has a valid mayor/rig git clone",
+			CheckDescription: "Verify rig has a valid coordinator/rig git clone",
 			CheckCategory:    CategoryRig,
 		},
 	}
 }
 
-// Run checks if the rig has a valid mayor/rig git clone.
+// Run checks if the rig has a valid coordinator/rig git clone.
 func (c *RigIsGitRepoCheck) Run(ctx *CheckContext) *CheckResult {
 	rigPath := ctx.RigPath()
 	if rigPath == "" {
@@ -46,24 +46,24 @@ func (c *RigIsGitRepoCheck) Run(ctx *CheckContext) *CheckResult {
 		}
 	}
 
-	// Check mayor/rig/ which is the authoritative clone for the rig
-	mayorRigPath := filepath.Join(rigPath, "mayor", "rig")
+	// Check coordinator/rig/ which is the authoritative clone for the rig
+	mayorRigPath := filepath.Join(rigPath, "coordinator", "rig")
 	gitPath := filepath.Join(mayorRigPath, ".git")
 	info, err := os.Stat(gitPath)
 	if os.IsNotExist(err) {
 		return &CheckResult{
 			Name:    c.Name(),
 			Status:  StatusError,
-			Message: "No mayor/rig clone found",
+			Message: "No coordinator/rig clone found",
 			Details: []string{fmt.Sprintf("Missing: %s", gitPath)},
-			FixHint: "Clone the repository to mayor/rig/",
+			FixHint: "Clone the repository to coordinator/rig/",
 		}
 	}
 	if err != nil {
 		return &CheckResult{
 			Name:    c.Name(),
 			Status:  StatusError,
-			Message: fmt.Sprintf("Cannot access mayor/rig/.git: %v", err),
+			Message: fmt.Sprintf("Cannot access coordinator/rig/.git: %v", err),
 		}
 	}
 
@@ -73,7 +73,7 @@ func (c *RigIsGitRepoCheck) Run(ctx *CheckContext) *CheckResult {
 		return &CheckResult{
 			Name:    c.Name(),
 			Status:  StatusError,
-			Message: "git status failed on mayor/rig",
+			Message: "git status failed on coordinator/rig",
 			Details: []string{fmt.Sprintf("Error: %v", err)},
 			FixHint: "Check git configuration and repository integrity",
 		}
@@ -87,7 +87,7 @@ func (c *RigIsGitRepoCheck) Run(ctx *CheckContext) *CheckResult {
 	return &CheckResult{
 		Name:    c.Name(),
 		Status:  StatusOK,
-		Message: fmt.Sprintf("Valid mayor/rig %s", gitType),
+		Message: fmt.Sprintf("Valid coordinator/rig %s", gitType),
 	}
 }
 
@@ -113,7 +113,7 @@ func NewGitExcludeConfiguredCheck() *GitExcludeConfiguredCheck {
 
 // requiredExcludes returns the directories that should be excluded.
 func (c *GitExcludeConfiguredCheck) requiredExcludes() []string {
-	return []string{"/polecats/", "/witness/", "/refinery/", "/mayor/"}
+	return []string{"/workers/", "/watcher/", "/merger/", "/coordinator/"}
 }
 
 // Run checks if .git/info/exclude contains required entries.
@@ -127,15 +127,15 @@ func (c *GitExcludeConfiguredCheck) Run(ctx *CheckContext) *CheckResult {
 		}
 	}
 
-	// Check mayor/rig/ which is the authoritative clone
-	mayorRigPath := filepath.Join(rigPath, "mayor", "rig")
+	// Check coordinator/rig/ which is the authoritative clone
+	mayorRigPath := filepath.Join(rigPath, "coordinator", "rig")
 	gitDir := filepath.Join(mayorRigPath, ".git")
 	info, err := os.Stat(gitDir)
 	if os.IsNotExist(err) {
 		return &CheckResult{
 			Name:    c.Name(),
 			Status:  StatusWarning,
-			Message: "No mayor/rig clone found",
+			Message: "No coordinator/rig clone found",
 			FixHint: "Run rig-is-git-repo check first",
 		}
 	}
@@ -280,8 +280,8 @@ func (c *HooksPathConfiguredCheck) Run(ctx *CheckContext) *CheckResult {
 
 	// Check all clone locations
 	clonePaths := []string{
-		filepath.Join(rigPath, "mayor", "rig"),
-		filepath.Join(rigPath, "refinery", "rig"),
+		filepath.Join(rigPath, "coordinator", "rig"),
+		filepath.Join(rigPath, "merger", "rig"),
 	}
 
 	// Add crew clones
@@ -295,7 +295,7 @@ func (c *HooksPathConfiguredCheck) Run(ctx *CheckContext) *CheckResult {
 	}
 
 	// Add polecat clones
-	polecatDir := filepath.Join(rigPath, "polecats")
+	polecatDir := filepath.Join(rigPath, "workers")
 	if entries, err := os.ReadDir(polecatDir); err == nil {
 		for _, entry := range entries {
 			if entry.IsDir() {
@@ -381,7 +381,7 @@ func NewWitnessExistsCheck() *WitnessExistsCheck {
 		FixableCheck: FixableCheck{
 			BaseCheck: BaseCheck{
 				CheckName:        "witness-exists",
-				CheckDescription: "Verify witness/ directory structure exists",
+				CheckDescription: "Verify watcher/ directory structure exists",
 				CheckCategory:    CategoryRig,
 			},
 		},
@@ -399,7 +399,7 @@ func (c *WitnessExistsCheck) Run(ctx *CheckContext) *CheckResult {
 		}
 	}
 
-	witnessDir := filepath.Join(c.rigPath, "witness")
+	witnessDir := filepath.Join(c.rigPath, "watcher")
 	rigClone := filepath.Join(witnessDir, "rig")
 	mailInbox := filepath.Join(witnessDir, "mail", "inbox.jsonl")
 
@@ -408,21 +408,21 @@ func (c *WitnessExistsCheck) Run(ctx *CheckContext) *CheckResult {
 	c.needsClone = false
 	c.needsMail = false
 
-	// Check witness/ directory
+	// Check watcher/ directory
 	if _, err := os.Stat(witnessDir); os.IsNotExist(err) {
-		issues = append(issues, "Missing: witness/")
+		issues = append(issues, "Missing: watcher/")
 		c.needsCreate = true
 	} else {
-		// Check witness/rig/ clone
+		// Check watcher/rig/ clone
 		rigGit := filepath.Join(rigClone, ".git")
 		if _, err := os.Stat(rigGit); os.IsNotExist(err) {
-			issues = append(issues, "Missing: witness/rig/ (git clone)")
+			issues = append(issues, "Missing: watcher/rig/ (git clone)")
 			c.needsClone = true
 		}
 
-		// Check witness/mail/inbox.jsonl
+		// Check watcher/mail/inbox.jsonl
 		if _, err := os.Stat(mailInbox); os.IsNotExist(err) {
-			issues = append(issues, "Missing: witness/mail/inbox.jsonl")
+			issues = append(issues, "Missing: watcher/mail/inbox.jsonl")
 			c.needsMail = true
 		}
 	}
@@ -446,18 +446,18 @@ func (c *WitnessExistsCheck) Run(ctx *CheckContext) *CheckResult {
 
 // Fix creates missing witness structure.
 func (c *WitnessExistsCheck) Fix(ctx *CheckContext) error {
-	witnessDir := filepath.Join(c.rigPath, "witness")
+	witnessDir := filepath.Join(c.rigPath, "watcher")
 
 	if c.needsCreate {
 		if err := os.MkdirAll(witnessDir, 0755); err != nil {
-			return fmt.Errorf("failed to create witness/: %w", err)
+			return fmt.Errorf("failed to create watcher/: %w", err)
 		}
 	}
 
 	if c.needsMail {
 		mailDir := filepath.Join(witnessDir, "mail")
 		if err := os.MkdirAll(mailDir, 0755); err != nil {
-			return fmt.Errorf("failed to create witness/mail/: %w", err)
+			return fmt.Errorf("failed to create watcher/mail/: %w", err)
 		}
 		inboxPath := filepath.Join(mailDir, "inbox.jsonl")
 		if err := os.WriteFile(inboxPath, []byte{}, 0644); err != nil {
@@ -467,7 +467,7 @@ func (c *WitnessExistsCheck) Fix(ctx *CheckContext) error {
 
 	// Note: Cannot auto-fix clone without knowing the repo URL
 	if c.needsClone {
-		return fmt.Errorf("cannot auto-create witness/rig/ clone (requires repo URL)")
+		return fmt.Errorf("cannot auto-create watcher/rig/ clone (requires repo URL)")
 	}
 
 	return nil
@@ -488,7 +488,7 @@ func NewRefineryExistsCheck() *RefineryExistsCheck {
 		FixableCheck: FixableCheck{
 			BaseCheck: BaseCheck{
 				CheckName:        "refinery-exists",
-				CheckDescription: "Verify refinery/ directory structure exists",
+				CheckDescription: "Verify merger/ directory structure exists",
 				CheckCategory:    CategoryRig,
 			},
 		},
@@ -506,7 +506,7 @@ func (c *RefineryExistsCheck) Run(ctx *CheckContext) *CheckResult {
 		}
 	}
 
-	refineryDir := filepath.Join(c.rigPath, "refinery")
+	refineryDir := filepath.Join(c.rigPath, "merger")
 	rigClone := filepath.Join(refineryDir, "rig")
 	mailInbox := filepath.Join(refineryDir, "mail", "inbox.jsonl")
 
@@ -515,21 +515,21 @@ func (c *RefineryExistsCheck) Run(ctx *CheckContext) *CheckResult {
 	c.needsClone = false
 	c.needsMail = false
 
-	// Check refinery/ directory
+	// Check merger/ directory
 	if _, err := os.Stat(refineryDir); os.IsNotExist(err) {
-		issues = append(issues, "Missing: refinery/")
+		issues = append(issues, "Missing: merger/")
 		c.needsCreate = true
 	} else {
-		// Check refinery/rig/ clone
+		// Check merger/rig/ clone
 		rigGit := filepath.Join(rigClone, ".git")
 		if _, err := os.Stat(rigGit); os.IsNotExist(err) {
-			issues = append(issues, "Missing: refinery/rig/ (git clone)")
+			issues = append(issues, "Missing: merger/rig/ (git clone)")
 			c.needsClone = true
 		}
 
-		// Check refinery/mail/inbox.jsonl
+		// Check merger/mail/inbox.jsonl
 		if _, err := os.Stat(mailInbox); os.IsNotExist(err) {
-			issues = append(issues, "Missing: refinery/mail/inbox.jsonl")
+			issues = append(issues, "Missing: merger/mail/inbox.jsonl")
 			c.needsMail = true
 		}
 	}
@@ -553,18 +553,18 @@ func (c *RefineryExistsCheck) Run(ctx *CheckContext) *CheckResult {
 
 // Fix creates missing refinery structure.
 func (c *RefineryExistsCheck) Fix(ctx *CheckContext) error {
-	refineryDir := filepath.Join(c.rigPath, "refinery")
+	refineryDir := filepath.Join(c.rigPath, "merger")
 
 	if c.needsCreate {
 		if err := os.MkdirAll(refineryDir, 0755); err != nil {
-			return fmt.Errorf("failed to create refinery/: %w", err)
+			return fmt.Errorf("failed to create merger/: %w", err)
 		}
 	}
 
 	if c.needsMail {
 		mailDir := filepath.Join(refineryDir, "mail")
 		if err := os.MkdirAll(mailDir, 0755); err != nil {
-			return fmt.Errorf("failed to create refinery/mail/: %w", err)
+			return fmt.Errorf("failed to create merger/mail/: %w", err)
 		}
 		inboxPath := filepath.Join(mailDir, "inbox.jsonl")
 		if err := os.WriteFile(inboxPath, []byte{}, 0644); err != nil {
@@ -573,12 +573,12 @@ func (c *RefineryExistsCheck) Fix(ctx *CheckContext) error {
 	}
 
 	// Auto-repair refinery worktree from shared bare repo (.repo.git).
-	// The refinery/rig is a worktree (not a full clone), so we don't need
+	// The merger/rig is a worktree (not a full clone), so we don't need
 	// the repo URL -- we just create a worktree from the local bare repo.
 	if c.needsClone {
 		bareRepoPath := filepath.Join(c.rigPath, ".repo.git")
 		if _, err := os.Stat(bareRepoPath); os.IsNotExist(err) {
-			return fmt.Errorf("cannot auto-create refinery/rig/ worktree: bare repo not found at %s", bareRepoPath)
+			return fmt.Errorf("cannot auto-create merger/rig/ worktree: bare repo not found at %s", bareRepoPath)
 		}
 
 		bareGit := git.NewGitWithDir(bareRepoPath, "")
@@ -609,7 +609,7 @@ func (c *RefineryExistsCheck) Fix(ctx *CheckContext) error {
 	return nil
 }
 
-// MayorCloneExistsCheck verifies the mayor/rig clone exists.
+// MayorCloneExistsCheck verifies the coordinator/rig clone exists.
 type MayorCloneExistsCheck struct {
 	FixableCheck
 	rigPath     string
@@ -623,14 +623,14 @@ func NewMayorCloneExistsCheck() *MayorCloneExistsCheck {
 		FixableCheck: FixableCheck{
 			BaseCheck: BaseCheck{
 				CheckName:        "mayor-clone-exists",
-				CheckDescription: "Verify mayor/rig/ git clone exists",
+				CheckDescription: "Verify coordinator/rig/ git clone exists",
 				CheckCategory:    CategoryRig,
 			},
 		},
 	}
 }
 
-// Run checks if the mayor/rig clone exists.
+// Run checks if the coordinator/rig clone exists.
 func (c *MayorCloneExistsCheck) Run(ctx *CheckContext) *CheckResult {
 	c.rigPath = ctx.RigPath()
 	if c.rigPath == "" {
@@ -641,7 +641,7 @@ func (c *MayorCloneExistsCheck) Run(ctx *CheckContext) *CheckResult {
 		}
 	}
 
-	mayorDir := filepath.Join(c.rigPath, "mayor")
+	mayorDir := filepath.Join(c.rigPath, "coordinator")
 	rigClone := filepath.Join(mayorDir, "rig")
 
 	var issues []string
@@ -653,10 +653,10 @@ func (c *MayorCloneExistsCheck) Run(ctx *CheckContext) *CheckResult {
 		issues = append(issues, "Missing: mayor/")
 		c.needsCreate = true
 	} else {
-		// Check mayor/rig/ clone
+		// Check coordinator/rig/ clone
 		rigGit := filepath.Join(rigClone, ".git")
 		if _, err := os.Stat(rigGit); os.IsNotExist(err) {
-			issues = append(issues, "Missing: mayor/rig/ (git clone)")
+			issues = append(issues, "Missing: coordinator/rig/ (git clone)")
 			c.needsClone = true
 		}
 	}
@@ -680,17 +680,17 @@ func (c *MayorCloneExistsCheck) Run(ctx *CheckContext) *CheckResult {
 
 // Fix creates missing mayor structure.
 func (c *MayorCloneExistsCheck) Fix(ctx *CheckContext) error {
-	mayorDir := filepath.Join(c.rigPath, "mayor")
+	mayorDir := filepath.Join(c.rigPath, "coordinator")
 
 	if c.needsCreate {
 		if err := os.MkdirAll(mayorDir, 0755); err != nil {
-			return fmt.Errorf("failed to create mayor/: %w", err)
+			return fmt.Errorf("failed to create coordinator/: %w", err)
 		}
 	}
 
 	// Note: Cannot auto-fix clone without knowing the repo URL
 	if c.needsClone {
-		return fmt.Errorf("cannot auto-create mayor/rig/ clone (requires repo URL)")
+		return fmt.Errorf("cannot auto-create coordinator/rig/ clone (requires repo URL)")
 	}
 
 	return nil
@@ -723,20 +723,20 @@ func (c *PolecatClonesValidCheck) Run(ctx *CheckContext) *CheckResult {
 		}
 	}
 
-	polecatsDir := filepath.Join(rigPath, "polecats")
+	polecatsDir := filepath.Join(rigPath, "workers")
 	entries, err := os.ReadDir(polecatsDir)
 	if os.IsNotExist(err) {
 		return &CheckResult{
 			Name:    c.Name(),
 			Status:  StatusOK,
-			Message: "No polecats/ directory (none deployed)",
+			Message: "No workers/ directory (none deployed)",
 		}
 	}
 	if err != nil {
 		return &CheckResult{
 			Name:    c.Name(),
 			Status:  StatusError,
-			Message: fmt.Sprintf("Cannot read polecats/: %v", err),
+			Message: fmt.Sprintf("Cannot read workers/: %v", err),
 		}
 	}
 
@@ -755,8 +755,8 @@ func (c *PolecatClonesValidCheck) Run(ctx *CheckContext) *CheckResult {
 		polecatName := entry.Name()
 
 		// Determine worktree path (handle both new and old structures)
-		// New structure: polecats/<name>/<rigname>/
-		// Old structure: polecats/<name>/
+		// New structure: workers/<name>/<rigname>/
+		// Old structure: workers/<name>/
 		polecatPath := filepath.Join(polecatsDir, polecatName, rigName)
 		if _, err := os.Stat(polecatPath); os.IsNotExist(err) {
 			polecatPath = filepath.Join(polecatsDir, polecatName)
@@ -898,7 +898,7 @@ func (c *BeadsConfigValidCheck) Fix(ctx *CheckContext) error {
 }
 
 // BeadsRedirectCheck verifies that rig-level beads redirect exists for tracked beads.
-// When a repo has .beads/ tracked in git (at mayor/rig/.beads), the rig root needs
+// When a repo has .beads/ tracked in git (at coordinator/rig/.beads), the rig root needs
 // a redirect file pointing to that location.
 type BeadsRedirectCheck struct {
 	FixableCheck
@@ -929,11 +929,11 @@ func (c *BeadsRedirectCheck) Run(ctx *CheckContext) *CheckResult {
 	}
 
 	rigPath := ctx.RigPath()
-	mayorRigBeads := filepath.Join(rigPath, "mayor", "rig", ".beads")
+	mayorRigBeads := filepath.Join(rigPath, "coordinator", "rig", ".beads")
 	rigBeadsDir := filepath.Join(rigPath, ".beads")
 	redirectPath := filepath.Join(rigBeadsDir, "redirect")
 
-	// Check if this rig has tracked beads (mayor/rig/.beads exists)
+	// Check if this rig has tracked beads (coordinator/rig/.beads exists)
 	if _, err := os.Stat(mayorRigBeads); os.IsNotExist(err) {
 		// No tracked beads - check if rig/.beads exists (local beads)
 		if _, err := os.Stat(rigBeadsDir); os.IsNotExist(err) {
@@ -969,7 +969,7 @@ func (c *BeadsRedirectCheck) Run(ctx *CheckContext) *CheckResult {
 			Status:  StatusError,
 			Message: "Conflicting local beads found with tracked beads",
 			Details: []string{
-				"Tracked beads exist at: mayor/rig/.beads",
+				"Tracked beads exist at: coordinator/rig/.beads",
 				"Local beads with data exist at: .beads/",
 				"Fix will remove local beads and create redirect to tracked beads",
 			},
@@ -984,7 +984,7 @@ func (c *BeadsRedirectCheck) Run(ctx *CheckContext) *CheckResult {
 			Status:  StatusError,
 			Message: "Missing rig-level beads redirect for tracked beads",
 			Details: []string{
-				"Tracked beads exist at: mayor/rig/.beads",
+				"Tracked beads exist at: coordinator/rig/.beads",
 				"Missing redirect at: .beads/redirect",
 				"Without this redirect, bd commands from rig root won't find beads",
 			},
@@ -1003,11 +1003,11 @@ func (c *BeadsRedirectCheck) Run(ctx *CheckContext) *CheckResult {
 	}
 
 	target := strings.TrimSpace(string(content))
-	if target != "mayor/rig/.beads" {
+	if target != "coordinator/rig/.beads" {
 		return &CheckResult{
 			Name:    c.Name(),
 			Status:  StatusError,
-			Message: fmt.Sprintf("Redirect points to %q, expected mayor/rig/.beads", target),
+			Message: fmt.Sprintf("Redirect points to %q, expected coordinator/rig/.beads", target),
 			FixHint: "Run 'gt doctor --fix --rig " + ctx.RigName + "' to correct the redirect",
 		}
 	}
@@ -1026,7 +1026,7 @@ func (c *BeadsRedirectCheck) Fix(ctx *CheckContext) error {
 	}
 
 	rigPath := ctx.RigPath()
-	mayorRigBeads := filepath.Join(rigPath, "mayor", "rig", ".beads")
+	mayorRigBeads := filepath.Join(rigPath, "coordinator", "rig", ".beads")
 	rigBeadsDir := filepath.Join(rigPath, ".beads")
 	redirectPath := filepath.Join(rigBeadsDir, "redirect")
 
@@ -1105,7 +1105,7 @@ func (c *BeadsRedirectCheck) Fix(ctx *CheckContext) error {
 		}
 
 		// Write redirect file
-		if err := os.WriteFile(redirectPath, []byte("mayor/rig/.beads\n"), 0644); err != nil {
+		if err := os.WriteFile(redirectPath, []byte("coordinator/rig/.beads\n"), 0644); err != nil {
 			return fmt.Errorf("writing redirect file: %w", err)
 		}
 	}
@@ -1414,7 +1414,7 @@ func (c *DefaultBranchAllRigsCheck) Run(ctx *CheckContext) *CheckResult {
 	rigsChecked := 0
 
 	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") || entry.Name() == "mayor" || entry.Name() == "docs" || entry.Name() == "scripts" {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") || entry.Name() == "coordinator" || entry.Name() == "docs" || entry.Name() == "scripts" {
 			continue
 		}
 
@@ -1479,7 +1479,7 @@ func (c *DefaultBranchAllRigsCheck) Run(ctx *CheckContext) *CheckResult {
 }
 
 // BareRepoExistsCheck verifies that .repo.git exists when worktrees depend on it.
-// Worktrees (refinery/rig, polecats) created from the shared bare repo have .git files
+// Worktrees (merger/rig, polecats) created from the shared bare repo have .git files
 // pointing to .repo.git/worktrees/<name>. If .repo.git is missing (deleted, moved, or
 // never created), all those worktrees break with "fatal: not a git repository".
 type BareRepoExistsCheck struct {
@@ -2000,35 +2000,35 @@ func (c *BareRepoExistsCheck) collectBareRepoReferences(rigPath, rigName string)
 }
 
 // findWorktreeDirs returns paths to directories that may be git worktrees within a rig.
-// Checks refinery/rig and all polecat worktree directories.
+// Checks merger/rig and all polecat worktree directories.
 func (c *BareRepoExistsCheck) findWorktreeDirs(rigPath, rigName string) []string {
 	var dirs []string
 
-	// refinery/rig
-	refineryRig := filepath.Join(rigPath, "refinery", "rig")
+	// merger/rig
+	refineryRig := filepath.Join(rigPath, "merger", "rig")
 	if _, err := os.Stat(refineryRig); err == nil {
 		dirs = append(dirs, refineryRig)
 	}
 
-	// witness/rig
-	witnessRig := filepath.Join(rigPath, "witness", "rig")
+	// watcher/rig
+	witnessRig := filepath.Join(rigPath, "watcher", "rig")
 	if _, err := os.Stat(witnessRig); err == nil {
 		dirs = append(dirs, witnessRig)
 	}
 
-	// polecats/<name>/<rigname>/
-	polecatsDir := filepath.Join(rigPath, "polecats")
+	// workers/<name>/<rigname>/
+	polecatsDir := filepath.Join(rigPath, "workers")
 	if entries, err := os.ReadDir(polecatsDir); err == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
 				continue
 			}
-			// New structure: polecats/<name>/<rigname>/
+			// New structure: workers/<name>/<rigname>/
 			newPath := filepath.Join(polecatsDir, entry.Name(), rigName)
 			if _, err := os.Stat(newPath); err == nil {
 				dirs = append(dirs, newPath)
 			}
-			// Old structure: polecats/<name>/
+			// Old structure: workers/<name>/
 			oldPath := filepath.Join(polecatsDir, entry.Name())
 			if oldPath != newPath {
 				if _, err := os.Stat(filepath.Join(oldPath, ".git")); err == nil {

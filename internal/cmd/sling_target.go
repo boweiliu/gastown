@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/steveyegge/gastown/internal/session"
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/tmux"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
@@ -259,7 +260,7 @@ func resolveTarget(target string, opts ResolveTargetOptions) (*ResolvedTarget, e
 	if err != nil {
 		if isPolecatTarget(target) {
 			parts := strings.Split(target, "/")
-			if len(parts) >= 3 && parts[1] == "polecats" {
+			if len(parts) >= 3 && constants.IsWorkersDir(parts[1]) {
 				rigName := parts[0]
 				if opts.BeadID != "" && !opts.Force {
 					if err := checkCrossRigGuard(opts.BeadID, rigName+"/polecats/_", opts.TownRoot); err != nil {
@@ -299,7 +300,7 @@ func resolveTarget(target string, opts ResolveTargetOptions) (*ResolvedTarget, e
 	}
 	if opts.BeadID != "" && isPolecatTarget(agentID) {
 		parts := strings.Split(agentID, "/")
-		if len(parts) >= 3 && parts[1] == "polecats" {
+		if len(parts) >= 3 && constants.IsWorkersDir(parts[1]) {
 			rigName := parts[0]
 			if err := verifyBeadExistsInTargetRigDatabase(opts.BeadID, rigName, opts.TownRoot); err != nil {
 				return nil, err

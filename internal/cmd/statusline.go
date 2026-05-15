@@ -139,7 +139,7 @@ func runWorkerStatusLine(t *tmux.Tmux, session, rigName, polecat, crew, issue st
 	// Priority 1: Check for hooked work (use rig beads)
 	hookedWork := ""
 	if identity != "" && rigName != "" && townRoot != "" {
-		rigBeadsDir := filepath.Join(townRoot, rigName, "mayor", "rig")
+		rigBeadsDir := filepath.Join(townRoot, rigName, "coordinator", "rig")
 		hookedWork = getHookedWork(identity, 40, rigBeadsDir)
 	}
 
@@ -205,7 +205,7 @@ func runMayorStatusLine(t *tmux.Tmux) error {
 	// Load registered rigs to validate against
 	registeredRigs := make(map[string]bool)
 	if townRoot != "" {
-		rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+		rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 		if rigsConfig, err := config.LoadRigsConfig(rigsConfigPath); err == nil {
 			for rigName := range rigsConfig.Rigs {
 				registeredRigs[rigName] = true
@@ -434,7 +434,7 @@ func runDeaconStatusLine(t *tmux.Tmux) error {
 	// Load registered rigs to validate against
 	registeredRigs := make(map[string]bool)
 	if townRoot != "" {
-		rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+		rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 		if rigsConfig, err := config.LoadRigsConfig(rigsConfigPath); err == nil {
 			for rigName := range rigsConfig.Rigs {
 				registeredRigs[rigName] = true
@@ -530,7 +530,7 @@ func runWitnessStatusLine(t *tmux.Tmux, rigName string) error {
 	// Priority 1: Check for hooked work (rig beads for witness)
 	hookedWork := ""
 	if townRoot != "" && rigName != "" {
-		rigBeadsDir := filepath.Join(townRoot, rigName, "mayor", "rig")
+		rigBeadsDir := filepath.Join(townRoot, rigName, "coordinator", "rig")
 		hookedWork = getHookedWork(identity, 30, rigBeadsDir)
 	}
 	if hookedWork != "" {
@@ -620,7 +620,7 @@ func runRefineryStatusLine(t *tmux.Tmux, rigName string) error {
 	// Priority 1: Check for hooked work (rig beads for refinery)
 	hookedWork := ""
 	if townRoot != "" && rigName != "" {
-		rigBeadsDir := filepath.Join(townRoot, rigName, "mayor", "rig")
+		rigBeadsDir := filepath.Join(townRoot, rigName, "coordinator", "rig")
 		hookedWork = getHookedWork(identity, 25, rigBeadsDir)
 	}
 	if hookedWork != "" {

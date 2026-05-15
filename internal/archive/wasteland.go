@@ -49,7 +49,7 @@ type Config struct {
 
 // ConfigPath returns the path to the wasteland config file for a town.
 func ConfigPath(townRoot string) string {
-	return filepath.Join(townRoot, "mayor", "wasteland.json")
+	return filepath.Join(townRoot, "coordinator", "wasteland.json")
 }
 
 // LoadConfig loads the wasteland configuration from disk.

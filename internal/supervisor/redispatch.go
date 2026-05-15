@@ -424,7 +424,7 @@ func LoadModelEscalationConfig(rigProjectDir string) (*ModelEscalationConfig, er
 // should omit the --agent flag and let the rig use its default.
 func resolveAgentForRedispatch(townRoot, targetRig string, beadState *BeadRedispatchState) string {
 	// Rig project dir is <townRoot>/<rig>/refinery/rig
-	rigProjectDir := filepath.Join(townRoot, targetRig, "refinery", "rig")
+	rigProjectDir := filepath.Join(townRoot, targetRig, "merger", "rig")
 
 	cfg, err := LoadModelEscalationConfig(rigProjectDir)
 	if err != nil || cfg == nil || !cfg.Enabled || len(cfg.Rules) == 0 {

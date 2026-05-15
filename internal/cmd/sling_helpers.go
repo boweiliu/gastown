@@ -686,13 +686,13 @@ func agentIDToBeadID(agentID, townRoot string) string {
 	prefix := beads.GetPrefixForRig(townRoot, rig)
 
 	switch {
-	case len(parts) == 2 && parts[1] == "witness":
+	case len(parts) == 2 && constants.IsWatcherDir(parts[1]):
 		return beads.WitnessBeadIDWithPrefix(prefix, rig)
-	case len(parts) == 2 && parts[1] == "refinery":
+	case len(parts) == 2 && constants.IsMergerDir(parts[1]):
 		return beads.RefineryBeadIDWithPrefix(prefix, rig)
 	case len(parts) == 3 && parts[1] == "crew":
 		return beads.CrewBeadIDWithPrefix(prefix, rig, parts[2])
-	case len(parts) == 3 && parts[1] == "polecats":
+	case len(parts) == 3 && constants.IsWorkersDir(parts[1]):
 		return beads.PolecatBeadIDWithPrefix(prefix, rig, parts[2])
 	case len(parts) == 3 && parts[0] == "deacon" && parts[1] == "dogs":
 		// Dogs are town-level agents with hq- prefix
@@ -814,7 +814,7 @@ func nudgeRefinery(rigName, message string) {
 // instead of failing when slinging work.
 func isPolecatTarget(target string) bool {
 	parts := strings.Split(target, "/")
-	return len(parts) >= 3 && parts[1] == "polecats"
+	return len(parts) >= 3 && constants.IsWorkersDir(parts[1])
 }
 
 // FormulaOnBeadResult contains the result of instantiating a formula on a bead.
@@ -1255,7 +1255,7 @@ func loadRigCommandVars(townRoot, rig string) []string {
 
 	// Load repo-sourced settings (floor — committed to git, always present after clone)
 	var repoMQ *config.MergeQueueConfig
-	repoRoot := filepath.Join(townRoot, rig, "mayor", "rig")
+	repoRoot := filepath.Join(townRoot, rig, "coordinator", "rig")
 	repoSettings, _ := config.LoadRepoSettings(repoRoot)
 	if repoSettings != nil {
 		repoMQ = repoSettings.MergeQueue

@@ -86,7 +86,7 @@ func (d *Daemon) runCheckpointDog() {
 // checkpointRigPolecats checkpoints dirty polecat worktrees in a single rig.
 // Returns (scanned, checkpointed) counts.
 func (d *Daemon) checkpointRigPolecats(rigName string) (int, int) {
-	polecatsDir := filepath.Join(d.config.TownRoot, rigName, "polecats")
+	polecatsDir := filepath.Join(d.config.TownRoot, rigName, "workers")
 	polecats, err := listPolecatWorktrees(polecatsDir)
 	if err != nil {
 		return 0, 0

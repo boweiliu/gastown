@@ -1656,7 +1656,7 @@ func (g *Git) submoduleReferencePath() string {
 	// The reference clone is at <rig>/mayor/rig/
 	if g.gitDir != "" {
 		rigDir := filepath.Dir(g.gitDir)
-		mayorRig := filepath.Join(rigDir, "mayor", "rig")
+		mayorRig := filepath.Join(rigDir, "coordinator", "rig")
 		if isValidSubmoduleReference(mayorRig) {
 			return mayorRig
 		}
@@ -1673,7 +1673,7 @@ func (g *Git) submoduleReferencePath() string {
 				break
 			}
 			if _, err := os.Stat(filepath.Join(parent, ".repo.git")); err == nil {
-				mayorRig := filepath.Join(parent, "mayor", "rig")
+				mayorRig := filepath.Join(parent, "coordinator", "rig")
 				if mayorRig != g.workDir && isValidSubmoduleReference(mayorRig) {
 					return mayorRig
 				}

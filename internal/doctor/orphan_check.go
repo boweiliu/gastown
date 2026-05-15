@@ -173,7 +173,7 @@ func (c *OrphanSessionCheck) getValidRigs(townRoot string) []string {
 	var rigs []string
 
 	// Read rigs.json if it exists
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	if _, err := os.Stat(rigsPath); err == nil {
 		// For simplicity, just scan directories at town root that look like rigs
 		entries, err := os.ReadDir(townRoot)
@@ -181,7 +181,7 @@ func (c *OrphanSessionCheck) getValidRigs(townRoot string) []string {
 			for _, entry := range entries {
 				if entry.IsDir() && entry.Name() != "mayor" && entry.Name() != ".beads" && !strings.HasPrefix(entry.Name(), ".") {
 					// Check if it looks like a rig (has polecats/ or crew/ directory)
-					polecatsDir := filepath.Join(townRoot, entry.Name(), "polecats")
+					polecatsDir := filepath.Join(townRoot, entry.Name(), "workers")
 					crewDir := filepath.Join(townRoot, entry.Name(), "crew")
 					if _, err := os.Stat(polecatsDir); err == nil {
 						rigs = append(rigs, entry.Name())

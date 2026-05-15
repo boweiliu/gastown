@@ -147,7 +147,7 @@ func validateSessionName(sessionName, rigName string) error {
 // polecatDir returns the parent directory for a worker.
 // This is polecats/<name>/ - the polecat's home directory.
 func (m *SessionManager) polecatDir(polecat string) string {
-	return filepath.Join(m.rig.Path, "polecats", polecat)
+	return filepath.Join(m.rig.Path, "workers", polecat)
 }
 
 // clonePath returns the path where the git worktree lives.
@@ -155,13 +155,13 @@ func (m *SessionManager) polecatDir(polecat string) string {
 // Falls back to old structure: polecats/<name>/ for backward compatibility.
 func (m *SessionManager) clonePath(polecat string) string {
 	// New structure: polecats/<name>/<rigname>/
-	newPath := filepath.Join(m.rig.Path, "polecats", polecat, m.rig.Name)
+	newPath := filepath.Join(m.rig.Path, "workers", polecat, m.rig.Name)
 	if info, err := os.Stat(newPath); err == nil && info.IsDir() {
 		return newPath
 	}
 
 	// Old structure: polecats/<name>/ (backward compat)
-	oldPath := filepath.Join(m.rig.Path, "polecats", polecat)
+	oldPath := filepath.Join(m.rig.Path, "workers", polecat)
 	if info, err := os.Stat(oldPath); err == nil && info.IsDir() {
 		// Check if this is actually a git worktree (has .git file or dir)
 		gitPath := filepath.Join(oldPath, ".git")
@@ -320,7 +320,7 @@ func (m *SessionManager) hasPolecat(polecat string) bool {
 // position among existing polecat directories. This enables port offsetting and
 // resource isolation when multiple polecats run in parallel (GH#954).
 func (m *SessionManager) polecatSlot(polecat string) int {
-	polecatsDir := filepath.Join(m.rig.Path, "polecats")
+	polecatsDir := filepath.Join(m.rig.Path, "workers")
 	entries, err := os.ReadDir(polecatsDir)
 	if err != nil {
 		return 0

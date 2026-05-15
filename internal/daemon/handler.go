@@ -366,7 +366,7 @@ func findDispatchableDog(mgr *helper.Manager, sm *helper.SessionManager, logger 
 
 // loadRigsConfig loads the rigs configuration from mayor/rigs.json.
 func (d *Daemon) loadRigsConfig() (*config.RigsConfig, error) {
-	rigsPath := filepath.Join(d.config.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(d.config.TownRoot, "coordinator", "rigs.json")
 	return config.LoadRigsConfig(rigsPath)
 }
 

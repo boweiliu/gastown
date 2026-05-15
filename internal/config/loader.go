@@ -1544,7 +1544,7 @@ func RoleSettingsDir(role, rigPath string) string {
 	case constants.RoleCrew, constants.RoleWitness, constants.RoleRefinery:
 		return filepath.Join(rigPath, role)
 	case constants.RolePolecat:
-		return filepath.Join(rigPath, "polecats")
+		return filepath.Join(rigPath, "workers")
 	default:
 		return ""
 	}
@@ -2756,7 +2756,7 @@ func GetDefaultFormula(rigPath string) string {
 // Falls back to "gt" if the rig isn't found or has no prefix configured.
 // townRoot is the path to the town directory (e.g., ~/gt).
 func GetRigPrefix(townRoot, rigName string) string {
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return "gt" // fallback
@@ -2780,7 +2780,7 @@ func GetRigPrefix(townRoot, rigName string) string {
 // Trailing hyphens are stripped (e.g. "gt-" becomes "gt").
 // Returns nil on error (caller should handle the fallback).
 func AllRigPrefixes(townRoot string) []string {
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return nil

@@ -15,6 +15,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/team"
 	"github.com/steveyegge/gastown/internal/deps"
@@ -507,7 +508,7 @@ func runRigAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		// Create new if doesn't exist
@@ -587,9 +588,9 @@ func runRigAdd(cmd *cobra.Command, args []string) error {
 	// to avoid "no route found" warnings (#1424). Determine beadsWorkDir for rig identity bead.
 	var beadsWorkDir string
 	if newRig.Config.Prefix != "" {
-		mayorRigBeads := filepath.Join(townRoot, name, "mayor", "rig", ".beads")
+		mayorRigBeads := filepath.Join(townRoot, name, "coordinator", "rig", ".beads")
 		if _, err := os.Stat(mayorRigBeads); err == nil {
-			beadsWorkDir = filepath.Join(townRoot, name, "mayor", "rig")
+			beadsWorkDir = filepath.Join(townRoot, name, "coordinator", "rig")
 		} else {
 			beadsWorkDir = filepath.Join(townRoot, name)
 		}
@@ -738,7 +739,7 @@ func runRigList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		fmt.Println("No rigs configured.")
@@ -870,7 +871,7 @@ func runRigMenu(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not in a Gas Town workspace: %w", err)
 	}
 
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil || len(rigsConfig.Rigs) == 0 {
 		return fmt.Errorf("no rigs configured")
@@ -989,7 +990,7 @@ func runRigRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		return fmt.Errorf("loading rigs config: %w", err)
@@ -1118,7 +1119,7 @@ func runRigAdopt(_ *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{
@@ -1176,7 +1177,7 @@ func runRigAdopt(_ *cobra.Command, args []string) error {
 	// Add route to town-level routes.jsonl for prefix-based routing
 	if result.BeadsPrefix != "" {
 		routePath := name
-		mayorRigBeads := filepath.Join(townRoot, name, "mayor", "rig", ".beads")
+		mayorRigBeads := filepath.Join(townRoot, name, "coordinator", "rig", ".beads")
 		if _, err := os.Stat(mayorRigBeads); err == nil {
 			routePath = name + "/mayor/rig"
 		}
@@ -1197,7 +1198,7 @@ func runRigAdopt(_ *cobra.Command, args []string) error {
 	rigPath := filepath.Join(townRoot, name)
 	beadsDirCandidates := []string{
 		filepath.Join(rigPath, ".beads"),
-		filepath.Join(rigPath, "mayor", "rig", ".beads"),
+		filepath.Join(rigPath, "coordinator", "rig", ".beads"),
 	}
 	foundBeadsCandidate := false
 	for _, beadsDir := range beadsDirCandidates {
@@ -1308,10 +1309,10 @@ func runRigAdopt(_ *cobra.Command, args []string) error {
 
 	// Create rig identity bead if prefix is set
 	if result.BeadsPrefix != "" {
-		mayorRigBeads := filepath.Join(rigPath, "mayor", "rig", ".beads")
+		mayorRigBeads := filepath.Join(rigPath, "coordinator", "rig", ".beads")
 		beadsWorkDir := rigPath
 		if _, err := os.Stat(mayorRigBeads); err == nil {
-			beadsWorkDir = filepath.Join(rigPath, "mayor", "rig")
+			beadsWorkDir = filepath.Join(rigPath, "coordinator", "rig")
 		}
 
 		bd := beads.New(beadsWorkDir)
@@ -1566,7 +1567,7 @@ func assigneeToSessionName(assignee string) (sessionName string, isPersistent bo
 			return session.CrewSessionName(session.PrefixFor(parts[0]), parts[2]), true
 		}
 		// rig/polecats/name -> gt-rig-name
-		if parts[1] == "polecats" {
+		if constants.IsWorkersDir(parts[1]) {
 			return session.PolecatSessionName(session.PrefixFor(parts[0]), parts[2]), false
 		}
 		// Other 3-part formats not recognized
@@ -1596,7 +1597,7 @@ func runRigBoot(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config and get rig
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{Rigs: make(map[string]config.RigEntry)}
@@ -1664,7 +1665,7 @@ func runRigStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{Rigs: make(map[string]config.RigEntry)}
@@ -1763,7 +1764,7 @@ func runRigShutdown(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config and get rig
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{Rigs: make(map[string]config.RigEntry)}
@@ -2089,7 +2090,7 @@ func runRigStop(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{Rigs: make(map[string]config.RigEntry)}
@@ -2187,7 +2188,7 @@ func runRigRestart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load rigs config
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{Rigs: make(map[string]config.RigEntry)}
@@ -2451,8 +2452,8 @@ func commitTownConfigChanges(townRoot, rigName string) {
 
 	// Collect the town-level files that rig add/adopt modifies.
 	files := []string{
-		filepath.Join("mayor", "rigs.json"),
-		filepath.Join("mayor", "daemon.json"),
+		filepath.Join("coordinator", "rigs.json"),
+		filepath.Join("coordinator", "daemon.json"),
 		filepath.Join(".beads", "routes.jsonl"),
 	}
 

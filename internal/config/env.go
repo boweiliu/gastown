@@ -463,7 +463,7 @@ func resolveDoltPort(townRoot string) int {
 	}
 
 	// 3. daemon.json fallback
-	daemonJSONPath := filepath.Join(townRoot, "mayor", "daemon.json")
+	daemonJSONPath := filepath.Join(townRoot, "coordinator", "daemon.json")
 	if data, err := os.ReadFile(daemonJSONPath); err == nil {
 		var daemonEnv struct {
 			Env map[string]string `json:"env"`

@@ -69,7 +69,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 	}
 
 	// Load rig config
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{Rigs: make(map[string]config.RigEntry)}
@@ -133,7 +133,7 @@ func SpawnPolecatForSling(rigName string, opts SlingSpawnOptions) (*SpawnedPolec
 	// Per-rig directory cap: prevent unbounded worktree accumulation even when
 	// polecats die quickly (tmux session count stays low).
 	const maxPolecatDirsPerRig = 30
-	rigPolecatDir := filepath.Join(townRoot, rigName, "polecats")
+	rigPolecatDir := filepath.Join(townRoot, rigName, "workers")
 	if entries, err := os.ReadDir(rigPolecatDir); err == nil {
 		dirCount := 0
 		for _, e := range entries {
@@ -348,7 +348,7 @@ func (s *SpawnedPolecatInfo) StartSession() (string, error) {
 	}
 
 	// Load rig config
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		rigsConfig = &config.RigsConfig{Rigs: make(map[string]config.RigEntry)}
@@ -455,7 +455,7 @@ func IsRigName(target string) (string, bool) {
 		return "", false
 	}
 
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return "", false

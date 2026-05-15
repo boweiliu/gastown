@@ -924,10 +924,10 @@ func _verifyCommitOnMain(workDir, rigName, polecatName string) (bool, error) {
 	// Construct polecat path, handling both new and old structures
 	// New structure: polecats/<name>/<rigname>/
 	// Old structure: polecats/<name>/
-	polecatPath := filepath.Join(townRoot, rigName, "polecats", polecatName, rigName)
+	polecatPath := filepath.Join(townRoot, rigName, "workers", polecatName, rigName)
 	if _, err := os.Stat(polecatPath); os.IsNotExist(err) {
 		// Fall back to old structure
-		polecatPath = filepath.Join(townRoot, rigName, "polecats", polecatName)
+		polecatPath = filepath.Join(townRoot, rigName, "workers", polecatName)
 	}
 
 	// Get git for the polecat worktree
@@ -1008,9 +1008,9 @@ func _verifyBranchAlreadyMerged(workDir, rigName, polecatName string) (bool, err
 		defaultBranch = rigCfg.DefaultBranch
 	}
 
-	polecatPath := filepath.Join(townRoot, rigName, "polecats", polecatName, rigName)
+	polecatPath := filepath.Join(townRoot, rigName, "workers", polecatName, rigName)
 	if _, err := os.Stat(polecatPath); os.IsNotExist(err) {
-		polecatPath = filepath.Join(townRoot, rigName, "polecats", polecatName)
+		polecatPath = filepath.Join(townRoot, rigName, "workers", polecatName)
 	}
 
 	g := git.NewGit(polecatPath)
@@ -1163,7 +1163,7 @@ func DetectZombiePolecats(bd *BdCli, workDir, rigName string, router *mail.Route
 	// Load witness thresholds from config (fallback to compiled-in defaults).
 	witCfg := config.LoadOperationalConfig(townRoot).GetWitnessConfig()
 
-	polecatsDir := filepath.Join(townRoot, rigName, "polecats")
+	polecatsDir := filepath.Join(townRoot, rigName, "workers")
 	entries, err := os.ReadDir(polecatsDir)
 	if err != nil {
 		return result
@@ -1790,7 +1790,7 @@ func DetectStalledPolecats(workDir, rigName string) *DetectStalledPolecatsResult
 	activityGrace := witCfg.StartupActivityGraceD()
 
 	// List all polecat directories
-	polecatsDir := filepath.Join(townRoot, rigName, "polecats")
+	polecatsDir := filepath.Join(townRoot, rigName, "workers")
 	entries, err := os.ReadDir(polecatsDir)
 	if err != nil {
 		return result // No polecats directory
@@ -1925,7 +1925,7 @@ func DiscoverCompletions(bd *BdCli, workDir, rigName string, router *mail.Router
 	}
 	initRegistryFromTownRoot(townRoot)
 
-	polecatsDir := filepath.Join(townRoot, rigName, "polecats")
+	polecatsDir := filepath.Join(townRoot, rigName, "workers")
 	entries, err := os.ReadDir(polecatsDir)
 	if err != nil {
 		return result
@@ -2439,7 +2439,7 @@ func DetectOrphanedBeads(bd *BdCli, workDir, rigName string, router *mail.Router
 
 		// Parse assignee: "rigname/polecats/polecatname"
 		parts := strings.Split(bead.Assignee, "/")
-		if len(parts) != 3 || parts[1] != "polecats" {
+		if len(parts) != 3 || !constants.IsWorkersDir(parts[1]) {
 			continue // Not a polecat assignee (crew, refinery, etc.)
 		}
 		assigneeRig := parts[0]
@@ -2465,7 +2465,7 @@ func DetectOrphanedBeads(bd *BdCli, workDir, rigName string, router *mail.Router
 
 		// Session is dead. Also check if polecat directory still exists
 		// (if dir exists, DetectZombiePolecats will handle it)
-		polecatsDir := filepath.Join(townRoot, assigneeRig, "polecats", polecatName)
+		polecatsDir := filepath.Join(townRoot, assigneeRig, "workers", polecatName)
 		if _, statErr := os.Stat(polecatsDir); statErr == nil {
 			continue // Directory exists — DetectZombiePolecats handles this case
 		} else if !os.IsNotExist(statErr) {
@@ -2573,7 +2573,7 @@ func DetectOrphanedMolecules(bd *BdCli, workDir, rigName string, router *mail.Ro
 	// Step 2: Check each polecat-assigned bead
 	polecatPrefix := rigName + "/polecats/"
 	t := tmux.NewTmux()
-	polecatsDir := filepath.Join(townRoot, rigName, "polecats")
+	polecatsDir := filepath.Join(townRoot, rigName, "workers")
 
 	for _, b := range allBeads {
 		if !strings.HasPrefix(b.Assignee, polecatPrefix) {

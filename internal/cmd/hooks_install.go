@@ -198,17 +198,17 @@ func determineTargets(townRoot, role string, allRigs bool, allowedRoles []string
 				targets = append(targets, crewDir)
 			}
 		case constants.RolePolecat:
-			polecatsDir := filepath.Join(rigPath, "polecats")
+			polecatsDir := filepath.Join(rigPath, "workers")
 			if info, err := os.Stat(polecatsDir); err == nil && info.IsDir() {
 				targets = append(targets, polecatsDir)
 			}
 		case constants.RoleWitness:
-			witnessDir := filepath.Join(rigPath, "witness")
+			witnessDir := filepath.Join(rigPath, "watcher")
 			if info, err := os.Stat(witnessDir); err == nil && info.IsDir() {
 				targets = append(targets, witnessDir)
 			}
 		case constants.RoleRefinery:
-			refineryDir := filepath.Join(rigPath, "refinery")
+			refineryDir := filepath.Join(rigPath, "merger")
 			if info, err := os.Stat(refineryDir); err == nil && info.IsDir() {
 				targets = append(targets, refineryDir)
 			}

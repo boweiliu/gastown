@@ -82,7 +82,7 @@ func resolveTownSessionTheme(townRoot, role, crewMember string) *Theme {
 		return unresolvedTheme
 	}
 
-	mayorCfg, err := config.LoadMayorConfig(filepath.Join(townRoot, "mayor", "config.json"))
+	mayorCfg, err := config.LoadMayorConfig(filepath.Join(townRoot, "coordinator", "config.json"))
 	if err != nil || mayorCfg.Theme == nil {
 		return unresolvedTheme
 	}

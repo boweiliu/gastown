@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/session"
 	"github.com/steveyegge/gastown/internal/tmux"
@@ -225,7 +226,7 @@ func assigneeToWorktreePath(townRoot, assignee string) string {
 	}
 
 	rigName, agentType, name := parts[0], parts[1], parts[2]
-	if agentType != "polecats" && agentType != "crew" {
+	if !constants.IsWorkersDir(agentType) && agentType != "crew" {
 		return ""
 	}
 

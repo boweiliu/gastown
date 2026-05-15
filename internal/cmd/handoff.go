@@ -695,7 +695,7 @@ func resolvePathToSession(path string) (string, error) {
 	}
 
 	// Handle <rig>/polecats/<name> format (explicit polecat path)
-	if len(parts) == 3 && parts[1] == "polecats" {
+	if len(parts) == 3 && constants.IsWorkersDir(parts[1]) {
 		rig := parts[0]
 		name := strings.ToLower(parts[2]) // normalize polecat name
 		return session.PolecatSessionName(session.PrefixFor(rig), name), nil

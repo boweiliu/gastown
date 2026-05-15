@@ -36,7 +36,7 @@ func NewTestutilSymlinkCheck() *TestutilSymlinkCheck {
 
 // canonicalTestutilPath returns the path to the canonical testutil directory.
 func canonicalTestutilPath(rigPath string) string {
-	return filepath.Join(rigPath, "mayor", "rig", "internal", "testutil")
+	return filepath.Join(rigPath, "coordinator", "rig", "internal", "testutil")
 }
 
 // Run checks if crew and refinery/rig internal/testutil are proper symlinks.
@@ -87,8 +87,8 @@ func (c *TestutilSymlinkCheck) Run(ctx *CheckContext) *CheckResult {
 	}
 
 	// Check refinery/rig/internal/testutil
-	refineryTestutil := filepath.Join(rigPath, "refinery", "rig", "internal", "testutil")
-	if _, err := os.Stat(filepath.Join(rigPath, "refinery", "rig")); err == nil {
+	refineryTestutil := filepath.Join(rigPath, "merger", "rig", "internal", "testutil")
+	if _, err := os.Stat(filepath.Join(rigPath, "merger", "rig")); err == nil {
 		c.checkSymlink(refineryTestutil, canonicalResolved, "refinery/rig")
 		checked++
 	}

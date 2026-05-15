@@ -12,6 +12,7 @@ import (
 	"github.com/steveyegge/gastown/internal/doctor"
 	"github.com/steveyegge/gastown/internal/formula"
 	"github.com/steveyegge/gastown/internal/hooks"
+	"github.com/steveyegge/gastown/internal/migration"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/workspace"
 )
@@ -76,6 +77,11 @@ func runUpgrade(cmd *cobra.Command, args []string) error {
 	}
 
 	var results []upgradeResult
+
+	// Step 0: Migrate runtime directory names (polecats→workers, etc.)
+	// Must run BEFORE doctor checks since doctor expects new names.
+	r0 := upgradeDirNames(townRoot)
+	results = append(results, r0)
 
 	// Step 1: Run doctor --fix for structural checks
 	r1 := upgradeDoctor(townRoot)
@@ -502,4 +508,38 @@ func printUpgradeSummary(results []upgradeResult) {
 	}
 
 	fmt.Println()
+}
+
+// upgradeDirNames migrates old-named runtime directories to new names.
+func upgradeDirNames(townRoot string) upgradeResult {
+	result := upgradeResult{step: "Directory names"}
+
+	fmt.Printf("\n  %s %s\n", style.Bold.Render("0."), "Migrating runtime directory names...")
+
+	migResult := migration.MigrateRuntimeDirs(townRoot, upgradeDryRun)
+
+	if len(migResult.Errors) > 0 {
+		for _, e := range migResult.Errors {
+			result.details = append(result.details, e)
+			fmt.Printf("     %s %s\n", style.ErrorPrefix, e)
+		}
+	}
+
+	if len(migResult.Renamed) == 0 && len(migResult.Errors) == 0 {
+		fmt.Printf("     %s Directory names %s\n", style.SuccessPrefix, style.Dim.Render("up-to-date"))
+		return result
+	}
+
+	for _, r := range migResult.Renamed {
+		fmt.Printf("     %s Renamed %s\n", style.SuccessPrefix, r)
+		result.changed++
+	}
+
+	for _, s := range migResult.Skipped {
+		if upgradeVerbose {
+			fmt.Printf("     %s Skipped %s\n", style.Dim.Render("○"), s)
+		}
+	}
+
+	return result
 }

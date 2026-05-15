@@ -214,7 +214,7 @@ func (m *Manager) loadRig(name string, entry config.RigEntry) (*Rig, error) {
 	}
 
 	// Scan for polecats
-	polecatsDir := filepath.Join(rigPath, "polecats")
+	polecatsDir := filepath.Join(rigPath, "workers")
 	if entries, err := os.ReadDir(polecatsDir); err == nil {
 		for _, e := range entries {
 			if !e.IsDir() {
@@ -239,19 +239,19 @@ func (m *Manager) loadRig(name string, entry config.RigEntry) (*Rig, error) {
 	}
 
 	// Check for witness (witnesses don't have clones, just the witness directory)
-	witnessPath := filepath.Join(rigPath, "witness")
+	witnessPath := filepath.Join(rigPath, "watcher")
 	if info, err := os.Stat(witnessPath); err == nil && info.IsDir() {
 		rig.HasWitness = true
 	}
 
 	// Check for refinery
-	refineryPath := filepath.Join(rigPath, "refinery", "rig")
+	refineryPath := filepath.Join(rigPath, "merger", "rig")
 	if _, err := os.Stat(refineryPath); err == nil {
 		rig.HasRefinery = true
 	}
 
 	// Check for mayor clone
-	mayorPath := filepath.Join(rigPath, "mayor", "rig")
+	mayorPath := filepath.Join(rigPath, "coordinator", "rig")
 	if _, err := os.Stat(mayorPath); err == nil {
 		rig.HasMayor = true
 	}
@@ -530,7 +530,7 @@ func (m *Manager) AddRig(opts AddRigOptions) (*Rig, error) {
 	// Uses --reference to borrow objects from the bare repo we just created,
 	// avoiding a redundant download from the remote (GH#1059).
 	fmt.Printf("  Creating mayor clone...\n")
-	mayorRigPath := filepath.Join(rigPath, "mayor", "rig")
+	mayorRigPath := filepath.Join(rigPath, "coordinator", "rig")
 	if err := os.MkdirAll(filepath.Dir(mayorRigPath), 0755); err != nil {
 		return nil, fmt.Errorf("creating mayor dir: %w", err)
 	}
@@ -749,7 +749,7 @@ func (m *Manager) AddRig(opts AddRigOptions) (*Rig, error) {
 	// Refinery needs to see polecat branches (shared .repo.git) and merges them.
 	// Being on the default branch allows direct merge workflow.
 	fmt.Printf("  Creating refinery worktree...\n")
-	refineryRigPath := filepath.Join(rigPath, "refinery", "rig")
+	refineryRigPath := filepath.Join(rigPath, "merger", "rig")
 	if err := os.MkdirAll(filepath.Dir(refineryRigPath), 0755); err != nil {
 		return nil, fmt.Errorf("creating refinery dir: %w", err)
 	}
@@ -804,7 +804,7 @@ Use crew for your own workspace. Polecats are for batch work dispatch.
 		return nil, fmt.Errorf("creating crew README: %w", err)
 	}
 	// Create witness directory (no clone needed)
-	witnessPath := filepath.Join(rigPath, "witness")
+	witnessPath := filepath.Join(rigPath, "watcher")
 	if err := os.MkdirAll(witnessPath, 0755); err != nil {
 		return nil, fmt.Errorf("creating witness dir: %w", err)
 	}
@@ -815,7 +815,7 @@ Use crew for your own workspace. Polecats are for batch work dispatch.
 	// Settings are passed to the agent via --settings flag (Claude) or installed
 	// in workDir (other agents). Scaffolding here ensures the settings file exists
 	// before the first polecat session starts, preventing startup failures.
-	polecatsPath := filepath.Join(rigPath, "polecats")
+	polecatsPath := filepath.Join(rigPath, "workers")
 	if err := os.MkdirAll(polecatsPath, 0755); err != nil {
 		return nil, fmt.Errorf("creating polecats dir: %w", err)
 	}
@@ -848,7 +848,7 @@ Use crew for your own workspace. Polecats are for batch work dispatch.
 	// Without this, agent bead creation logs "no route found" warnings (#1424).
 	if opts.BeadsPrefix != "" {
 		routePath := opts.Name
-		mayorRigBeads := filepath.Join(rigPath, "mayor", "rig", ".beads")
+		mayorRigBeads := filepath.Join(rigPath, "coordinator", "rig", ".beads")
 		if _, err := os.Stat(mayorRigBeads); err == nil {
 			routePath = opts.Name + "/mayor/rig"
 		}
@@ -919,7 +919,7 @@ Use crew for your own workspace. Polecats are for batch work dispatch.
 	// if the save fails, success remains false and the deferred cleanup removes the dir.
 	// Without this, a failure after AddRig returns (but before the caller saves) would
 	// leave a directory that is not registered in rigs.json.
-	rigsPath := filepath.Join(m.townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(m.townRoot, "coordinator", "rigs.json")
 	if err := config.SaveRigsConfig(rigsPath, m.config); err != nil {
 		return nil, fmt.Errorf("registering rig in rigs.json: %w", err)
 	}
@@ -1138,7 +1138,7 @@ func (m *Manager) InitBeads(rigPath, prefix, rigName string) error {
 	}
 
 	beadsDir := filepath.Join(rigPath, ".beads")
-	mayorRigBeads := filepath.Join(rigPath, "mayor", "rig", ".beads")
+	mayorRigBeads := filepath.Join(rigPath, "coordinator", "rig", ".beads")
 
 	// Check if source repo has tracked .beads/ (cloned into mayor/rig).
 	// If so, create a redirect file instead of a new database.
@@ -1733,7 +1733,7 @@ func (m *Manager) RegisterRig(opts RegisterRigOptions) (*RegisterRigResult, erro
 
 	// Apply push URL to existing repos (mirrors AddRig behavior).
 	bareRepoPath := filepath.Join(rigPath, ".repo.git")
-	mayorRigPath := filepath.Join(rigPath, "mayor", "rig")
+	mayorRigPath := filepath.Join(rigPath, "coordinator", "rig")
 	if pushURL != "" {
 		if _, err := os.Stat(bareRepoPath); err == nil {
 			bareGit := git.NewGitWithDir(bareRepoPath, "")
@@ -1817,8 +1817,8 @@ func (m *Manager) detectPushURL(rigPath string) string {
 
 	clonePaths := []string{
 		rigPath,
-		filepath.Join(rigPath, "mayor", "rig"),
-		filepath.Join(rigPath, "refinery", "rig"),
+		filepath.Join(rigPath, "coordinator", "rig"),
+		filepath.Join(rigPath, "merger", "rig"),
 	}
 	for _, p := range clonePaths {
 		if pushURL := detectPushURLFrom(git.NewGit(p)); pushURL != "" {
@@ -1852,8 +1852,8 @@ func detectPushURLFrom(g *git.Git) string {
 func (m *Manager) detectGitURL(rigPath string) (string, error) {
 	possiblePaths := []string{
 		rigPath,
-		filepath.Join(rigPath, "mayor", "rig"),
-		filepath.Join(rigPath, "refinery", "rig"),
+		filepath.Join(rigPath, "coordinator", "rig"),
+		filepath.Join(rigPath, "merger", "rig"),
 	}
 	for _, p := range possiblePaths {
 		g := git.NewGit(p)

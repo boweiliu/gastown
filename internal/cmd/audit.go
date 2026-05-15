@@ -259,7 +259,7 @@ func collectBeadsActivity(townRoot, actor string, since time.Time) ([]AuditEntry
 	var entries []AuditEntry
 
 	// Find the gastown beads path (where gt- prefix issues live)
-	gastownBeadsPath := filepath.Join(townRoot, "gastown", "mayor", "rig")
+	gastownBeadsPath := filepath.Join(townRoot, "gastown", "coordinator", "rig")
 	b := beads.New(gastownBeadsPath)
 
 	// List all issues to filter by created_by and assignee

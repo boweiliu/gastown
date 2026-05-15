@@ -204,12 +204,12 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating directory: %w", err)
 	}
 
-	// Create mayor directory (holds config, state, and mail)
-	mayorDir := filepath.Join(absPath, "mayor")
-	if err := os.MkdirAll(mayorDir, 0755); err != nil {
-		return fmt.Errorf("creating mayor directory: %w", err)
+	// Create coordinator directory (holds config, state, and mail)
+	coordinatorDir := filepath.Join(absPath, "coordinator")
+	if err := os.MkdirAll(coordinatorDir, 0755); err != nil {
+		return fmt.Errorf("creating coordinator directory: %w", err)
 	}
-	fmt.Printf("   ✓ Created mayor/\n")
+	fmt.Printf("   ✓ Created coordinator/\n")
 
 	// Determine owner (defaults to git user.email)
 	owner := installOwner
@@ -227,7 +227,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create town.json in mayor/ (only if it doesn't already exist).
-	townPath := filepath.Join(mayorDir, "town.json")
+	townPath := filepath.Join(coordinatorDir, "town.json")
 	if townInfo, err := os.Stat(townPath); os.IsNotExist(err) {
 		townConfig := &config.TownConfig{
 			Type:       "town",
@@ -251,7 +251,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Create rigs.json in mayor/ (only if it doesn't already exist).
 	// Re-running install must NOT clobber existing rig registrations.
-	rigsPath := filepath.Join(mayorDir, "rigs.json")
+	rigsPath := filepath.Join(coordinatorDir, "rigs.json")
 	if rigsInfo, err := os.Stat(rigsPath); os.IsNotExist(err) {
 		rigsConfig := &config.RigsConfig{
 			Version: config.CurrentRigsVersion,
@@ -287,12 +287,12 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// IMPORTANT: Settings must be in ~/gt/mayor/.claude/, NOT ~/gt/.claude/
 	// Settings at town root would be found by ALL agents via directory traversal,
 	// causing crew/polecat/etc to cd to town root before running commands.
-	// mayorDir already defined above
-	if err := os.MkdirAll(mayorDir, 0755); err != nil {
+	// coordinatorDir already defined above
+	if err := os.MkdirAll(coordinatorDir, 0755); err != nil {
 		fmt.Printf("   %s Could not create mayor directory: %v\n", style.Dim.Render("⚠"), err)
 	} else {
-		mayorRuntimeConfig := config.ResolveRoleAgentConfig("mayor", absPath, mayorDir)
-		if err := runtime.EnsureSettingsForRole(mayorDir, mayorDir, "mayor", mayorRuntimeConfig); err != nil {
+		mayorRuntimeConfig := config.ResolveRoleAgentConfig("mayor", absPath, coordinatorDir)
+		if err := runtime.EnsureSettingsForRole(coordinatorDir, coordinatorDir, "mayor", mayorRuntimeConfig); err != nil {
 			fmt.Printf("   %s Could not create mayor settings: %v\n", style.Dim.Render("⚠"), err)
 		} else {
 			fmt.Printf("   ✓ Created mayor/.claude/settings.json\n")

@@ -51,7 +51,7 @@ func (c *StaleRuntimeFilesCheck) Run(ctx *CheckContext) *CheckResult {
 	c.staleWispConfigs = nil
 
 	// Load registered rigs
-	rigsConfigPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return &CheckResult{

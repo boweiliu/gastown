@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/session"
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/style"
 	"github.com/steveyegge/gastown/internal/tmux"
 	"github.com/steveyegge/gastown/internal/workspace"
@@ -374,16 +375,16 @@ func targetToSessionName(target string) (string, error) {
 	parts := strings.Split(target, "/")
 
 	switch {
-	case len(parts) == 3 && parts[1] == "polecats":
+	case len(parts) == 3 && constants.IsWorkersDir(parts[1]):
 		// gastown/polecats/alpha -> {prefix}-alpha
 		return session.PolecatSessionName(session.PrefixFor(parts[0]), parts[2]), nil
 	case len(parts) == 3 && parts[1] == "crew":
 		// gastown/crew/bob -> {prefix}-crew-bob
 		return session.CrewSessionName(session.PrefixFor(parts[0]), parts[2]), nil
-	case len(parts) == 2 && parts[1] == "witness":
+	case len(parts) == 2 && constants.IsWatcherDir(parts[1]):
 		// gastown/witness -> {prefix}-witness
 		return session.WitnessSessionName(session.PrefixFor(parts[0])), nil
-	case len(parts) == 2 && parts[1] == "refinery":
+	case len(parts) == 2 && constants.IsMergerDir(parts[1]):
 		// gastown/refinery -> {prefix}-refinery
 		return session.RefinerySessionName(session.PrefixFor(parts[0])), nil
 	case len(parts) == 2 && parts[0] == "deacon" && parts[1] == "dogs":

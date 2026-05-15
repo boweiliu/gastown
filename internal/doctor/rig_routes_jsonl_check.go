@@ -125,7 +125,7 @@ func (c *RigRoutesJSONLCheck) findRigDirectories(townRoot string) []string {
 	seen := make(map[string]bool)
 
 	// Source 1: rigs.json registry
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	if rigsConfig, err := config.LoadRigsConfig(rigsPath); err == nil {
 		for rigName := range rigsConfig.Rigs {
 			rigPath := filepath.Join(townRoot, rigName)

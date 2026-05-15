@@ -219,7 +219,7 @@ func isLikelyRig(path string) bool {
 		return true
 	}
 	// Check for mayor/rig (has the standard rig structure)
-	if _, err := os.Stat(filepath.Join(path, "mayor", "rig")); err == nil {
+	if _, err := os.Stat(filepath.Join(path, "coordinator", "rig")); err == nil {
 		return true
 	}
 	// Check for .beads directory (has beads configured)
@@ -254,14 +254,14 @@ func getBeadsDirsToCheck(rigDir string) []string {
 	}
 
 	// Refinery .beads: <rig>/refinery/rig/.beads
-	refineryBeads := filepath.Join(rigDir, "refinery", "rig", ".beads")
+	refineryBeads := filepath.Join(rigDir, "merger", "rig", ".beads")
 	if _, err := os.Stat(refineryBeads); err == nil {
 		dirs = append(dirs, refineryBeads)
 	}
 
 	// Polecats .beads directories: <rig>/polecats/*/.beads
 	// Polecats may use nested structure: polecats/<name>/<rig_name>/.beads
-	polecatsDir := filepath.Join(rigDir, "polecats")
+	polecatsDir := filepath.Join(rigDir, "workers")
 	if entries, err := os.ReadDir(polecatsDir); err == nil {
 		for _, entry := range entries {
 			// Skip hidden directories
@@ -366,7 +366,7 @@ func (c *StaleBeadsRedirectCheck) verifyRedirectTopology(ctx *CheckContext, rigD
 
 	// Check if rig has beads configured at all
 	rigBeadsPath := filepath.Join(rigDir, ".beads")
-	mayorBeadsPath := filepath.Join(rigDir, "mayor", "rig", ".beads")
+	mayorBeadsPath := filepath.Join(rigDir, "coordinator", "rig", ".beads")
 
 	// If neither location has beads, skip this rig (not configured)
 	if !dirExists(rigBeadsPath) && !dirExists(mayorBeadsPath) {
@@ -436,7 +436,7 @@ func getWorktreePaths(rigDir string) []string {
 	// Polecats: <rig>/polecats/*
 	// Polecats may use nested structure: polecats/<name>/<rig_name>/
 	// where <rig_name>/ is the actual git worktree (clone path).
-	polecatsDir := filepath.Join(rigDir, "polecats")
+	polecatsDir := filepath.Join(rigDir, "workers")
 	if entries, err := os.ReadDir(polecatsDir); err == nil {
 		for _, entry := range entries {
 			name := entry.Name()
@@ -448,7 +448,7 @@ func getWorktreePaths(rigDir string) []string {
 	}
 
 	// Refinery: <rig>/refinery/rig
-	refineryPath := filepath.Join(rigDir, "refinery", "rig")
+	refineryPath := filepath.Join(rigDir, "merger", "rig")
 	if dirExists(refineryPath) {
 		paths = append(paths, refineryPath)
 	}
@@ -462,7 +462,7 @@ func getWorktreePaths(rigDir string) []string {
 //   - Old flat structure: polecats/<name>/ (backward compat)
 func polecatClonePath(rigDir, polecatName string) string {
 	rigName := filepath.Base(rigDir)
-	polecatDir := filepath.Join(rigDir, "polecats", polecatName)
+	polecatDir := filepath.Join(rigDir, "workers", polecatName)
 
 	// New structure: polecats/<name>/<rig_name>/
 	nestedPath := filepath.Join(polecatDir, rigName)

@@ -233,7 +233,7 @@ func cleanupSpawnedPolecat(spawnInfo *SpawnedPolecatInfo, rigName, convoyID stri
 	if err != nil {
 		return
 	}
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return
@@ -344,7 +344,7 @@ func getRepoGitForRig(rigPath string) *git.Git {
 	if info, statErr := os.Stat(bareRepoPath); statErr == nil && info.IsDir() {
 		return git.NewGitWithDir(bareRepoPath, "")
 	}
-	return git.NewGit(filepath.Join(rigPath, "mayor", "rig"))
+	return git.NewGit(filepath.Join(rigPath, "coordinator", "rig"))
 }
 
 // deletePolecatBranch deletes a local git branch for a worker.

@@ -266,7 +266,7 @@ func detectRole(cwd, townRoot string) RoleInfo {
 	}
 
 	// Check for mayor role: mayor/ or mayor/rig/
-	if len(parts) >= 1 && parts[0] == "mayor" {
+	if len(parts) >= 1 && constants.IsCoordinatorDir(parts[0]) {
 		ctx.Role = RoleMayor
 		return ctx
 	}
@@ -300,25 +300,25 @@ func detectRole(cwd, townRoot string) RoleInfo {
 	ctx.Rig = rigName
 
 	// Check for mayor: <rig>/mayor/ or <rig>/mayor/rig/
-	if len(parts) >= 2 && parts[1] == "mayor" {
+	if len(parts) >= 2 && constants.IsCoordinatorDir(parts[1]) {
 		ctx.Role = RoleMayor
 		return ctx
 	}
 
 	// Check for witness: <rig>/witness/rig/
-	if len(parts) >= 2 && parts[1] == "witness" {
+	if len(parts) >= 2 && constants.IsWatcherDir(parts[1]) {
 		ctx.Role = RoleWitness
 		return ctx
 	}
 
 	// Check for refinery: <rig>/refinery/rig/
-	if len(parts) >= 2 && parts[1] == "refinery" {
+	if len(parts) >= 2 && constants.IsMergerDir(parts[1]) {
 		ctx.Role = RoleRefinery
 		return ctx
 	}
 
 	// Check for polecat: <rig>/polecats/<name>/
-	if len(parts) >= 3 && parts[1] == "polecats" {
+	if len(parts) >= 3 && constants.IsWorkersDir(parts[1]) {
 		ctx.Role = RolePolecat
 		ctx.Polecat = parts[2]
 		return ctx
@@ -436,24 +436,24 @@ func (info RoleInfo) ActorString() string {
 func getRoleHome(role Role, rig, polecat, townRoot string) string {
 	switch role {
 	case RoleMayor:
-		return filepath.Join(townRoot, "mayor")
+		return filepath.Join(townRoot, "coordinator")
 	case RoleDeacon:
 		return filepath.Join(townRoot, "deacon")
 	case RoleWitness:
 		if rig == "" {
 			return ""
 		}
-		return filepath.Join(townRoot, rig, "witness")
+		return filepath.Join(townRoot, rig, "watcher")
 	case RoleRefinery:
 		if rig == "" {
 			return ""
 		}
-		return filepath.Join(townRoot, rig, "refinery", "rig")
+		return filepath.Join(townRoot, rig, "merger", "rig")
 	case RolePolecat:
 		if rig == "" || polecat == "" {
 			return ""
 		}
-		return filepath.Join(townRoot, rig, "polecats", polecat)
+		return filepath.Join(townRoot, rig, "workers", polecat)
 	case RoleCrew:
 		if rig == "" || polecat == "" {
 			return ""

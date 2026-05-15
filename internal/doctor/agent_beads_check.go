@@ -491,7 +491,7 @@ func verifyLabelAdded(workDir, beadID, label string) bool {
 // listPolecats returns the names of canonical polecat directories in a rig.
 // Filters out git worktrees (same logic as listCrewWorkers). See GH#2767.
 func listPolecats(townRoot, rigName string) []string {
-	polecatDir := filepath.Join(townRoot, rigName, "polecats")
+	polecatDir := filepath.Join(townRoot, rigName, "workers")
 	entries, err := os.ReadDir(polecatDir)
 	if err != nil {
 		return nil // No polecats directory or can't read it

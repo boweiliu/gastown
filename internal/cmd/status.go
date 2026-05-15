@@ -727,7 +727,7 @@ func gatherStatus() (TownStatus, error) {
 		beadsWg.Add(1)
 		go func(r *rig.Rig) {
 			defer beadsWg.Done()
-			rigBeadsPath := filepath.Join(r.Path, "mayor", "rig")
+			rigBeadsPath := filepath.Join(r.Path, "coordinator", "rig")
 			rigBeads := beads.New(rigBeadsPath)
 			rigAgentBeads, _ := rigBeads.ListAgentBeads()
 			if rigAgentBeads == nil {

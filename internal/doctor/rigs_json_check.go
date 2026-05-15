@@ -71,7 +71,7 @@ func (c *RigsJSONCheck) Fix(ctx *CheckContext) error {
 // Run checks that rigs.json exists at the canonical or fallback location.
 func (c *RigsJSONCheck) Run(ctx *CheckContext) *CheckResult {
 	c.townRoot = ctx.TownRoot
-	c.canonicalPath = filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	c.canonicalPath = filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	c.fallbackPath = filepath.Join(ctx.TownRoot, "rigs.json")
 
 	// Check canonical location

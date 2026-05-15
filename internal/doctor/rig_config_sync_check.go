@@ -65,7 +65,7 @@ func NewRigConfigSyncCheck() *RigConfigSyncCheck {
 
 // Run checks if all registered rigs have proper configuration.
 func (c *RigConfigSyncCheck) Run(ctx *CheckContext) *CheckResult {
-	rigsConfigPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return &CheckResult{
@@ -278,7 +278,7 @@ func (c *RigConfigSyncCheck) Run(ctx *CheckContext) *CheckResult {
 
 // Fix creates missing config.json files, Dolt databases, and rig identity beads.
 func (c *RigConfigSyncCheck) Fix(ctx *CheckContext) error {
-	rigsConfigPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return fmt.Errorf("could not load rigs registry: %w", err)
@@ -369,7 +369,7 @@ func (c *RigConfigSyncCheck) Fix(ctx *CheckContext) error {
 		rigPath := filepath.Join(ctx.TownRoot, rigName)
 		beadsDir := doltserver.FindRigBeadsDir(ctx.TownRoot, rigName)
 		cmdDir := rigPath
-		mayorRigPath := filepath.Join(rigPath, "mayor", "rig")
+		mayorRigPath := filepath.Join(rigPath, "coordinator", "rig")
 		if _, err := os.Stat(beadsDir); os.IsNotExist(err) {
 			if _, statErr := os.Stat(mayorRigPath); statErr == nil {
 				beadsDir = filepath.Join(mayorRigPath, ".beads")

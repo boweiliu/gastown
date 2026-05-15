@@ -515,7 +515,7 @@ func (c *SessionHookCheck) findSettingsFiles(townRoot string) []string {
 	var files []string
 
 	// Town-level agents: mayor and deacon (settings in their own dir)
-	mayorSettings := filepath.Join(townRoot, "mayor", ".claude", "settings.json")
+	mayorSettings := filepath.Join(townRoot, "coordinator", ".claude", "settings.json")
 	if _, err := os.Stat(mayorSettings); err == nil {
 		files = append(files, mayorSettings)
 	}
@@ -529,13 +529,13 @@ func (c *SessionHookCheck) findSettingsFiles(townRoot string) []string {
 	rigs := findAllRigs(townRoot)
 	for _, rig := range rigs {
 		// Witness - settings in parent directory (witness/)
-		witnessSettings := filepath.Join(rig, "witness", ".claude", "settings.json")
+		witnessSettings := filepath.Join(rig, "watcher", ".claude", "settings.json")
 		if _, err := os.Stat(witnessSettings); err == nil {
 			files = append(files, witnessSettings)
 		}
 
 		// Refinery - settings in parent directory (refinery/)
-		refinerySettings := filepath.Join(rig, "refinery", ".claude", "settings.json")
+		refinerySettings := filepath.Join(rig, "merger", ".claude", "settings.json")
 		if _, err := os.Stat(refinerySettings); err == nil {
 			files = append(files, refinerySettings)
 		}
@@ -547,7 +547,7 @@ func (c *SessionHookCheck) findSettingsFiles(townRoot string) []string {
 		}
 
 		// Polecats - shared settings in parent directory (polecats/)
-		polecatSettings := filepath.Join(rig, "polecats", ".claude", "settings.json")
+		polecatSettings := filepath.Join(rig, "workers", ".claude", "settings.json")
 		if _, err := os.Stat(polecatSettings); err == nil {
 			files = append(files, polecatSettings)
 		}
@@ -578,7 +578,7 @@ func findAllRigs(townRoot string) []string {
 		rigPath := filepath.Join(townRoot, name)
 
 		// Check if this looks like a rig (has crew/, polecats/, witness/, or refinery/)
-		markers := []string{"crew", "polecats", "witness", "refinery"}
+		markers := []string{"crew", "team", "polecats", "workers", "witness", "watcher", "refinery", "merger"}
 		for _, marker := range markers {
 			if _, err := os.Stat(filepath.Join(rigPath, marker)); err == nil {
 				rigs = append(rigs, rigPath)

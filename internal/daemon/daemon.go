@@ -1054,7 +1054,7 @@ func (d *Daemon) checkAllRigsDolt() error {
 
 	// Check each registered rig
 	for _, rigName := range d.getKnownRigs() {
-		rigBeadsDir := filepath.Join(d.config.TownRoot, rigName, "mayor", "rig", ".beads")
+		rigBeadsDir := filepath.Join(d.config.TownRoot, rigName, "coordinator", "rig", ".beads")
 		if backend := readBeadsBackend(rigBeadsDir); backend != "" && backend != "dolt" {
 			rigPath := filepath.Join(d.config.TownRoot, rigName)
 			problems = append(problems, fmt.Sprintf(
@@ -1972,7 +1972,7 @@ func (d *Daemon) killDefaultPrefixGhosts() {
 		if rigPrefix == session.DefaultPrefix {
 			continue // This rig uses "gt" — its sessions are fine
 		}
-		rigPath := filepath.Join(d.config.TownRoot, rigName, "polecats")
+		rigPath := filepath.Join(d.config.TownRoot, rigName, "workers")
 		entries, err := os.ReadDir(rigPath)
 		if err != nil {
 			continue
@@ -2074,7 +2074,7 @@ func (d *Daemon) invalidateKnownRigsCache() {
 
 // readKnownRigsFromDisk reads and parses mayor/rigs.json.
 func (d *Daemon) readKnownRigsFromDisk() []string {
-	rigsPath := filepath.Join(d.config.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(d.config.TownRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
 		return nil
@@ -2538,7 +2538,7 @@ func (d *Daemon) checkPolecatSessionHealth() {
 // checkRigPolecatHealth checks polecat session health for a specific rig.
 func (d *Daemon) checkRigPolecatHealth(rigName string) {
 	// Get polecat directories for this rig
-	polecatsDir := filepath.Join(d.config.TownRoot, rigName, "polecats")
+	polecatsDir := filepath.Join(d.config.TownRoot, rigName, "workers")
 	polecats, err := listPolecatWorktrees(polecatsDir)
 	if err != nil {
 		return // No polecats directory - rig might not have polecats
@@ -2822,7 +2822,7 @@ func (d *Daemon) reapIdlePolecats() {
 
 // reapRigIdlePolecats checks all polecats in a rig and kills idle sessions.
 func (d *Daemon) reapRigIdlePolecats(rigName string, timeout time.Duration) {
-	polecatsDir := filepath.Join(d.config.TownRoot, rigName, "polecats")
+	polecatsDir := filepath.Join(d.config.TownRoot, rigName, "workers")
 	polecats, err := listPolecatWorktrees(polecatsDir)
 	if err != nil {
 		return // No polecats directory

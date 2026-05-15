@@ -288,9 +288,9 @@ func NewEngineer(r *rig.Rig) *Engineer {
 	// Determine the git working directory for refinery operations.
 	// Prefer refinery/rig worktree, fall back to mayor/rig (legacy architecture).
 	// Using rig.Path directly would find town's .git with rig-named remotes instead of "origin".
-	gitDir := filepath.Join(r.Path, "refinery", "rig")
+	gitDir := filepath.Join(r.Path, "merger", "rig")
 	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
-		gitDir = filepath.Join(r.Path, "mayor", "rig")
+		gitDir = filepath.Join(r.Path, "coordinator", "rig")
 	}
 	beadsClient := beads.New(r.Path)
 
@@ -581,7 +581,7 @@ func (e *Engineer) doMerge(ctx context.Context, branch, target, sourceIssue stri
 	if len(subChanges) > 0 {
 		// Ensure submodules are initialized in the refinery worktree
 		// Use mayor/rig as reference to avoid re-fetching from remote
-		mayorRig := filepath.Join(e.rig.Path, "mayor", "rig")
+		mayorRig := filepath.Join(e.rig.Path, "coordinator", "rig")
 		if initErr := git.InitSubmodules(e.git.WorkDir(), mayorRig); initErr != nil {
 			return ProcessResult{
 				Success: false,

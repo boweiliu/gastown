@@ -311,7 +311,7 @@ func getDogManager() (*helper.Manager, error) {
 		return nil, fmt.Errorf("finding town root: %w", err)
 	}
 
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("loading rigs config: %w", err)
@@ -1018,7 +1018,7 @@ func runDogDispatch(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get rig names for plugin scanner
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return fmt.Errorf("loading rigs config: %w", err)

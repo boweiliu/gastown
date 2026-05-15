@@ -203,7 +203,7 @@ func PrefixFor(rigName string) string {
 // silent failures in session name parsing (crew cycling, nudge routing, etc.).
 func BuildPrefixRegistryFromTown(townRoot string) (*PrefixRegistry, error) {
 	// Canonical location: inside mayor worktree.
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	fallbackPath := filepath.Join(townRoot, "rigs.json")
 	if _, err := os.Stat(rigsPath); err == nil {
 		r, err := BuildPrefixRegistryFromFile(rigsPath)

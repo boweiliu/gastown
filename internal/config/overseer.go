@@ -26,7 +26,7 @@ const CurrentOverseerVersion = 1
 
 // OverseerConfigPath returns the standard path for overseer config in a town.
 func OverseerConfigPath(townRoot string) string {
-	return filepath.Join(townRoot, "mayor", "overseer.json")
+	return filepath.Join(townRoot, "coordinator", "overseer.json")
 }
 
 // LoadOverseerConfig loads and validates an overseer configuration file.

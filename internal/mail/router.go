@@ -1026,7 +1026,7 @@ func (r *Router) validateAgentWorkspace(identity string) bool {
 		}
 	case 3:
 		// Explicit role paths: rig/crew/<name> or rig/polecats/<name>
-		if parts[1] == "crew" || parts[1] == "polecats" {
+		if parts[1] == "crew" || constants.IsWorkersDir(parts[1]) {
 			return dirExists(filepath.Join(r.townRoot, parts[0], parts[1], parts[2]))
 		}
 		// Dog addresses: deacon/dogs/<name>

@@ -114,7 +114,7 @@ func (c *RoutesCheck) Run(ctx *CheckContext) *CheckResult {
 	}
 
 	// Load rigs registry
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		// No rigs config - check for missing town/convoy routes and validate existing routes
@@ -341,7 +341,7 @@ func (c *RoutesCheck) Fix(ctx *CheckContext) error {
 	}
 
 	// Load rigs registry
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsPath)
 	if err != nil {
 		// No rigs config - just write town root route if we added it

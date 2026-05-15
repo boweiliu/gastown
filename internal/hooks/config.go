@@ -429,7 +429,7 @@ func DiscoverTargets(townRoot string) ([]Target, error) {
 
 	// Town-level targets (mayor/deacon cwd IS the settings dir)
 	targets = append(targets, Target{
-		Path: filepath.Join(townRoot, "mayor", ".claude", "settings.json"),
+		Path: filepath.Join(townRoot, "coordinator", ".claude", "settings.json"),
 		Key:  "mayor",
 		Role: "mayor",
 	})
@@ -486,7 +486,7 @@ func DiscoverTargets(townRoot string) ([]Target, error) {
 
 		// Polecats — one shared settings file in the polecats parent directory.
 		// All polecats share this via --settings flag.
-		polecatsDir := filepath.Join(rigPath, "polecats")
+		polecatsDir := filepath.Join(rigPath, "workers")
 		if info, err := os.Stat(polecatsDir); err == nil && info.IsDir() {
 			targets = append(targets, Target{
 				Path: filepath.Join(polecatsDir, ".claude", "settings.json"),
@@ -497,7 +497,7 @@ func DiscoverTargets(townRoot string) ([]Target, error) {
 		}
 
 		// Witness — settings in the witness parent directory
-		witnessDir := filepath.Join(rigPath, "witness")
+		witnessDir := filepath.Join(rigPath, "watcher")
 		if info, err := os.Stat(witnessDir); err == nil && info.IsDir() {
 			targets = append(targets, Target{
 				Path: filepath.Join(witnessDir, ".claude", "settings.json"),
@@ -508,7 +508,7 @@ func DiscoverTargets(townRoot string) ([]Target, error) {
 		}
 
 		// Refinery — settings in the refinery parent directory
-		refineryDir := filepath.Join(rigPath, "refinery")
+		refineryDir := filepath.Join(rigPath, "merger")
 		if info, err := os.Stat(refineryDir); err == nil && info.IsDir() {
 			targets = append(targets, Target{
 				Path: filepath.Join(refineryDir, ".claude", "settings.json"),
@@ -642,7 +642,7 @@ func isGitWorktreeRoot(dir string) bool {
 
 // isRig checks if a directory looks like a rig (has crew/, witness/, or polecats/ subdirectory).
 func isRig(path string) bool {
-	for _, sub := range []string{"crew", "witness", "polecats", "refinery"} {
+	for _, sub := range []string{"crew", "team", "witness", "watcher", "polecats", "workers", "refinery", "merger"} {
 		info, err := os.Stat(filepath.Join(path, sub))
 		if err == nil && info.IsDir() {
 			return true
@@ -846,7 +846,7 @@ func NormalizeTarget(target string) (string, bool) {
 
 	validRoles := map[string]bool{
 		"crew": true, "witness": true, "refinery": true,
-		"polecats": true, "mayor": true, "deacon": true,
+		"polecats": true, "workers": true, "mayor": true, "coordinator": true, "deacon": true,
 	}
 
 	// Simple role target

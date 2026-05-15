@@ -114,11 +114,11 @@ func (c *WorktreeGitdirCheck) Run(ctx *CheckContext) *CheckResult {
 // checkRigWorktrees checks all worktrees within a single rig.
 func (c *WorktreeGitdirCheck) checkRigWorktrees(rigPath, rigName string) {
 	// Check refinery/rig
-	refineryRig := filepath.Join(rigPath, "refinery", "rig")
+	refineryRig := filepath.Join(rigPath, "merger", "rig")
 	c.checkWorktree(refineryRig, rigPath)
 
 	// Check polecats (both structures: polecats/<name>/<rigname>/ and polecats/<name>/)
-	polecatsDir := filepath.Join(rigPath, "polecats")
+	polecatsDir := filepath.Join(rigPath, "workers")
 	polecatEntries, err := os.ReadDir(polecatsDir)
 	if err != nil {
 		return
@@ -144,7 +144,7 @@ func (c *WorktreeGitdirCheck) checkRigWorktrees(rigPath, rigName string) {
 	}
 
 	// Check witness/rig
-	witnessRig := filepath.Join(rigPath, "witness", "rig")
+	witnessRig := filepath.Join(rigPath, "watcher", "rig")
 	if c.hasGitFile(witnessRig) {
 		c.checkWorktree(witnessRig, rigPath)
 	}
@@ -443,7 +443,7 @@ func isRigDir(path string) bool {
 		return true
 	}
 	// Check for known rig subdirectories
-	markers := []string{"refinery", "witness", "polecats", "mayor"}
+	markers := []string{"refinery", "merger", "witness", "watcher", "polecats", "workers", "mayor", "coordinator"}
 	for _, marker := range markers {
 		if _, err := os.Stat(filepath.Join(path, marker)); err == nil {
 			return true

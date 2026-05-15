@@ -204,7 +204,7 @@ func (m *Manager) findRepoBase(rigPath string) (*git.Git, error) {
 	}
 
 	// Fall back to mayor/rig
-	mayorPath := filepath.Join(rigPath, "mayor", "rig")
+	mayorPath := filepath.Join(rigPath, "coordinator", "rig")
 	if _, err := os.Stat(mayorPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("no repo base found (neither .repo.git nor mayor/rig exists)")
 	}

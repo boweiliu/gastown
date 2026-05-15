@@ -21,11 +21,11 @@ var (
 )
 
 func ACPPidFilePath(townRoot string) string {
-	return filepath.Join(townRoot, "mayor", acpPidFileName)
+	return filepath.Join(townRoot, "coordinator", acpPidFileName)
 }
 
 func WriteACPPid(townRoot string) error {
-	mayorDir := filepath.Join(townRoot, "mayor")
+	mayorDir := filepath.Join(townRoot, "coordinator")
 	if err := os.MkdirAll(mayorDir, 0755); err != nil {
 		return fmt.Errorf("creating mayor directory: %w", err)
 	}
@@ -65,11 +65,11 @@ func GetACPPid(townRoot string) (int, error) {
 // ACP agent name persistence functions
 
 func ACPAgentFilePath(townRoot string) string {
-	return filepath.Join(townRoot, "mayor", acpAgentFileName)
+	return filepath.Join(townRoot, "coordinator", acpAgentFileName)
 }
 
 func WriteACPAgent(townRoot, agentName string) error {
-	mayorDir := filepath.Join(townRoot, "mayor")
+	mayorDir := filepath.Join(townRoot, "coordinator")
 	if err := os.MkdirAll(mayorDir, 0755); err != nil {
 		return fmt.Errorf("creating mayor directory: %w", err)
 	}

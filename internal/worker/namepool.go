@@ -712,7 +712,7 @@ func DeleteCustomTheme(townRoot, name string) error {
 // FindRigsUsingTheme checks all rigs in a town and returns the names of any
 // rigs whose namepool style matches the given theme name.
 func FindRigsUsingTheme(townRoot, theme string) []string {
-	rigsFile := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsFile := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsFile)
 	if err != nil {
 		return nil

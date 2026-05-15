@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/steveyegge/gastown/internal/beads"
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/mail"
 	"github.com/steveyegge/gastown/internal/style"
@@ -177,7 +178,7 @@ func executeSling(params SlingParams) (*SlingResult, error) {
 	// but unaware it lost its hook. Mirrors the same logic in runSling (sling.go).
 	if (info.Status == "hooked" || info.Status == "in_progress") && params.Force && info.Assignee != "" {
 		assigneeParts := strings.Split(info.Assignee, "/")
-		if len(assigneeParts) >= 3 && assigneeParts[1] == "polecats" {
+		if len(assigneeParts) >= 3 && constants.IsWorkersDir(assigneeParts[1]) {
 			oldRigName := assigneeParts[0]
 			oldPolecatName := assigneeParts[2]
 			if townRoot != "" {

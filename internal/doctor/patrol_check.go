@@ -513,7 +513,7 @@ func (c *PatrolPluginDriftCheck) Fix(ctx *CheckContext) error {
 
 // discoverRigs finds all registered rigs.
 func discoverRigs(townRoot string) ([]string, error) {
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
 		if os.IsNotExist(err) {

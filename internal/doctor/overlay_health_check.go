@@ -148,7 +148,7 @@ func (c *OverlayHealthCheck) scanOverlays(townRoot string) []overlayFile {
 	results = append(results, scanOverlayDir(townDir)...)
 
 	// Scan rig-level overlays by reading rigs.json.
-	rigNames := loadRigNames(filepath.Join(townRoot, "mayor", "rigs.json"))
+	rigNames := loadRigNames(filepath.Join(townRoot, "coordinator", "rigs.json"))
 	for rigName := range rigNames {
 		rigDir := filepath.Join(townRoot, rigName, "formula-overlays")
 		results = append(results, scanOverlayDir(rigDir)...)

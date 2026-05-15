@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/events"
 	"github.com/steveyegge/gastown/internal/git"
@@ -173,11 +174,11 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 	cwdIsPolecatWorktree := strings.Contains(cwd, "/polecats/")
 	if cwdAvailable && !cwdIsPolecatWorktree {
 		if polecatName := os.Getenv("GT_POLECAT"); polecatName != "" && rigName != "" {
-			polecatClone := filepath.Join(townRoot, rigName, "polecats", polecatName, rigName)
+			polecatClone := filepath.Join(townRoot, rigName, "workers", polecatName, rigName)
 			if _, err := os.Stat(polecatClone); err == nil {
 				cwd = polecatClone
 			} else {
-				polecatClone = filepath.Join(townRoot, rigName, "polecats", polecatName)
+				polecatClone = filepath.Join(townRoot, rigName, "workers", polecatName)
 				if _, err := os.Stat(filepath.Join(polecatClone, ".git")); err == nil {
 					cwd = polecatClone
 				}
@@ -215,7 +216,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 		g = git.NewGit(cwd)
 	} else {
 		// Fallback: use the rig's mayor clone for git operations
-		mayorClone := filepath.Join(townRoot, rigName, "mayor", "rig")
+		mayorClone := filepath.Join(townRoot, rigName, "coordinator", "rig")
 		g = git.NewGit(mayorClone)
 	}
 
@@ -825,7 +826,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 				}
 			} else {
 				// No bare repo — try mayor/rig as last resort
-				mayorPath := filepath.Join(rigPath, "mayor", "rig")
+				mayorPath := filepath.Join(rigPath, "coordinator", "rig")
 				if _, statErr := os.Stat(mayorPath); statErr == nil {
 					mayorGit := git.NewGit(mayorPath)
 					pushErr = mayorGit.Push("origin", refspec, false)
@@ -2011,7 +2012,7 @@ func selfNukePolecat(roleInfo RoleInfo, _ string) error {
 // Non-polecat actors have formats like: gastown/crew/name, rigname/witness, etc.
 func isPolecatActor(actor string) bool {
 	parts := strings.Split(actor, "/")
-	return len(parts) >= 2 && parts[1] == "polecats"
+	return len(parts) >= 2 && constants.IsWorkersDir(parts[1])
 }
 
 // selfKillSession terminates the polecat's own tmux session after logging the event.

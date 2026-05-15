@@ -368,7 +368,7 @@ func DefaultConfig(townRoot string) *Config {
 	// We cannot import the daemon package here (circular: daemon→doltserver),
 	// so we parse the minimal JSON structure directly.
 	if os.Getenv("GT_DOLT_PORT") == "" && townRoot != "" {
-		daemonJSONPath := filepath.Join(townRoot, "mayor", "daemon.json")
+		daemonJSONPath := filepath.Join(townRoot, "coordinator", "daemon.json")
 		if data, err := os.ReadFile(daemonJSONPath); err == nil {
 			var daemonEnv struct {
 				Env map[string]string `json:"env"`
@@ -797,7 +797,7 @@ func HasServerModeMetadata(townRoot string) []string {
 	}
 
 	// Check rig-level beads
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
 		return serverRigs
@@ -2755,7 +2755,7 @@ func collectReferencedDatabases(townRoot string) map[string]bool {
 	}
 
 	// Check all rigs from rigs.json
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err == nil {
 		var config struct {
@@ -2809,7 +2809,7 @@ func collectReferencedDatabases(townRoot string) map[string]bool {
 				referenced[db] = true
 			}
 			// Check <rig>/mayor/rig/.beads/metadata.json
-			if db := readExistingDoltDatabase(filepath.Join(townRoot, entry.Name(), "mayor", "rig", ".beads")); db != "" {
+			if db := readExistingDoltDatabase(filepath.Join(townRoot, entry.Name(), "coordinator", "rig", ".beads")); db != "" {
 				referenced[db] = true
 			}
 		}
@@ -2840,7 +2840,7 @@ func CollectDatabaseOwners(townRoot string) map[string]string {
 	}
 
 	// Check all rigs from rigs.json
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err == nil {
 		var config struct {
@@ -2897,7 +2897,7 @@ func CollectDatabaseOwners(townRoot string) map[string]string {
 					owners[db] = dirName + " rig beads"
 				}
 			}
-			if db := readExistingDoltDatabase(filepath.Join(townRoot, dirName, "mayor", "rig", ".beads")); db != "" {
+			if db := readExistingDoltDatabase(filepath.Join(townRoot, dirName, "coordinator", "rig", ".beads")); db != "" {
 				if _, already := owners[db]; !already {
 					owners[db] = dirName + " rig beads"
 				}
@@ -3050,7 +3050,7 @@ func FindBrokenWorkspaces(townRoot string) ([]BrokenWorkspace, string) {
 	}
 
 	// Check rig-level beads via rigs.json
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
 		return broken, warning
@@ -3304,7 +3304,7 @@ func EnsureMetadataForBeadsDir(townRoot, beadsDir, rigName string, doltDatabase 
 // Rigs where the database name equals the directory name are not included.
 func buildRigPrefixMap(townRoot string) map[string]string {
 	result := make(map[string]string)
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
 		return result
@@ -3452,7 +3452,7 @@ func FindRigBeadsDir(townRoot, rigName string) string {
 	}
 
 	// Prefer mayor/rig/.beads (canonical location for tracked beads)
-	mayorBeads := filepath.Join(townRoot, rigName, "mayor", "rig", ".beads")
+	mayorBeads := filepath.Join(townRoot, rigName, "coordinator", "rig", ".beads")
 	if _, err := os.Stat(mayorBeads); err == nil {
 		return mayorBeads
 	}
@@ -3493,7 +3493,7 @@ func FindOrCreateRigBeadsDir(townRoot, rigName string) (string, error) {
 	// Check mayor/rig/.beads first (canonical location).
 	// Use MkdirAll as an idempotent existence check+create to close the
 	// TOCTOU window between os.Stat and the caller's file operations.
-	mayorBeads := filepath.Join(townRoot, rigName, "mayor", "rig", ".beads")
+	mayorBeads := filepath.Join(townRoot, rigName, "coordinator", "rig", ".beads")
 	if _, err := os.Stat(mayorBeads); err == nil {
 		// Ensure it still exists (no-op if present, recreates if deleted)
 		if err := os.MkdirAll(mayorBeads, 0755); err != nil {

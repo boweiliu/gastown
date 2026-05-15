@@ -1003,7 +1003,7 @@ func formatCountStyled(count int, s lipgloss.Style) string {
 // countPolecatSessions counts the number of sessions from checkpoint files.
 func countPolecatSessions(rigPath, polecatName string) int {
 	// Look for checkpoint files in the polecat's directory
-	checkpointDir := filepath.Join(rigPath, "polecats", polecatName, ".checkpoints")
+	checkpointDir := filepath.Join(rigPath, "workers", polecatName, ".checkpoints")
 	entries, err := os.ReadDir(checkpointDir)
 	if err != nil {
 		// Also check at rig level

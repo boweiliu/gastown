@@ -199,7 +199,7 @@ func findOrCreateTown() (string, error) {
 
 // isValidTown checks if a path is a valid Gas Town installation.
 func isValidTown(path string) bool {
-	mayorDir := filepath.Join(path, "mayor")
+	mayorDir := filepath.Join(path, "coordinator")
 	_, err := os.Stat(mayorDir)
 	return err == nil
 }

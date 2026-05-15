@@ -113,7 +113,7 @@ func (c *UnregisteredBeadsDirsCheck) Run(ctx *CheckContext) *CheckResult {
 
 // loadRegisteredRigNames reads rig names from mayor/rigs.json.
 func loadRegisteredRigNames(townRoot string) map[string]bool {
-	rigsPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	data, err := os.ReadFile(rigsPath)
 	if err != nil {
 		return nil

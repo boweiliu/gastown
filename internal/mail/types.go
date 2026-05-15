@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/steveyegge/gastown/internal/constants"
 )
 
 // Priority levels for messages.
@@ -580,7 +582,7 @@ func normalizeAddress(s string) string {
 	// Normalize crew/ and polecats/ to canonical form:
 	// "rig/crew/name" → "rig/name"
 	// "rig/polecats/name" → "rig/name"
-	if len(parts) == 3 && (parts[1] == "crew" || parts[1] == "polecats") {
+	if len(parts) == 3 && (parts[1] == "crew" || constants.IsWorkersDir(parts[1])) {
 		return parts[0] + "/" + parts[2]
 	}
 

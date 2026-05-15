@@ -108,20 +108,20 @@ const (
 
 // Directory names within a Gas Town workspace.
 const (
-	// DirMayor is the directory containing mayor configuration and state.
-	DirMayor = "mayor"
+	// DirCoordinator is the directory containing coordinator configuration and state.
+	DirCoordinator = "coordinator"
 
-	// DirPolecats is the directory containing polecat worktrees.
-	DirPolecats = "polecats"
+	// DirWorkers is the directory containing worker worktrees.
+	DirWorkers = "workers"
 
-	// DirCrew is the directory containing crew workspaces.
-	DirCrew = "crew"
+	// DirTeam is the directory containing team workspaces.
+	DirTeam = "team"
 
-	// DirRefinery is the directory containing the refinery clone.
-	DirRefinery = "refinery"
+	// DirMerger is the directory containing the merger clone.
+	DirMerger = "merger"
 
-	// DirWitness is the directory containing witness state.
-	DirWitness = "witness"
+	// DirWatcher is the directory containing watcher state.
+	DirWatcher = "watcher"
 
 	// DirRig is the subdirectory containing the actual git clone.
 	DirRig = "rig"
@@ -135,6 +135,70 @@ const (
 	// DirSettings is the rig settings directory (git-tracked).
 	DirSettings = "settings"
 )
+
+// Legacy directory name aliases (deprecated, use new names).
+const (
+	DirMayor    = DirCoordinator
+	DirPolecats = DirWorkers
+	DirCrew     = DirTeam
+	DirRefinery = DirMerger
+	DirWitness  = DirWatcher
+)
+
+// Legacy directory name strings for migration detection.
+const (
+	LegacyDirMayor    = "mayor"
+	LegacyDirPolecats = "polecats"
+	LegacyDirCrew     = "crew"
+	LegacyDirRefinery = "refinery"
+	LegacyDirWitness  = "witness"
+)
+
+// DirRenames maps old directory names to new directory names.
+// Used by migration logic to detect and rename legacy directories.
+var DirRenames = map[string]string{
+	LegacyDirMayor:    DirCoordinator,
+	LegacyDirPolecats: DirWorkers,
+	LegacyDirCrew:     DirTeam,
+	LegacyDirRefinery: DirMerger,
+	LegacyDirWitness:  DirWatcher,
+}
+
+// RoleToDirName maps a role name to its runtime directory name.
+// Handles both old and new role names for backward compatibility.
+func RoleToDirName(role string) string {
+	switch role {
+	case "mayor", "coordinator":
+		return DirCoordinator
+	case "polecat", "polecats", "worker", "workers":
+		return DirWorkers
+	case "crew", "team":
+		return DirTeam
+	case "refinery", "merger":
+		return DirMerger
+	case "witness", "watcher":
+		return DirWatcher
+	case "deacon", "supervisor":
+		return "supervisor"
+	default:
+		return role
+	}
+}
+
+// IsWorkersDir returns true if the string is a workers directory name (new or legacy).
+func IsWorkersDir(s string) bool { return s == DirWorkers || s == LegacyDirPolecats }
+
+// IsCoordinatorDir returns true if the string is a coordinator directory name (new or legacy).
+func IsCoordinatorDir(s string) bool { return s == DirCoordinator || s == LegacyDirMayor }
+
+// IsMergerDir returns true if the string is a merger directory name (new or legacy).
+func IsMergerDir(s string) bool { return s == DirMerger || s == LegacyDirRefinery }
+
+// IsWatcherDir returns true if the string is a watcher directory name (new or legacy).
+func IsWatcherDir(s string) bool { return s == DirWatcher || s == LegacyDirWitness }
+
+// IsTeamDir returns true if the string is a team directory name (new or legacy).
+func IsTeamDir(s string) bool { return s == DirTeam || s == LegacyDirCrew }
 
 // File names for configuration and state.
 const (
@@ -354,39 +418,39 @@ var SupportedShells = []string{"bash", "zsh", "sh", "fish", "tcsh", "ksh", "pwsh
 
 // Path helpers construct common paths.
 
-// MayorRigsPath returns the path to rigs.json within a town root.
-func MayorRigsPath(townRoot string) string {
-	return townRoot + "/" + DirMayor + "/" + FileRigsJSON
+// CoordinatorRigsPath returns the path to rigs.json within a town root.
+func CoordinatorRigsPath(townRoot string) string {
+	return townRoot + "/" + DirCoordinator + "/" + FileRigsJSON
 }
 
-// MayorTownPath returns the path to town.json within a town root.
-func MayorTownPath(townRoot string) string {
-	return townRoot + "/" + DirMayor + "/" + FileTownJSON
+// CoordinatorTownPath returns the path to town.json within a town root.
+func CoordinatorTownPath(townRoot string) string {
+	return townRoot + "/" + DirCoordinator + "/" + FileTownJSON
 }
 
-// RigMayorPath returns the path to mayor/rig within a rig.
-func RigMayorPath(rigPath string) string {
-	return rigPath + "/" + DirMayor + "/" + DirRig
+// RigCoordinatorPath returns the path to coordinator/rig within a rig.
+func RigCoordinatorPath(rigPath string) string {
+	return rigPath + "/" + DirCoordinator + "/" + DirRig
 }
 
-// RigBeadsPath returns the path to mayor/rig/.beads within a rig.
+// RigBeadsPath returns the path to coordinator/rig/.beads within a rig.
 func RigBeadsPath(rigPath string) string {
-	return rigPath + "/" + DirMayor + "/" + DirRig + "/" + DirBeads
+	return rigPath + "/" + DirCoordinator + "/" + DirRig + "/" + DirBeads
 }
 
-// RigPolecatsPath returns the path to polecats/ within a rig.
-func RigPolecatsPath(rigPath string) string {
-	return rigPath + "/" + DirPolecats
+// RigWorkersPath returns the path to workers/ within a rig.
+func RigWorkersPath(rigPath string) string {
+	return rigPath + "/" + DirWorkers
 }
 
-// RigCrewPath returns the path to crew/ within a rig.
-func RigCrewPath(rigPath string) string {
-	return rigPath + "/" + DirCrew
+// RigTeamPath returns the path to team/ within a rig.
+func RigTeamPath(rigPath string) string {
+	return rigPath + "/" + DirTeam
 }
 
-// MayorConfigPath returns the path to mayor/config.json within a town root.
-func MayorConfigPath(townRoot string) string {
-	return townRoot + "/" + DirMayor + "/" + FileConfigJSON
+// CoordinatorConfigPath returns the path to coordinator/config.json within a town root.
+func CoordinatorConfigPath(townRoot string) string {
+	return townRoot + "/" + DirCoordinator + "/" + FileConfigJSON
 }
 
 // TownRuntimePath returns the path to .runtime/ at the town root.
@@ -404,15 +468,27 @@ func RigSettingsPath(rigPath string) string {
 	return rigPath + "/" + DirSettings
 }
 
-// MayorAccountsPath returns the path to mayor/accounts.json within a town root.
-func MayorAccountsPath(townRoot string) string {
-	return townRoot + "/" + DirMayor + "/" + FileAccountsJSON
+// CoordinatorAccountsPath returns the path to coordinator/accounts.json within a town root.
+func CoordinatorAccountsPath(townRoot string) string {
+	return townRoot + "/" + DirCoordinator + "/" + FileAccountsJSON
 }
 
-// MayorQuotaPath returns the path to mayor/quota.json within a town root.
-func MayorQuotaPath(townRoot string) string {
-	return townRoot + "/" + DirMayor + "/" + FileQuotaJSON
+// CoordinatorQuotaPath returns the path to coordinator/quota.json within a town root.
+func CoordinatorQuotaPath(townRoot string) string {
+	return townRoot + "/" + DirCoordinator + "/" + FileQuotaJSON
 }
+
+// Legacy path helper aliases (deprecated, use new names).
+var (
+	MayorRigsPath     = CoordinatorRigsPath
+	MayorTownPath     = CoordinatorTownPath
+	RigMayorPath      = RigCoordinatorPath
+	RigPolecatsPath   = RigWorkersPath
+	RigCrewPath       = RigTeamPath
+	MayorConfigPath   = CoordinatorConfigPath
+	MayorAccountsPath = CoordinatorAccountsPath
+	MayorQuotaPath    = CoordinatorQuotaPath
+)
 
 // DefaultRateLimitPatterns are the default patterns that indicate a session
 // is rate-limited. These are matched against tmux pane content.

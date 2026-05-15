@@ -347,7 +347,7 @@ func (m *Manager) addLocked(name string, createBranch bool) (*CrewWorker, error)
 // This ensures crew clones have the same origin (fork) and upstream as the rig,
 // preventing repo ID mismatches and broken formula slinging.
 func (m *Manager) syncRemotesFromRig(crewPath string) error {
-	rigRepoPath := filepath.Join(m.rig.Path, "mayor", "rig")
+	rigRepoPath := filepath.Join(m.rig.Path, "coordinator", "rig")
 	if _, err := os.Stat(rigRepoPath); err != nil {
 		return fmt.Errorf("mayor/rig not found at %s", rigRepoPath)
 	}

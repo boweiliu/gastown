@@ -528,7 +528,7 @@ func (f *LiveConvoyFetcher) getWorkersFromAssignees(details map[string]*issueDet
 func (f *LiveConvoyFetcher) getSessionActivityForAssignee(assignee string) *time.Time {
 	// Parse assignee: "roxas/polecats/dag" -> rig="roxas", polecat="dag"
 	parts := strings.Split(assignee, "/")
-	if len(parts) != 3 || parts[1] != "polecats" {
+	if len(parts) != 3 || !constants.IsWorkersDir(parts[1]) {
 		return nil
 	}
 	rig := parts[0]
@@ -641,7 +641,7 @@ func calculateWorkStatus(completed, total int, activityColor string) string {
 // FetchMergeQueue fetches open PRs from registered rigs.
 func (f *LiveConvoyFetcher) FetchMergeQueue() ([]MergeQueueRow, error) {
 	// Load registered rigs from config
-	rigsConfigPath := filepath.Join(f.townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(f.townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("loading rigs config: %w", err)
@@ -815,7 +815,7 @@ func determineColorClass(ciStatus, mergeable string) string {
 // FetchWorkers fetches all running worker sessions (polecats and refinery) with activity data.
 func (f *LiveConvoyFetcher) FetchWorkers() ([]WorkerRow, error) {
 	// Load registered rigs to filter sessions
-	rigsConfigPath := filepath.Join(f.townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(f.townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("loading rigs config: %w", err)
@@ -1164,7 +1164,7 @@ func formatAgentAddress(addr string) string {
 	}
 
 	parts := strings.Split(addr, "/")
-	if len(parts) >= 3 && parts[1] == "polecats" {
+	if len(parts) >= 3 && constants.IsWorkersDir(parts[1]) {
 		return fmt.Sprintf("%s (%s)", parts[2], parts[0])
 	}
 	if len(parts) >= 3 && parts[1] == "crew" {
@@ -1179,7 +1179,7 @@ func formatAgentAddress(addr string) string {
 // FetchRigs returns all registered rigs with their agent counts.
 func (f *LiveConvoyFetcher) FetchRigs() ([]RigRow, error) {
 	// Load rigs config from mayor/rigs.json
-	rigsConfigPath := filepath.Join(f.townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(f.townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("loading rigs config: %w", err)
@@ -1195,7 +1195,7 @@ func (f *LiveConvoyFetcher) FetchRigs() ([]RigRow, error) {
 		rigPath := filepath.Join(f.townRoot, name)
 
 		// Count polecats
-		polecatsDir := filepath.Join(rigPath, "polecats")
+		polecatsDir := filepath.Join(rigPath, "workers")
 		if entries, err := os.ReadDir(polecatsDir); err == nil {
 			for _, e := range entries {
 				if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
@@ -1215,13 +1215,13 @@ func (f *LiveConvoyFetcher) FetchRigs() ([]RigRow, error) {
 		}
 
 		// Check for witness
-		witnessPath := filepath.Join(rigPath, "witness")
+		witnessPath := filepath.Join(rigPath, "watcher")
 		if _, err := os.Stat(witnessPath); err == nil {
 			row.HasWitness = true
 		}
 
 		// Check for refinery
-		refineryPath := filepath.Join(rigPath, "refinery", "rig")
+		refineryPath := filepath.Join(rigPath, "merger", "rig")
 		if _, err := os.Stat(refineryPath); err == nil {
 			row.HasRefinery = true
 		}

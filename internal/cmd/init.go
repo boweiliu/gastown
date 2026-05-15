@@ -49,10 +49,16 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("not a git repository (run 'git init' first)")
 	}
 
-	// Check if already initialized
-	polecatsDir := filepath.Join(cwd, "polecats")
-	if _, err := os.Stat(polecatsDir); err == nil && !initForce {
-		return fmt.Errorf("rig already initialized (use --force to reinitialize)")
+	// Check if already initialized (check both old and new directory names)
+	workersDir := filepath.Join(cwd, "workers")
+	legacyPolecatsDir := filepath.Join(cwd, "polecats")
+	if !initForce {
+		if fi, err := os.Stat(workersDir); err == nil && fi.IsDir() {
+			return fmt.Errorf("rig already initialized (use --force to reinitialize)")
+		}
+		if fi, err := os.Stat(legacyPolecatsDir); err == nil && fi.IsDir() {
+			return fmt.Errorf("rig already initialized (use --force to reinitialize)")
+		}
 	}
 
 	fmt.Printf("%s Initializing Gas Town rig in %s\n\n",

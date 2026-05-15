@@ -35,7 +35,7 @@ func ResolveWindowTint(rig, role string) *tmux.WindowStyle {
 
 	// Load global window tint config.
 	if townRoot != "" {
-		mayorConfigPath := filepath.Join(townRoot, "mayor", "config.json")
+		mayorConfigPath := filepath.Join(townRoot, "coordinator", "config.json")
 		if mayorCfg, err := config.LoadMayorConfig(mayorConfigPath); err == nil {
 			if mayorCfg.Theme != nil {
 				globalWindowTint = mayorCfg.Theme.WindowTint
@@ -119,7 +119,7 @@ func ResolveTintFactor(rig string) float64 {
 
 	// Check global config.
 	if townRoot != "" {
-		mayorConfigPath := filepath.Join(townRoot, "mayor", "config.json")
+		mayorConfigPath := filepath.Join(townRoot, "coordinator", "config.json")
 		if mayorCfg, err := config.LoadMayorConfig(mayorConfigPath); err == nil {
 			if mayorCfg.Theme != nil && mayorCfg.Theme.WindowTint != nil && mayorCfg.Theme.WindowTint.TintFactor != nil {
 				return *mayorCfg.Theme.WindowTint.TintFactor
@@ -147,7 +147,7 @@ func IsWindowTintEnabled(rig string) bool {
 
 	// Check global config.
 	if townRoot != "" {
-		mayorConfigPath := filepath.Join(townRoot, "mayor", "config.json")
+		mayorConfigPath := filepath.Join(townRoot, "coordinator", "config.json")
 		if mayorCfg, err := config.LoadMayorConfig(mayorConfigPath); err == nil {
 			if mayorCfg.Theme != nil && mayorCfg.Theme.WindowTint != nil && mayorCfg.Theme.WindowTint.Enabled != nil {
 				return *mayorCfg.Theme.WindowTint.Enabled

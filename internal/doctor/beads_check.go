@@ -119,7 +119,7 @@ func (c *PrefixMismatchCheck) Run(ctx *CheckContext) *CheckResult {
 	}
 
 	// Load rigs.json
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigsConfig, err := loadRigsConfig(rigsPath)
 	if err != nil {
 		return &CheckResult{
@@ -200,7 +200,7 @@ func (c *PrefixMismatchCheck) Fix(ctx *CheckContext) error {
 	}
 
 	// Load rigs.json
-	rigsPath := filepath.Join(ctx.TownRoot, "mayor", "rigs.json")
+	rigsPath := filepath.Join(ctx.TownRoot, "coordinator", "rigs.json")
 	rigsConfig, err := loadRigsConfig(rigsPath)
 	if err != nil {
 		return nil // Nothing to fix

@@ -768,7 +768,7 @@ func discoverRigs(townRoot string) []string {
 	var rigs []string
 
 	// Try rigs.json first
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	if rigsConfig, err := config.LoadRigsConfig(rigsConfigPath); err == nil {
 		for name := range rigsConfig.Rigs {
 			rigs = append(rigs, name)
@@ -804,7 +804,7 @@ func discoverRigs(townRoot string) []string {
 		}
 
 		// Check for polecats directory (indicates a rig)
-		polecatsPath := filepath.Join(dirPath, "polecats")
+		polecatsPath := filepath.Join(dirPath, "workers")
 		if _, err := os.Stat(polecatsPath); err == nil {
 			rigs = append(rigs, name)
 		}
@@ -944,7 +944,7 @@ func startPolecatsWithWork(townRoot, rigName string) ([]string, map[string]error
 	errors := map[string]error{}
 
 	rigPath := filepath.Join(townRoot, rigName)
-	polecatsDir := filepath.Join(rigPath, "polecats")
+	polecatsDir := filepath.Join(rigPath, "workers")
 
 	// List polecat directories
 	entries, err := os.ReadDir(polecatsDir)

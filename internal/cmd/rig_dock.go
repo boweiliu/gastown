@@ -268,7 +268,7 @@ func runRigUndock(cmd *cobra.Command, args []string) error {
 func IsRigDocked(townRoot, rigName, prefix string) bool {
 	// Construct the rig beads path
 	rigPath := filepath.Join(townRoot, rigName)
-	beadsPath := filepath.Join(rigPath, "mayor", "rig")
+	beadsPath := filepath.Join(rigPath, "coordinator", "rig")
 	if _, err := os.Stat(beadsPath); err != nil {
 		beadsPath = rigPath
 	}

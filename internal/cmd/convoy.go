@@ -1322,7 +1322,7 @@ func findConvoyWorktrees(tracked []trackedIssueInfo) []convoyWorktreeInfo {
 		return nil
 	}
 
-	rigsConfigPath := filepath.Join(townRoot, "mayor", "rigs.json")
+	rigsConfigPath := filepath.Join(townRoot, "coordinator", "rigs.json")
 	rigsConfig, err := config.LoadRigsConfig(rigsConfigPath)
 	if err != nil {
 		return nil
@@ -1344,7 +1344,7 @@ func findConvoyWorktrees(tracked []trackedIssueInfo) []convoyWorktreeInfo {
 
 	for rigName := range rigsConfig.Rigs {
 		rigPath := filepath.Join(townRoot, rigName)
-		polecatsDir := filepath.Join(rigPath, "polecats")
+		polecatsDir := filepath.Join(rigPath, "workers")
 
 		entries, err := os.ReadDir(polecatsDir)
 		if err != nil {
@@ -2618,13 +2618,13 @@ func getWorkersForIssues(issueIDs []string) map[string]*workerInfo {
 	}
 
 	// Discover rigs with beads directories
-	rigDirs, _ := filepath.Glob(filepath.Join(townRoot, "*", "polecats"))
+	rigDirs, _ := filepath.Glob(filepath.Join(townRoot, "*", "workers"))
 	var beadsDirs []string
 	for _, polecatsDir := range rigDirs {
 		rigDir := filepath.Dir(polecatsDir)
-		beadsDir := filepath.Join(rigDir, "mayor", "rig", ".beads")
+		beadsDir := filepath.Join(rigDir, "coordinator", "rig", ".beads")
 		if info, err := os.Stat(beadsDir); err == nil && info.IsDir() {
-			beadsDirs = append(beadsDirs, filepath.Join(rigDir, "mayor", "rig"))
+			beadsDirs = append(beadsDirs, filepath.Join(rigDir, "coordinator", "rig"))
 		}
 	}
 

@@ -107,7 +107,7 @@ func (m *Manager) SessionName() string {
 
 // mayorDir returns the working directory for the mayor.
 func (m *Manager) mayorDir() string {
-	return filepath.Join(m.townRoot, "mayor")
+	return filepath.Join(m.townRoot, "coordinator")
 }
 
 // Start starts the mayor session.

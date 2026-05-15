@@ -447,18 +447,18 @@ func (c *OrphanedAttachmentsCheck) agentExists(agent, townRoot string) bool {
 	// Handle special roles with hyphen separator
 	if strings.HasSuffix(agent, "-witness") {
 		rig := strings.TrimSuffix(agent, "-witness")
-		path := filepath.Join(townRoot, rig, "witness")
+		path := filepath.Join(townRoot, rig, "watcher")
 		return dirExists(path)
 	}
 	if strings.HasSuffix(agent, "-refinery") {
 		rig := strings.TrimSuffix(agent, "-refinery")
-		path := filepath.Join(townRoot, rig, "refinery")
+		path := filepath.Join(townRoot, rig, "merger")
 		return dirExists(path)
 	}
 
 	// Handle mayor
 	if agent == "mayor" {
-		return dirExists(filepath.Join(townRoot, "mayor"))
+		return dirExists(filepath.Join(townRoot, "coordinator"))
 	}
 
 	// Handle crew (rig/crew/name pattern)
@@ -474,7 +474,7 @@ func (c *OrphanedAttachmentsCheck) agentExists(agent, townRoot string) bool {
 	if strings.Contains(agent, "/") {
 		parts := strings.SplitN(agent, "/", 2)
 		if len(parts) == 2 {
-			path := filepath.Join(townRoot, parts[0], "polecats", parts[1])
+			path := filepath.Join(townRoot, parts[0], "workers", parts[1])
 			return dirExists(path)
 		}
 	}

@@ -42,7 +42,7 @@ func FindTownRoot(startDir string) string {
 	dir := startDir
 	candidate := ""
 	for {
-		townFile := filepath.Join(dir, "mayor", "town.json")
+		townFile := filepath.Join(dir, "coordinator", "town.json")
 		if _, err := os.Stat(townFile); err == nil {
 			candidate = dir
 		}

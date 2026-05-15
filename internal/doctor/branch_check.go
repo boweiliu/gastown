@@ -263,13 +263,13 @@ func (c *BranchCheck) findPersistentRoleDirs(townRoot string) []string {
 		}
 
 		// Add witness/rig if exists
-		witnessRig := filepath.Join(rigPath, "witness", "rig")
+		witnessRig := filepath.Join(rigPath, "watcher", "rig")
 		if _, err := os.Stat(witnessRig); err == nil {
 			dirs = append(dirs, witnessRig)
 		}
 
 		// Add refinery/rig if exists
-		refineryRig := filepath.Join(rigPath, "refinery", "rig")
+		refineryRig := filepath.Join(rigPath, "merger", "rig")
 		if _, err := os.Stat(refineryRig); err == nil {
 			dirs = append(dirs, refineryRig)
 		}
@@ -280,7 +280,7 @@ func (c *BranchCheck) findPersistentRoleDirs(townRoot string) []string {
 
 // isRig checks if a directory looks like a rig.
 func (c *BranchCheck) isRig(path string) bool {
-	markers := []string{"crew", "polecats", "witness", "refinery"}
+	markers := []string{"crew", "team", "polecats", "workers", "witness", "watcher", "refinery", "merger"}
 	for _, marker := range markers {
 		if _, err := os.Stat(filepath.Join(path, marker)); err == nil {
 			return true
@@ -458,7 +458,7 @@ func (c *CloneDivergenceCheck) findAllClones(townRoot string) []string {
 		// New structure: polecats/<name>/<rigname>/
 		// Old structure: polecats/<name>/
 		rigName := entry.Name()
-		polecatsPath := filepath.Join(rigPath, "polecats")
+		polecatsPath := filepath.Join(rigPath, "workers")
 		if polecatEntries, err := os.ReadDir(polecatsPath); err == nil {
 			for _, wk := range polecatEntries {
 				if wk.IsDir() && !strings.HasPrefix(wk.Name(), ".") {

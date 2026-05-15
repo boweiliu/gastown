@@ -84,7 +84,7 @@ func (c *PrimingCheck) Run(ctx *CheckContext) *CheckResult {
 
 	// Check 2.5: Detect stale mayor/CLAUDE.md and mayor/AGENTS.md
 	// Mayor no longer gets per-directory bootstrap files — only the town-root identity anchor.
-	mayorDir := filepath.Join(ctx.TownRoot, "mayor")
+	mayorDir := filepath.Join(ctx.TownRoot, "coordinator")
 	for _, filename := range []string{"CLAUDE.md", "AGENTS.md"} {
 		filePath := filepath.Join(mayorDir, filename)
 		if fileExists(filePath) {
@@ -256,16 +256,16 @@ func (c *PrimingCheck) checkRigPriming(townRoot string) []primingIssue {
 		}
 
 		// Check witness priming
-		witnessPath := filepath.Join(rigPath, "witness")
+		witnessPath := filepath.Join(rigPath, "watcher")
 		if dirExists(witnessPath) {
-			witnessIssues := c.checkAgentPriming(townRoot, filepath.Join(rigName, "witness"), "witness", rigName)
+			witnessIssues := c.checkAgentPriming(townRoot, filepath.Join(rigName, "watcher"), "witness", rigName)
 			issues = append(issues, witnessIssues...)
 		}
 
 		// Check refinery priming
-		refineryPath := filepath.Join(rigPath, "refinery")
+		refineryPath := filepath.Join(rigPath, "merger")
 		if dirExists(refineryPath) {
-			refineryIssues := c.checkAgentPriming(townRoot, filepath.Join(rigName, "refinery"), "refinery", rigName)
+			refineryIssues := c.checkAgentPriming(townRoot, filepath.Join(rigName, "merger"), "refinery", rigName)
 			issues = append(issues, refineryIssues...)
 		}
 
@@ -295,7 +295,7 @@ func (c *PrimingCheck) checkRigPriming(townRoot string) []primingIssue {
 
 		// Check polecat PRIME.md
 		// Polecat structure: polecats/<name>/<rigname>/ (worktree is nested inside polecatDir)
-		polecatsDir := filepath.Join(rigPath, "polecats")
+		polecatsDir := filepath.Join(rigPath, "workers")
 		if dirExists(polecatsDir) {
 			pcEntries, _ := os.ReadDir(polecatsDir)
 			for _, pcEntry := range pcEntries {

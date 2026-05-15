@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/steveyegge/gastown/internal/beads"
+	"github.com/steveyegge/gastown/internal/constants"
 	"github.com/steveyegge/gastown/internal/config"
 	"github.com/steveyegge/gastown/internal/git"
 	"github.com/steveyegge/gastown/internal/style"
@@ -49,9 +50,9 @@ func buildAgentBeadID(identity string, role Role, townRoot string) string {
 			return beads.DeaconBeadIDTown()
 		case identity == "deacon-boot":
 			return beads.DogBeadIDTown("boot")
-		case len(parts) == 2 && parts[1] == "witness":
+		case len(parts) == 2 && constants.IsWatcherDir(parts[1]):
 			return beads.WitnessBeadIDWithPrefix(getPrefix(parts[0]), parts[0])
-		case len(parts) == 2 && parts[1] == "refinery":
+		case len(parts) == 2 && constants.IsMergerDir(parts[1]):
 			return beads.RefineryBeadIDWithPrefix(getPrefix(parts[0]), parts[0])
 		case len(parts) == 2:
 			// Assume rig/name is a polecat
@@ -59,7 +60,7 @@ func buildAgentBeadID(identity string, role Role, townRoot string) string {
 		case len(parts) == 3 && parts[1] == "crew":
 			// rig/crew/name - crew member
 			return beads.CrewBeadIDWithPrefix(getPrefix(parts[0]), parts[0], parts[2])
-		case len(parts) == 3 && parts[1] == "polecats":
+		case len(parts) == 3 && constants.IsWorkersDir(parts[1]):
 			// rig/polecats/name - explicit polecat
 			return beads.PolecatBeadIDWithPrefix(getPrefix(parts[0]), parts[0], parts[2])
 		default:
@@ -84,7 +85,7 @@ func buildAgentBeadID(identity string, role Role, townRoot string) string {
 		return ""
 	case RolePolecat:
 		// Handle both 2-part (rig/name) and 3-part (rig/polecats/name) formats
-		if len(parts) == 3 && parts[1] == "polecats" {
+		if len(parts) == 3 && constants.IsWorkersDir(parts[1]) {
 			return beads.PolecatBeadIDWithPrefix(getPrefix(parts[0]), parts[0], parts[2])
 		}
 		if len(parts) >= 2 {

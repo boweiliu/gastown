@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/steveyegge/gastown/internal/constants"
 )
 
 // ResolveBeadsDir returns the actual beads directory, following any redirect.
@@ -190,7 +192,7 @@ func ComputeRedirectTarget(townRoot, worktreePath string) (string, error) {
 	// This would create a circular redirect chain since rig/.beads redirects to mayor/rig/.beads.
 	// Check both parts[0] (worktree IS the mayor dir, e.g., <town>/mayor/rig) and
 	// parts[1] (worktree is inside a rig's mayor, e.g., <town>/<rig>/mayor/rig).
-	if parts[0] == "mayor" || (len(parts) >= 2 && parts[1] == "mayor") {
+	if constants.IsCoordinatorDir(parts[0]) || (len(parts) >= 2 && constants.IsCoordinatorDir(parts[1])) {
 		return "", fmt.Errorf("cannot create redirect in canonical beads location (mayor/rig)")
 	}
 
@@ -198,7 +200,7 @@ func ComputeRedirectTarget(townRoot, worktreePath string) (string, error) {
 	rigRoot := filepath.Join(townRootAbs, rigName)
 	townBeadsPath := filepath.Join(townRootAbs, ".beads")
 	rigBeadsPath := filepath.Join(rigRoot, ".beads")
-	mayorBeadsPath := filepath.Join(rigRoot, "mayor", "rig", ".beads")
+	mayorBeadsPath := filepath.Join(rigRoot, "coordinator", "rig", ".beads")
 
 	// Check rig-level .beads first: if the rig has its own database
 	// (metadata.json with dolt_database), crew must use rig-level beads
@@ -343,7 +345,7 @@ func SetupRedirect(townRoot, worktreePath string) error {
 		if _, err := os.Stat(rigRedirectPath); os.IsNotExist(err) {
 			// No redirect file — this is an unexpected fallback
 			rigBeadsPath := filepath.Join(rigRoot, ".beads")
-			mayorBeadsPath := filepath.Join(rigRoot, "mayor", "rig", ".beads")
+			mayorBeadsPath := filepath.Join(rigRoot, "coordinator", "rig", ".beads")
 			fmt.Fprintf(os.Stderr, "Warning: rig .beads not found at %s, using %s\n", rigBeadsPath, mayorBeadsPath)
 			fmt.Fprintf(os.Stderr, "  Run 'bd doctor' to fix rig beads configuration\n")
 		}
