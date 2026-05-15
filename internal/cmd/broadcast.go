@@ -26,7 +26,6 @@ func init() {
 
 var broadcastCmd = &cobra.Command{
 	Use:     "announce <message>",
-	Aliases: []string{"broadcast"},
 	GroupID: GroupComm,
 	Short:   "Send a message to all workers",
 	Long: `Broadcasts a message to all active workers (polecats and crew).

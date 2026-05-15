@@ -39,7 +39,6 @@ var (
 
 var formulaCmd = &cobra.Command{
 	Use:     "template",
-	Aliases: []string{"formula", "formulas"},
 	GroupID: GroupWork,
 	Short:   "Manage workflow templates",
 	RunE:    requireSubcommand,

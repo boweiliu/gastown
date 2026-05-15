@@ -16,7 +16,7 @@ import (
 
 var unslingCmd = &cobra.Command{
 	Use:     "unassign [bead-id] [target]",
-	Aliases: []string{"unsling", "unhook"},
+	Aliases: []string{"unhook"},
 	GroupID: GroupWork,
 	Short:   "Remove work from an agent's hook",
 	Long: `Remove work from an agent's hook (the inverse of sling/hook).

@@ -20,7 +20,6 @@ var mountainJSON bool
 
 var mountainCmd = &cobra.Command{
 	Use:     "launch <epic-id>",
-	Aliases: []string{"mountain"},
 	GroupID: GroupWork,
 	Annotations: map[string]string{AnnotationPolecatSafe: "true"},
 	Short:   "Launch an epic: stage, label, and dispatch",

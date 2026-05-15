@@ -31,7 +31,7 @@ func getDeaconSessionName() string {
 
 var deaconCmd = &cobra.Command{
 	Use:     "supervisor",
-	Aliases: []string{"deacon", "dea"},
+	Aliases: []string{"dea"},
 	GroupID: GroupAgents,
 	Short:   "Manage the Supervisor (town-level watchdog)",
 	RunE:    requireSubcommand,

@@ -27,7 +27,7 @@ var (
 
 var refineryCmd = &cobra.Command{
 	Use:     "merger",
-	Aliases: []string{"refinery", "ref"},
+	Aliases: []string{"ref"},
 	GroupID: GroupAgents,
 	Short:   "Manage the Merger (merge queue processor)",
 	RunE:    requireSubcommand,

@@ -26,7 +26,6 @@ var (
 
 var bootCmd = &cobra.Command{
 	Use:     "watchdog",
-	Aliases: []string{"boot"},
 	GroupID: GroupAgents,
 	Short:   "Manage Watchdog (Supervisor watchdog)",
 	Long: `Manage Boot - the daemon's watchdog for Deacon triage.

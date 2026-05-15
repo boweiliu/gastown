@@ -32,7 +32,6 @@ var (
 
 var seanceCmd = &cobra.Command{
 	Use:     "recall",
-	Aliases: []string{"seance"},
 	GroupID: GroupDiag,
 	Short:   "Talk to your predecessor sessions",
 	Long: `Seance lets you literally talk to predecessor sessions.

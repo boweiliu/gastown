@@ -37,7 +37,6 @@ import (
 
 var rigCmd = &cobra.Command{
 	Use:     "project",
-	Aliases: []string{"rig"},
 	GroupID: GroupWorkspace,
 	Short:   "Manage projects in the workspace",
 	RunE:    requireSubcommand,

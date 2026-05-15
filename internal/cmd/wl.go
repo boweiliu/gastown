@@ -21,7 +21,6 @@ var (
 
 var wlCmd = &cobra.Command{
 	Use:     "archive",
-	Aliases: []string{"wl"},
 	GroupID: GroupWork,
 	Short:   "Archive federation commands",
 	RunE:    requireSubcommand,

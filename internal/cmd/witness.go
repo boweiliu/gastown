@@ -23,7 +23,6 @@ var (
 
 var witnessCmd = &cobra.Command{
 	Use:     "watcher",
-	Aliases: []string{"witness"},
 	GroupID: GroupAgents,
 	Short:   "Manage the Watcher (per-rig worker health monitor)",
 	RunE:    requireSubcommand,

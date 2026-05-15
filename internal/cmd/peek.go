@@ -21,7 +21,6 @@ func init() {
 
 var peekCmd = &cobra.Command{
 	Use:     "inspect <rig/worker> [count]",
-	Aliases: []string{"peek"},
 	GroupID: GroupComm,
 	Short:   "View recent output from a worker or team session",
 	Long: `Capture and display recent terminal output from an agent session.
